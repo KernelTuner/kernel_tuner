@@ -34,10 +34,12 @@ from constraint import (
 
 from kernel_tuner.accuracy import Tunable
 
-try:
-    import cupy as cp
-except ImportError:
-    cp = np
+def _get_cupy():
+    try:
+        import cupy as _cp
+    except ImportError:
+        return None
+    return _cp
 
 from kernel_tuner.observers.nvml import NVMLObserver
 
@@ -132,6 +134,8 @@ def check_argument_type(dtype, kernel_argument):
 
 def check_argument_list(kernel_name, kernel_string, args):
     """Raise an exception if kernel arguments do not match host arguments."""
+    cp = _get_cupy()
+    cupy_ndarray = (cp.ndarray,) if cp is not None else ()
     kernel_arguments = list()
     collected_errors = list()
 
@@ -155,7 +159,7 @@ def check_argument_list(kernel_name, kernel_string, args):
                 continue
 
             # Handle numpy arrays and other array types
-            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray)):
+            if not isinstance(arg, (np.ndarray, np.generic, torch.Tensor, DeviceArray) + cupy_ndarray):
                 raise TypeError(
                     f"Argument at position {i} of type: {type(arg)} should be of type "
                     "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
