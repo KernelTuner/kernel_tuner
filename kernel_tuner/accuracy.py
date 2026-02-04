@@ -1,19 +1,25 @@
-from collections import UserDict
-from typing import Dict
-import numpy as np
+"""Module for accuracy measurement and tunable parameters."""
+
 import logging
 import re
+from collections import UserDict
+from typing import Dict
+
+import numpy as np
 
 from kernel_tuner.observers import OutputObserver
 
 
 class Tunable(UserDict):
+    """``Tunable`` can be used as a parameter value dependent input argument when tuning kernels."""
+
     def __init__(self, param_key: str, arrays: Dict):
-        """The ``Tunable`` object can be used as an input argument when tuning
-        kernels. It is a container that holds several arrays internally and
+        """The ``Tunable`` object can be used as an input argument when tuning kernels.
+
+        It is a container that holds several arrays internally and
         selects one array during benchmarking based on the value of a tunable parameter.
 
-        Example
+        Example:
         -------
         Consider this example::
 
@@ -37,6 +43,7 @@ class Tunable(UserDict):
         self.param_key = param_key
 
     def select_for_configuration(self, params):
+        """Select the array for the given configuration."""
         if callable(self.param_key):
             option = self.param_key(params)
         elif self.param_key in params:
@@ -46,13 +53,11 @@ class Tunable(UserDict):
 
         if option not in self.data:
             list = ", ".join(map(str, self.data.keys()))
-            raise KeyError(
-                f"'{option}' is not a valid parameter value, should be one of: {list}"
-            )
+            raise KeyError(f"'{option}' is not a valid parameter value, should be one of: {list}")
 
         return self.data[option]
 
-    def __call__(self, params):
+    def __call__(self, params):  # noqa: D102
         return self.select_for_configuration(params)
 
 
@@ -70,6 +75,7 @@ def _find_bfloat16_if_available():
     if dtype is None:
         try:
             from ml_dtypes import bfloat16
+
             dtype = bfloat16
         except ImportError:
             pass
@@ -78,6 +84,7 @@ def _find_bfloat16_if_available():
     if dtype is None:
         try:
             from jax.numpy import bfloat16
+
             dtype = bfloat16
         except ImportError:
             pass
@@ -86,6 +93,7 @@ def _find_bfloat16_if_available():
     if dtype is None:
         try:
             from tensorflow import bfloat16
+
             dtype = bfloat16.as_numpy_dtype
         except ImportError:
             pass
@@ -100,9 +108,9 @@ def _find_bfloat16_if_available():
 
 
 def _to_float_dtype(x: str) -> np.dtype:
-    """Convert a string to a numpy data type (``dtype``). This function recognizes
-    common names (such as ``f16`` or ``kfloat``), and uses ``np.dtype(x)`` as a
-    fallback.
+    """Convert a string to a numpy data type (``dtype``).
+
+    This function recognizes common names (such as ``f16`` or ``kfloat``), and uses ``np.dtype(x)`` as a fallback.
     """
     if isinstance(x, str):
         x = x.lower()
@@ -123,16 +131,17 @@ def _to_float_dtype(x: str) -> np.dtype:
 
 
 class TunablePrecision(Tunable):
-    def __init__(
-        self, param_key: str, array: np.ndarray, dtypes: Dict[str, np.dtype] = None
-    ):
-        """The ``Tunable`` object can be used as an input argument when tuning
-        kernels. It is a container that internally holds several arrays
+    """``TunablePrecision`` can be used as a precision-level dependent input argument when tuning kernels."""
+
+    def __init__(self, param_key: str, array: np.ndarray, dtypes: Dict[str, np.dtype] = None):
+        """The ``Tunable`` object can be used as an input argument when tuning kernels.
+
+        It is a container that internally holds several arrays
         containing the same data, but stored in using different levels of
         precision. During benchamrking, one array is selected based on the value
         of the tunable parameter called ``param_key``.
 
-        Example
+        Example:
         -------
         Consider this example::
 
@@ -155,7 +164,6 @@ class TunablePrecision(Tunable):
             bfloat16 = _find_bfloat16_if_available()
             if bfloat16 is not None:
                 dtypes["bfloat16"] = bfloat16
-
 
         # If dtype is a list, convert it to a dictionary
         if isinstance(dtypes, (list, tuple)):
@@ -197,7 +205,6 @@ def error_metric_from_name(user_key, EPS=1e-8):
     The value of `EPS` is used for relative errors to prevent division by zero.
     ``
     """
-
     # Prepocess the provided name:
     # - convert to lowercase
     # - remove the word "error"
@@ -278,17 +285,13 @@ def error_metric_from_name(user_key, EPS=1e-8):
         raise ValueError(f"invalid error metric provided: {user_key}")
 
     # cast both arguments to f64 before passing them to the metric
-    return lambda a, b: metric(
-        a.astype(np.float64, copy=False), b.astype(np.float64, copy=False)
-    )
+    return lambda a, b: metric(a.astype(np.float64, copy=False), b.astype(np.float64, copy=False))
 
 
 class AccuracyObserver(OutputObserver):
-    """``AccuracyObserver`` measures the error on the output produced by a kernel
-    by comparing the output against a reference output.
+    """``AccuracyObserver`` measures the error on the output produced by a kernel by comparing to a reference output.
 
-    By default, it uses the root mean-squared error (RMSE) and uses the
-    metric name ``"error"``.
+    By default, it uses the root mean-squared error (RMSE) and uses the metric name ``"error"``.
     """
 
     def __init__(self, metric=None, key="error", *, atol=1e-8):
@@ -303,7 +306,6 @@ class AccuracyObserver(OutputObserver):
         :param atol: The tolerance used in relative metrics to prevent
                      division by zero. It is ignored by absolute error metrics.
         """
-
         # Default metric is RMSE
         if not metric:
             metric = "rmse"
@@ -317,6 +319,7 @@ class AccuracyObserver(OutputObserver):
         self.result = None
 
     def process_output(self, answers, outputs):
+        """Process the output produced by the kernel and compare it to the reference answers."""
         errors = []
 
         for answer, output in zip(answers, outputs):
@@ -326,4 +329,5 @@ class AccuracyObserver(OutputObserver):
         self.result = max(errors)
 
     def get_results(self):
+        """Get the results produced by this observer."""
         return dict([(self.key, self.result)])
