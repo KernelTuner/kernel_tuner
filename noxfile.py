@@ -22,7 +22,7 @@ python_versions_to_test = ["3.11", "3.12", "3.13", "3.14"]
 nox.options.stop_on_first_error = True
 nox.options.error_on_missing_interpreters = True
 nox.options.default_venv_backend = "virtualenv"
-nox.options.reuse_existing_virtualenvs = True
+nox.options.reuse_existing_virtualenvs = False
 
 # workspace level settings
 settings_file_path = Path("./noxsettings.toml")
