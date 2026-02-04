@@ -27,12 +27,14 @@ class ScoreObserver(BenchmarkObserver):
         self.scores.append(self.dev.last_score)
 
     def get_results(self):
-        results = {'score': mean(self.scores), 'scores': self.scores.copy()}
+        results = {"score": mean(self.scores), "scores": self.scores.copy()}
         self.scores = []
         return results
 
+
 class HypertunerFunctions(Backend):
     """Class for executing hyperparameter tuning."""
+
     units = {}
 
     def __init__(self, iterations, compiler_options=None):
@@ -51,30 +53,30 @@ class HypertunerFunctions(Backend):
                 "name": "dedispersion_milo",
                 "folder": folder,
                 "input_file": "dedispersion_milo.json",
-                "objective_performance_keys": ["time"]
+                "objective_performance_keys": ["time"],
             },
             {
                 "name": "hotspot_milo",
                 "folder": folder,
                 "input_file": "hotspot_milo.json",
-                "objective_performance_keys": ["GFLOP/s"]
+                "objective_performance_keys": ["GFLOP/s"],
             },
             {
                 "name": "convolution_milo",
                 "folder": folder,
                 "input_file": "convolution_milo.json",
-                "objective_performance_keys": ["time"]
+                "objective_performance_keys": ["time"],
             },
             {
                 "name": "gemm_milo",
                 "folder": folder,
                 "input_file": "gemm_milo.json",
-                "objective_performance_keys": ["time"]
-            }
+                "objective_performance_keys": ["time"],
+            },
         ]
         # any additional settings
-        self.override = { 
-            "experimental_groups_defaults": { 
+        self.override = {
+            "experimental_groups_defaults": {
                 "repeats": 25,
                 "samples": self.iterations,
                 "minimum_fraction_of_budget_valid": 0.1,
@@ -84,10 +86,8 @@ class HypertunerFunctions(Backend):
                 "cutoff_percentile": 0.95,
                 "cutoff_percentile_start": 0.01,
                 "cutoff_type": "time",
-                "objective_time_keys": [
-                    "all"
-                ]
-            }
+                "objective_time_keys": ["all"],
+            },
         }
 
         # override the defaults with compiler options if provided
@@ -113,7 +113,7 @@ class HypertunerFunctions(Backend):
         if arglist is None:
             arglist = []
         return arglist
-    
+
     def compile(self, kernel_instance):
         super().compile(kernel_instance)
         path = Path(__file__).parent.parent.parent / "hyperparamtuning"
@@ -121,37 +121,47 @@ class HypertunerFunctions(Backend):
 
         # strategy settings
         strategy: str = kernel_instance.arguments[0]
-        hyperparams = [{'name': k, 'value': v} for k, v in kernel_instance.params.items()]
+        hyperparams = [{"name": k, "value": v} for k, v in kernel_instance.params.items()]
         hyperparams_string = "_".join(f"{k}={str(v)}" for k, v in kernel_instance.params.items())
-        searchspace_strategies = [{
-            "autotuner": "KernelTuner",
-            "name": f"{strategy.lower()}_{hyperparams_string}",
-            "display_name": strategy.replace('_', ' ').capitalize(),
-            "search_method": strategy.lower(),
-            'search_method_hyperparameters': hyperparams
-        }]
+        searchspace_strategies = [
+            {
+                "autotuner": "KernelTuner",
+                "name": f"{strategy.lower()}_{hyperparams_string}",
+                "display_name": strategy.replace("_", " ").capitalize(),
+                "search_method": strategy.lower(),
+                "search_method_hyperparameters": hyperparams,
+            }
+        ]
 
         name = kernel_instance.name if len(kernel_instance.name) > 0 else kernel_instance.kernel_source.kernel_name
-        experiments_filepath = generate_experiment_file(name, path, searchspace_strategies, self.applications, self.gpus, 
-                                                        override=self.override, generate_unique_file=True, overwrite_existing_file=True)
+        experiments_filepath = generate_experiment_file(
+            name,
+            path,
+            searchspace_strategies,
+            self.applications,
+            self.gpus,
+            override=self.override,
+            generate_unique_file=True,
+            overwrite_existing_file=True,
+        )
         return str(experiments_filepath)
-    
+
     def start_event(self):
         return super().start_event()
-    
+
     def stop_event(self):
         return super().stop_event()
-    
+
     def kernel_finished(self):
         super().kernel_finished()
         return True
-    
+
     def synchronize(self):
         return super().synchronize()
-    
+
     def run_kernel(self, func, gpu_args=None, threads=None, grid=None, stream=None, params=None):
         # from cProfile import Profile
-    
+
         # # generate the experiments file
         # experiments_filepath = Path(func)
 
@@ -161,23 +171,23 @@ class HypertunerFunctions(Backend):
         #     pr.dump_stats('diff_evo_hypertune_hotspot.prof')
         # self.last_score = scores[list(scores.keys())[0]]['score']
         # raise ValueError(scores)
-    
+
         # generate the experiments file
         experiments_filepath = Path(func)
 
         # run the methodology to get a fitness score for this configuration
         scores = get_strategy_scores(str(experiments_filepath), full_validate_on_load=False)
-        self.last_score = scores[list(scores.keys())[0]]['score']
+        self.last_score = scores[list(scores.keys())[0]]["score"]
 
         # remove the experiments file
         experiments_filepath.unlink()
-    
+
     def memset(self, allocation, value, size):
         return super().memset(allocation, value, size)
-    
+
     def memcpy_dtoh(self, dest, src):
         return super().memcpy_dtoh(dest, src)
-    
+
     def memcpy_htod(self, dest, src):
         return super().memcpy_htod(dest, src)
 

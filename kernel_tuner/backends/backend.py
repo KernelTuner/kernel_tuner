@@ -1,4 +1,5 @@
 """This module contains the interface of all kernel_tuner backends."""
+
 from __future__ import print_function
 
 from abc import ABC, abstractmethod

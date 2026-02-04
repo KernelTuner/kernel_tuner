@@ -17,9 +17,7 @@
     "black-formatter.args": [
         "--config=pyproject.toml"
     ],
-    "ruff.args": [
-        "--config=pyproject.toml"
-    ],
+    "ruff.configuration": "pyproject.toml",
     "autoDocstring.docstringFormat": "google-notypes",
     "esbonio.sphinx.confDir": "",
     "python.testing.pytestArgs": [

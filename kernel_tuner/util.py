@@ -1,4 +1,5 @@
 """Module for kernel tuner utility functions."""
+
 import ast
 import errno
 import json
@@ -14,7 +15,6 @@ from inspect import getsource, signature
 from pathlib import Path
 from types import FunctionType
 from typing import Union
-from math import ceil, floor    # to have these available in eval contexts
 
 import numpy as np
 from constraint import (
@@ -203,14 +203,13 @@ def check_stop_criterion(to: dict) -> float:
     if "max_fevals" in to:
         if len(to.unique_results) >= to.max_fevals:
             raise StopCriterionReached(f"max_fevals ({to.max_fevals}) reached")
-        if not "time_limit" in to:
+        if "time_limit" not in to:
             return len(to.unique_results) / to.max_fevals
     if "time_limit" in to:
         time_spent = (time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time
         if time_spent > to.time_limit:
             raise StopCriterionReached("time limit exceeded")
         return time_spent / to.time_limit
-    
 
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
@@ -232,7 +231,11 @@ def check_block_size_names(block_size_names):
         if len(block_size_names) > 3:
             raise ValueError("block_size_names should not contain more than 3 names!", block_size_names)
         if not all([isinstance(name, "".__class__) for name in block_size_names]):
-            raise ValueError("block_size_names should contain only strings!", block_size_names, [type(name) for name in block_size_names])
+            raise ValueError(
+                "block_size_names should contain only strings!",
+                block_size_names,
+                [type(name) for name in block_size_names],
+            )
 
 
 def append_default_block_size_names(block_size_names):
@@ -266,7 +269,6 @@ def check_block_size_params_names_list(block_size_names, tune_params):
             block_size_names = sorted(result, key=str.casefold)
 
     return block_size_names
-
 
 
 def check_restriction(restrict, params: dict) -> bool:
@@ -474,7 +476,9 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
             for div in divisor:
                 divisor_num *= get_dimension_divisor(div, 1, params)
         else:
-            raise ValueError("Error: unrecognized type in grid divisor list, should be any of int, str, callable, or iterable")
+            raise ValueError(
+                "Error: unrecognized type in grid divisor list, should be any of int, str, callable, or iterable"
+            )
 
         return divisor_num
 
@@ -587,9 +591,7 @@ def get_smem_args(smem_args, params):
 
 def get_temp_filename(suffix=None):
     """Return a string in the form of temp_X, where X is a large integer."""
-    tmp_file = tempfile.mkstemp(
-        suffix=suffix, prefix="temp_", dir=os.getcwd()
-    )
+    tmp_file = tempfile.mkstemp(suffix=suffix, prefix="temp_", dir=os.getcwd())
     os.close(tmp_file[0])
     return tmp_file[1]
 
@@ -813,7 +815,7 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
                 kernel_prefix += f"constexpr int {k} = {v};\n"
         elif lang.upper() == "JULIA":
             # kernel_prefix += f"const {k} = {v}\n"
-            pass    # in Julia, we can't redefine constants like this, so we skip it and give it as arguments on the kernel launch
+            pass  # in Julia, we can't redefine constants like this, so we skip it and give it as arguments on the kernel launch
         else:
             kernel_prefix += f"#define {k} {v}\n"
 
@@ -920,7 +922,7 @@ def parse_restrictions(
             return param
         else:
             return key
-    
+
     # remove functionally duplicate restrictions (preserves order and whitespace)
     if all(isinstance(r, str) for r in restrictions):
         # clean the restriction strings to functional equivalence
@@ -1029,7 +1031,7 @@ def get_all_lambda_asts(func):
         if not res:
             raise ValueError(f"No lambda node found in the source {source}.")
     except SyntaxError:
-        """ Ignore syntax errors on the lambda """
+        """Ignore syntax errors on the lambda"""
         return res
     except OSError:
         raise ValueError("Could not retrieve source. Is this defined interactively or dynamically?")
@@ -1040,15 +1042,18 @@ class ConstraintLambdaTransformer(ast.NodeTransformer):
     """Replaces any `NAME['string']` subscript with just `'string'`, if `NAME`
     matches the lambda argument name.
     """
+
     def __init__(self, dict_arg_name):
         self.dict_arg_name = dict_arg_name
 
     def visit_Subscript(self, node):
         # We only replace subscript expressions of the form <dict_arg_name>['some_string']
-        if (isinstance(node.value, ast.Name)
-                and node.value.id == self.dict_arg_name
-                and isinstance(node.slice, ast.Constant)
-                and isinstance(node.slice.value, str)):
+        if (
+            isinstance(node.value, ast.Name)
+            and node.value.id == self.dict_arg_name
+            and isinstance(node.slice, ast.Constant)
+            and isinstance(node.slice.value, str)
+        ):
             # Replace `dict_arg_name['some_key']` with the string used as key
             return ast.Name(node.slice.value)
         return self.generic_visit(node)
@@ -1084,7 +1089,7 @@ def convert_constraint_lambdas(restrictions):
             try:
                 lambda_asts = get_all_lambda_asts(c)
             except ValueError:
-                res.append(c)   # it's just a plain function, not a lambda
+                res.append(c)  # it's just a plain function, not a lambda
                 continue
 
             for lambda_ast in lambda_asts:
@@ -1093,7 +1098,9 @@ def convert_constraint_lambdas(restrictions):
 
     result = list(set(res))
     if not len(result) == len(restrictions):
-        raise ValueError("An error occured when parsing restrictions. If you mix lambdas and string-based restrictions, please define the lambda first.")
+        raise ValueError(
+            "An error occured when parsing restrictions. If you mix lambdas and string-based restrictions, please define the lambda first."
+        )
 
     return result
 
@@ -1142,12 +1149,16 @@ def compile_restrictions(
             noncompiled_restrictions.append((r, [], r))
     return noncompiled_restrictions + compiled_restrictions
 
+
 def check_matching_problem_size(cached_problem_size, problem_size):
     """Check the if requested problem size matches the problem size in the cache."""
     cached_problem_size_arr = np.array(cached_problem_size)
     problem_size_arr = np.array(problem_size)
     if cached_problem_size_arr.size != problem_size_arr.size or not (cached_problem_size_arr == problem_size_arr).all():
-        raise ValueError(f"Cannot load cache which contains results for different problem_size, cache: {cached_problem_size}, requested: {problem_size}")
+        raise ValueError(
+            f"Cannot load cache which contains results for different problem_size, cache: {cached_problem_size}, requested: {problem_size}"
+        )
+
 
 def process_cache(cache, kernel_options, tuning_options, runner):
     """Cache file for storing tuned configurations.

@@ -1,4 +1,5 @@
 """This module contains all CUDA specific kernel_tuner functions."""
+
 from __future__ import print_function
 
 import logging
@@ -97,13 +98,9 @@ class PyCudaFunctions(GPUBackend):
             PyCudaFunctions.last_selected_context = self.context
 
         # inspect device properties
-        devprops = {
-            str(k): v for (k, v) in self.context.get_device().get_attributes().items()
-        }
+        devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
         self.max_threads = devprops["MAX_THREADS_PER_BLOCK"]
-        cc = str(devprops.get("COMPUTE_CAPABILITY_MAJOR", "0")) + str(
-            devprops.get("COMPUTE_CAPABILITY_MINOR", "0")
-        )
+        cc = str(devprops.get("COMPUTE_CAPABILITY_MAJOR", "0")) + str(devprops.get("COMPUTE_CAPABILITY_MINOR", "0"))
         if cc == "00":
             cc = self.context.get_device().compute_capability()
         self.cc = str(cc)
@@ -350,14 +347,7 @@ class PyCudaFunctions(GPUBackend):
         """
         if stream is None:
             stream = self.stream
-        func(
-            *gpu_args,
-            block=threads,
-            grid=grid,
-            stream=stream,
-            shared=self.smem_size,
-            texrefs=self.texrefs
-        )
+        func(*gpu_args, block=threads, grid=grid, stream=stream, shared=self.smem_size, texrefs=self.texrefs)
 
     def memset(self, allocation, value, size):
         """Set the memory in allocation to the value in value.

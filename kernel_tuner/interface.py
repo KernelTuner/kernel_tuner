@@ -27,13 +27,12 @@ limitations under the License.
 import logging
 from argparse import ArgumentParser
 from ast import literal_eval
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from time import perf_counter
-from copy import deepcopy
 
 import numpy
-from constraint import Constraint
 
 import kernel_tuner.core as core
 import kernel_tuner.util as util
@@ -740,7 +739,8 @@ def tune_kernel(
 
 tune_kernel.__doc__ = _tune_kernel_docstring
 
-_run_kernel_docstring = """Compile and run a single kernel
+_run_kernel_docstring = (
+    """Compile and run a single kernel
 
     Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
     However, instead of measuring execution time run_kernel returns the output of the kernel.
@@ -766,10 +766,9 @@ _run_kernel_docstring = """Compile and run a single kernel
     :returns: A list of numpy arrays, similar to the arguments passed to this
         function, containing the output after kernel execution.
     :rtype: list
-""" % _get_docstring(
-    _kernel_options
-) + _get_docstring(
-    _device_options
+"""
+    % _get_docstring(_kernel_options)
+    + _get_docstring(_device_options)
 )
 
 

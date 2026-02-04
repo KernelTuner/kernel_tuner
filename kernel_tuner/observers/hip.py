@@ -1,7 +1,7 @@
 import numpy as np
 
-from kernel_tuner.observers.observer import BenchmarkObserver
 from kernel_tuner.backends.hip.util import hip_check
+from kernel_tuner.observers.observer import BenchmarkObserver
 
 try:
     from hip import hip, hiprtc
@@ -15,7 +15,9 @@ class HipRuntimeObserver(BenchmarkObserver):
 
     def __init__(self, dev):
         if not hip or not hiprtc:
-            raise ImportError("Unable to import HIP Python, or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-hip-python.")
+            raise ImportError(
+                "Unable to import HIP Python, or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-hip-python."
+            )
 
         self.dev = dev
         self.stream = dev.stream

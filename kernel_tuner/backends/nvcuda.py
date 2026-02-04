@@ -1,5 +1,4 @@
 """This module contains all NVIDIA cuda-python specific kernel_tuner functions."""
-from warnings import warn
 
 import numpy as np
 
@@ -11,11 +10,13 @@ from kernel_tuner.utils.nvcuda import cuda_error_check, to_valid_nvrtc_gpu_arch_
 # embedded in try block to be able to generate documentation
 # and run tests without cuda-python installed
 try:
-    from cuda.bindings import driver, runtime, nvrtc
+    from cuda.bindings import driver, nvrtc, runtime
 except ImportError:
     try:
         # backward compatibility hack for older cuda-python versions
-        from cuda import cuda as driver, cudart as runtime, nvrtc as nvrtc
+        from cuda import cuda as driver
+        from cuda import cudart as runtime
+        from cuda import nvrtc as nvrtc
     except ImportError:
         driver = None
 

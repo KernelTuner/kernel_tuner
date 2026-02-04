@@ -7,7 +7,11 @@ Be careful that the general setup of tests is left to pyproject.toml.
 
 import platform
 import re
+import subprocess
+from json import JSONDecodeError
+from json import loads as json_loads
 from pathlib import Path
+from re import search as regex_search
 
 import nox
 from nox_poetry import Session, session
@@ -51,12 +55,13 @@ def create_settings(session: Session) -> None:
             noxenv_file_path.unlink()
         # write the settings
         assert venvbackend in venvbackend_values, f"{venvbackend=}, must be one of {','.join(venvbackend_values)}"
-        settings = f'venvbackend = "{venvbackend}"\n' f'envdir = "{envdir}"\n'
+        settings = f'venvbackend = "{venvbackend}"\nenvdir = "{envdir}"\n'
         settings_file_path.write_text(settings)
         # exit to make sure the user checks the settings are correct
         if arg_trigger:
             session.warn(
-                f"Settings file '{settings_file_path}' created, exiting. Please check settings are correct before running Nox again."
+                f"Settings file '{settings_file_path}' created, exiting. "
+                "Please check settings are correct before running Nox again."
             )
             exit(1)
 
@@ -69,9 +74,9 @@ if settings_file_path.exists():
         nox_settings = tomli.load(fp)
         venvbackend = nox_settings["venvbackend"]
         envdir = nox_settings["envdir"]
-        assert (
-            venvbackend in venvbackend_values
-        ), f"File '{settings_file_path}' has {venvbackend=}, must be one of {','.join(venvbackend_values)}"
+        assert venvbackend in venvbackend_values, (
+            f"File '{settings_file_path}' has {venvbackend=}, must be one of {','.join(venvbackend_values)}"
+        )
         nox.options.default_venv_backend = venvbackend
         nox.options.venvbackend = venvbackend
         if envdir is not None and len(envdir) > 0:
@@ -101,7 +106,7 @@ def check_development_environment(session: Session) -> None:
             return None
     output: str = session.run("poetry", "install", "--sync", "--dry-run", "--with", "test", silent=True, external=True)
     match = re.search(
-        r"Package operations: (\d+) (?:install|installs), (\d+) (?:update|updates), (\d+) (?:removal|removals), \d+ skipped",
+        r"Package operations: (\d+) (?:install|installs), (\d+) (?:update|updates), (\d+) (?:removal|removals), \d+ skipped",  # noqa: E501
         output,
     )
     assert match is not None, f"Could not check development environment, reason: {output}"
@@ -213,7 +218,7 @@ def tests(session: Session) -> None:
 
     # separately install optional dependencies with weird dependencies / build process
     install_warning = """Installation failed, this likely means that the required hardware or drivers are missing.
-                  Run with `-- skip-gpu` / `-- skip-julia` or one of the more specific options (e.g. `-- skip-cuda`) to avoid this."""
+                  Run with `-- skip-gpu` / `-- skip-julia` or one of the more specific options (e.g. `-- skip-cuda`) to avoid this."""  # noqa: E501
     if install_cuda:
         # use NVCC to get the CUDA version
         import re
@@ -236,7 +241,7 @@ def tests(session: Session) -> None:
                 session.warn(install_warning)
         else:
             session.warn("PyCUDA installed")
-            # if PyCUDA is already installed, check whether the CUDA version PyCUDA was installed with matches the current CUDA version
+            # if PyCUDA is already installed, check whether the CUDA version PyCUDA was installed with matches the current CUDA version # noqa: E501
             session.install("numpy")  # required by pycuda.driver
             pycuda_version = session.run(
                 "python",
@@ -251,7 +256,7 @@ def tests(session: Session) -> None:
             )
             if longest_string[: len(shortest_string)] != shortest_string:
                 session.warn(
-                    f"PyCUDA was compiled with a version of CUDA ({pycuda_version}) that does not match the current version ({cuda_version}). Re-installing."
+                    f"PyCUDA was compiled with a version of CUDA ({pycuda_version}) that does not match the current version ({cuda_version}). Re-installing."  # noqa: E501
                 )
                 try:
                     session.install(
@@ -273,7 +278,7 @@ def tests(session: Session) -> None:
     # if the poetry virtualenv is not set to the session env, use requirements file export instead of Poetry install
     if poetry_env != session_env:
         session.warn(
-            f"Poetry env ({str(poetry_env)}) is not session env ({str(session_env)}), falling back to install via requirements export"
+            f"Poetry env ({str(poetry_env)}) is not session env ({str(session_env)}), falling back to install via requirements export"  # noqa: E501
         )
         requirements_file = Path(f"tmp_test_requirements_{session.name}.txt")
         if requirements_file.exists():
@@ -363,10 +368,6 @@ def tests(session: Session) -> None:
 
 
 ### Helper functions ###
-
-import subprocess
-from json import loads as json_loads, JSONDecodeError
-from re import search as regex_search
 
 
 def detect_julia_gpu_backends():

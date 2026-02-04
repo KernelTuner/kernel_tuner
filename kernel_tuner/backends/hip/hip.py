@@ -7,8 +7,8 @@ import logging
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
-from kernel_tuner.observers.hip import HipRuntimeObserver
 from kernel_tuner.backends.hip.util import hip_check
+from kernel_tuner.observers.hip import HipRuntimeObserver
 
 try:
     from hip import hip, hiprtc
@@ -31,6 +31,7 @@ dtype_map = {
 }
 
 hipSuccess = 0
+
 
 class HipFunctions(GPUBackend):
     """Class that groups the HIP functions on maintains state about the device."""

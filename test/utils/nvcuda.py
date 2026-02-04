@@ -1,3 +1,4 @@
+# ruff: noqa: D100, D103
 from kernel_tuner.utils.nvcuda import to_valid_nvrtc_gpu_arch_cc
 
 

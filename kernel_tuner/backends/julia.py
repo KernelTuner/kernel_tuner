@@ -13,10 +13,11 @@ Notes:
 """
 
 import subprocess
-from warnings import warn
+from json import JSONDecodeError
+from json import loads as json_loads
 from pathlib import Path
-from json import loads as json_loads, JSONDecodeError
 from re import search as regex_search
+from warnings import warn
 
 import numpy as np
 
@@ -25,8 +26,8 @@ from kernel_tuner.observers.julia import JuliaRuntimeObserver
 from kernel_tuner.util import SkippableFailure
 
 try:
-    from juliacall import Main as jl
     from juliacall import JuliaError
+    from juliacall import Main as jl
 except ImportError:
     jl = None
 
@@ -111,7 +112,6 @@ class JuliaFunctions(GPUBackend):
 
     def initialize_backend(self, device, backend_name):
         """Initialize for a choice of Julia backends by backend_name, one of 'cuda', 'amd', 'intel', 'metal'."""
-
         # Map name → Julia module and device-selection calls
         backend_map = {
             "CUDA": {

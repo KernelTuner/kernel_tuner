@@ -1,3 +1,4 @@
+# ruff: noqa
 from itertools import product
 from time import perf_counter
 
@@ -44,8 +45,9 @@ def env():
 @skip_if_no_gcc
 def test_no_time_budget(env):
     """Ensure that a RuntimeError is raised if the startup takes longer than the time budget."""
-    with raises(RuntimeError, match='startup time of the tuning process'):
+    with raises(RuntimeError, match="startup time of the tuning process"):
         tune_kernel(*env, strategy="random_sample", strategy_options={"strategy": "random_sample", "time_limit": 0.0})
+
 
 @skip_if_no_gcc
 def test_some_time_budget(env):
@@ -65,6 +67,7 @@ def test_some_time_budget(env):
 
     # Ensure that the time limit was respected by some margin.
     assert perf_counter() - start_time < time_limit * 2
+
 
 @skip_if_no_gcc
 def test_full_time_budget(env):

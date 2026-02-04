@@ -1,13 +1,13 @@
-""" This module contains the functionality for running and compiling C functions """
+"""This module contains the functionality for running and compiling C functions"""
 
-from collections import namedtuple
-import subprocess
-import platform
-import errno
-import re
-import logging
-import ctypes as C
 import _ctypes
+import ctypes as C
+import errno
+import logging
+import platform
+import re
+import subprocess
+from collections import namedtuple
 
 import numpy as np
 import numpy.ctypeslib
@@ -15,10 +15,9 @@ import numpy.ctypeslib
 from kernel_tuner.backends.backend import CompilerBackend
 from kernel_tuner.observers.compiler import CompilerRuntimeObserver
 from kernel_tuner.util import (
-    get_temp_filename,
     delete_temp_file,
+    get_temp_filename,
     write_file,
-    SkippableFailure,
 )
 
 try:
@@ -88,7 +87,7 @@ class CompilerFunctions(CompilerBackend):
     """Class that groups the code for running and compiling C functions"""
 
     def __init__(self, iterations=7, compiler_options=None, compiler=None, observers=None):
-        """instantiate CFunctions object used for interacting with C code
+        """Instantiate CFunctions object used for interacting with C code
 
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
@@ -146,7 +145,7 @@ class CompilerFunctions(CompilerBackend):
         self.name = platform.processor()
 
     def ready_argument_list(self, arguments):
-        """ready argument list to be passed to the C function
+        """Ready argument list to be passed to the C function
 
         :param arguments: List of arguments to be passed to the C function.
             The order should match the argument list on the C function.
@@ -181,7 +180,7 @@ class CompilerFunctions(CompilerBackend):
         return ctype_args
 
     def compile(self, kernel_instance):
-        """call the C compiler to compile the kernel, return the function
+        """Call the C compiler to compile the kernel, return the function
 
         :param kernel_instance: An object representing the specific instance of the tunable kernel
             in the parameter space.
@@ -311,29 +310,33 @@ class CompilerFunctions(CompilerBackend):
     def start_event(self):
         """Records the event that marks the start of a measurement
 
-        C backend does not use events"""
+        C backend does not use events
+        """
         pass
 
     def stop_event(self):
         """Records the event that marks the end of a measurement
 
-        C backend does not use events"""
+        C backend does not use events
+        """
         pass
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise
 
-        C backend does not support asynchronous launches"""
+        C backend does not support asynchronous launches
+        """
         return True
 
     def synchronize(self):
         """Halts execution until device has finished its tasks
 
-        C backend does not support asynchronous launches"""
+        C backend does not support asynchronous launches
+        """
         pass
 
     def run_kernel(self, func, c_args, threads, grid, stream=None, params=None):
-        """runs the kernel once, returns whatever the kernel returns
+        """Runs the kernel once, returns whatever the kernel returns
 
         :param func: A C function compiled for this specific configuration
         :type func: ctypes._FuncPtr
@@ -367,7 +370,7 @@ class CompilerFunctions(CompilerBackend):
         return time
 
     def memset(self, allocation, value, size):
-        """set the memory in allocation to the value in value
+        """Set the memory in allocation to the value in value
 
         :param allocation: An Argument for some memory allocation unit
         :type allocation: Argument
@@ -419,7 +422,7 @@ class CompilerFunctions(CompilerBackend):
                 self.memcpy_dtoh(arg, self.allocations[i])
 
     def cleanup_lib(self):
-        """unload the previously loaded shared library"""
+        """Unload the previously loaded shared library"""
         if self.lib is None:
             return
 

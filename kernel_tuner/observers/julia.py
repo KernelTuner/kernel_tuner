@@ -1,12 +1,14 @@
-import numpy as np
 from time import perf_counter
 from warnings import warn
+
+import numpy as np
+
 from kernel_tuner.observers.observer import BenchmarkObserver, PrologueObserver
 
 
 class JuliaRuntimeObserver(BenchmarkObserver):
-    """
-    Cross-backend GPU timing for KernelAbstractions:
+    """Cross-backend GPU timing for KernelAbstractions.
+
     - CUDA: CuEvent timing
     - AMDGPU: ROCEvent timing
     - OneAPI: host timing + synchronize (less accurate, no events available)
@@ -24,7 +26,6 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         end_event=None,
     ):
         """Observer that measures GPU time depending on the Julia backend used."""
-
         self.kernelabstractions = kernelabstractions
         self.backend = backend
         self.backend_mod = backend_mod

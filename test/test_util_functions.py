@@ -1,3 +1,4 @@
+# ruff: noqa
 from __future__ import print_function
 
 import json
@@ -35,17 +36,13 @@ def test_get_grid_dimensions1():
     assert grid[1] == 28
     assert grid[2] == 1
 
-    grid = get_grid_dimensions(
-        problem_size, params, (grid_div[0], None, None), block_size_names
-    )
+    grid = get_grid_dimensions(problem_size, params, (grid_div[0], None, None), block_size_names)
 
     assert grid[0] == 25
     assert grid[1] == 1024
     assert grid[2] == 1
 
-    grid = get_grid_dimensions(
-        problem_size, params, (None, grid_div[1], None), block_size_names
-    )
+    grid = get_grid_dimensions(problem_size, params, (None, grid_div[1], None), block_size_names)
 
     assert grid[0] == 1024
     assert grid[1] == 28
@@ -59,17 +56,13 @@ def test_get_grid_dimensions1():
     assert grid[1] == 25
     assert grid[2] == 1
 
-    grid = get_grid_dimensions(
-        problem_size, params, ("41", 37, None), block_size_names
-    )
+    grid = get_grid_dimensions(problem_size, params, ("41", 37, None), block_size_names)
 
     assert grid[0] == 25
     assert grid[1] == 28
     assert grid[2] == 1
 
-    grid = get_grid_dimensions(
-        problem_size, params, (None, [2, "block_y"], None), block_size_names
-    )
+    grid = get_grid_dimensions(problem_size, params, (None, [2, "block_y"], None), block_size_names)
 
     assert grid[0] == 1024
     assert grid[1] == 14
@@ -83,9 +76,7 @@ def test_get_grid_dimensions2():
     grid_div_x = ["block_x*8"]
     grid_div_y = ["(block_y+2)/8"]
 
-    grid = get_grid_dimensions(
-        problem_size, params, (grid_div_x, grid_div_y, None), block_size_names
-    )
+    grid = get_grid_dimensions(problem_size, params, (grid_div_x, grid_div_y, None), block_size_names)
 
     assert grid[0] == 4
     assert grid[1] == 256
@@ -99,9 +90,7 @@ def test_get_grid_dimensions3():
     grid_div_y = ["(block_y+2)/8"]
 
     def assert_grid_dimensions(problem_size):
-        grid = get_grid_dimensions(
-            problem_size, params, (grid_div_x, grid_div_y, None), block_size_names
-        )
+        grid = get_grid_dimensions(problem_size, params, (grid_div_x, grid_div_y, None), block_size_names)
         assert grid[0] == 1
         assert grid[1] == 256
         assert grid[2] == 1
@@ -187,15 +176,13 @@ def test_prepare_kernel_string():
     defines = dict(foo=1, bar="custom", baz=lambda config: config["is"] * 5)
 
     _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", defines)
-    expected = "#define foo 1\n" "#define bar custom\n" "#define baz 40\n" "#line 1\n" "this is a weird kernel"
+    expected = "#define foo 1\n#define bar custom\n#define baz 40\n#line 1\nthis is a weird kernel"
     assert output == expected
 
     # Throw exception on invalid name (for instance, a space in the name)
     invalid_defines = {"invalid name": "1"}
     with pytest.raises(ValueError):
-        prepare_kernel_string(
-            "this", kernel, params, grid, threads, block_size_names, "", invalid_defines
-        )
+        prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", invalid_defines)
 
 
 def test_prepare_kernel_string_partial_loop_unrolling():
@@ -210,15 +197,14 @@ def test_prepare_kernel_string_partial_loop_unrolling():
     params = dict()
     params["loop_unroll_factor_monkey"] = 8
 
-    _, output = prepare_kernel_string(
-        "this", kernel, params, grid, threads, block_size_names, "CUDA", None
-    )
+    _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "CUDA", None)
     assert "constexpr int loop_unroll_factor_monkey = 8;" in output
 
     params["loop_unroll_factor_monkey"] = 0
     _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "CUDA", None)
     assert "constexpr int loop_unroll_factor_monkey" not in output
     assert "#pragma unroll loop_unroll_factor_monkey" not in output
+
 
 def test_replace_param_occurrences():
     kernel = "this is a weird kernel"
@@ -227,9 +213,7 @@ def test_replace_param_occurrences():
     params["weird"] = 14
 
     new_kernel = replace_param_occurrences(kernel, params)
-    assert (
-        new_kernel == "this 8 a 14 kernel"
-    )  # Note: The "is" in "this" should not be replaced
+    assert new_kernel == "this 8 a 14 kernel"  # Note: The "is" in "this" should not be replaced
 
     new_kernel = replace_param_occurrences(kernel, dict())
     assert kernel == new_kernel
@@ -357,9 +341,7 @@ def test_check_argument_list3():
         }
         """
     args = [np.uint16(42), np.float16([3, 4, 6]), np.int32([300])]
-    assert_user_warning(
-        check_argument_list, [kernel_name, kernel_string, args], "at position 2"
-    )
+    assert_user_warning(check_argument_list, [kernel_name, kernel_string, args], "at position 2")
 
 
 def test_check_argument_list4():
@@ -369,9 +351,7 @@ def test_check_argument_list4():
         }
         """
     args = [np.uint16(42), np.float16([3, 4, 6]), np.int64([300]), np.ubyte(32)]
-    assert_user_warning(
-        check_argument_list, [kernel_name, kernel_string, args], "do not match in size"
-    )
+    assert_user_warning(check_argument_list, [kernel_name, kernel_string, args], "do not match in size")
 
 
 def test_check_argument_list5():
@@ -489,18 +469,12 @@ def test_check_block_size_params_names_list():
 
     # check warning does not triger when nondefault block size names are used correctly
     block_size_names = ["block_size_a", "block_size_b"]
-    tune_params = dict(
-        zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3])
-    )
-    test_warnings(
-        check_block_size_params_names_list, [block_size_names, tune_params], 0, None
-    )
+    tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
+    test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 0, None)
 
     # check that a warning is issued when none of the default names are used and no alternative names are specified
     block_size_names = None
-    tune_params = dict(
-        zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3])
-    )
+    tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
     test_warnings(
         check_block_size_params_names_list,
         [block_size_names, tune_params],
@@ -510,12 +484,8 @@ def test_check_block_size_params_names_list():
 
     # check that no error is raised when any of the default block size names is being used
     block_size_names = None
-    tune_params = dict(
-        zip(["block_size_x", "several_other_things"], [[1, 2, 3, 4], [2, 4]])
-    )
-    test_warnings(
-        check_block_size_params_names_list, [block_size_names, tune_params], 0, None
-    )
+    tune_params = dict(zip(["block_size_x", "several_other_things"], [[1, 2, 3, 4], [2, 4]]))
+    test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 0, None)
 
 
 def test_get_kernel_string_func():
@@ -697,10 +667,7 @@ def test_process_metrics():
     # assert params["b"] == 15
 
     # test if a metric overrides any existing metrics
-    params = {
-        "x": 15,
-        "b": 12
-    }
+    params = {"x": 15, "b": 12}
     metrics = dict()
     metrics["b"] = "x"
     params = process_metrics(params, metrics)
@@ -710,7 +677,11 @@ def test_process_metrics():
 def test_parse_restrictions():
     tune_params = {"block_size_x": [50, 100], "use_padding": [0, 1]}
     restrict = ["block_size_x != 320"]
-    restrictions = ["block_size_x != 320", "use_padding == 0 or block_size_x % 32 != 0", "50 <= block_size_x * use_padding < 100"]
+    restrictions = [
+        "block_size_x != 320",
+        "use_padding == 0 or block_size_x % 32 != 0",
+        "50 <= block_size_x * use_padding < 100",
+    ]
 
     # test the monolithic parsed function
     parsed = parse_restrictions(restrict, tune_params, monolithic=True)[0]
@@ -737,9 +708,9 @@ def test_check_matching_problem_size():
     with pytest.raises(ValueError):
         check_matching_problem_size(42, 1000)
     with pytest.raises(ValueError):
-        check_matching_problem_size([42,1], 42)
+        check_matching_problem_size([42, 1], 42)
     with pytest.raises(ValueError):
-        check_matching_problem_size([42,0], 42)
+        check_matching_problem_size([42, 0], 42)
     with pytest.raises(ValueError):
         check_matching_problem_size(None, 42)
     # these should not error
@@ -747,28 +718,39 @@ def test_check_matching_problem_size():
     check_matching_problem_size([1000], 1000)
     check_matching_problem_size(1000, 1000)
     check_matching_problem_size(1000, [1000])
-    check_matching_problem_size([1000,], 1000)
+    check_matching_problem_size(
+        [
+            1000,
+        ],
+        1000,
+    )
 
 
 def test_convert_constraint_lambdas():
 
-    restrictions = [lambda p: 32 <= p["block_size_x"]*p["block_size_y"] <= 1024,
-                    "32 <= block_size_x*block_size_y <= 512",
-                    lambda p: p["block_size_z"] < 8]
+    restrictions = [
+        lambda p: 32 <= p["block_size_x"] * p["block_size_y"] <= 1024,
+        "32 <= block_size_x*block_size_y <= 512",
+        lambda p: p["block_size_z"] < 8,
+    ]
 
     result = convert_constraint_lambdas(restrictions)
     print(result)
-    expected = ['32 <= block_size_x * block_size_y <= 1024', 'block_size_z < 8', '32 <= block_size_x*block_size_y <= 512']
+    expected = [
+        "32 <= block_size_x * block_size_y <= 1024",
+        "block_size_z < 8",
+        "32 <= block_size_x*block_size_y <= 512",
+    ]
 
     assert sorted(result) == sorted(expected)
 
     restrictions2 = []
-    restrictions2 += [lambda p: 32 <= p["block_size_x"]*p["block_size_y"] <= 1024]
+    restrictions2 += [lambda p: 32 <= p["block_size_x"] * p["block_size_y"] <= 1024]
     restrictions2 += [lambda p: p["block_size_z"] < 8]
 
     result2 = convert_constraint_lambdas(restrictions2)
     print(result2)
-    expected2 = ['block_size_z < 8', '32 <= block_size_x * block_size_y <= 1024']
+    expected2 = ["block_size_z < 8", "32 <= block_size_x * block_size_y <= 1024"]
 
     assert sorted(result2) == sorted(expected2)
 
@@ -780,16 +762,20 @@ def test_convert_constraint_lambdas_illformatted():
     That is why this test expects an exception
 
     """
-    restrictions = ["32 <= block_size_x*block_size_y <= 512",
-                    lambda p: 32 <= p["block_size_x"]*p["block_size_y"] <= 1024,
-                    lambda p: p["block_size_z"] < 8]
+    restrictions = [
+        "32 <= block_size_x*block_size_y <= 512",
+        lambda p: 32 <= p["block_size_x"] * p["block_size_y"] <= 1024,
+        lambda p: p["block_size_z"] < 8,
+    ]
 
-    expected = ['32 <= block_size_x * block_size_y <= 1024', 'block_size_z < 8', '32 <= block_size_x*block_size_y <= 512']
+    expected = [
+        "32 <= block_size_x * block_size_y <= 1024",
+        "block_size_z < 8",
+        "32 <= block_size_x*block_size_y <= 512",
+    ]
 
     try:
         result = convert_constraint_lambdas(restrictions)
         print(result)
     except ValueError:
         pass
-
-
