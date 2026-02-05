@@ -82,11 +82,14 @@ if settings_file_path.exists():
         if envdir is not None and len(envdir) > 0:
             nox.options.envdir = envdir
 
-# @session    # to only run on the current python interpreter
-# def lint(session: Session) -> None:
-#     """Ensure the code is formatted as expected."""
-#     session.install("ruff")
-#     session.run("ruff", "--output-format=github", "--config=pyproject.toml", ".")
+
+@session  # to only run on the current python interpreter
+def lint(session: Session) -> None:
+    """Ensure the code is formatted as expected."""
+    session.install("ruff")
+    session.warn("Linting errors detected:")
+    session.run(*"ruff check . --config=pyproject.toml --statistics --exit-zero".split())
+    # session.run(*"ruff check --config=pyproject.toml --output-format=github .".split())
 
 
 @session  # to only run on the current python interpreter
@@ -210,7 +213,7 @@ def tests(session: Session) -> None:
     if install_julia:
         extras_args.extend(["-E", "julia"])
         # set the paths to Julia install, environment and project
-        session_envdir = session.env["VIRTUAL_ENV"]
+        session_envdir = nox.options.envdir if nox.options.envdir is not None else session.env["VIRTUAL_ENV"]
         julia_envdir = Path(session_envdir) / ".julia"
         if julia_envdir is not None:
             session.env["JULIA_DEPOT_PATH"] = str(Path(julia_envdir).resolve())
@@ -227,18 +230,21 @@ def tests(session: Session) -> None:
         nvcc_output = "".join(nvcc_output.splitlines())  # convert to single string for easier REGEX
         cuda_version = re.match(r"^.*release ([0-9]+.[0-9]+).*$", nvcc_output, flags=re.IGNORECASE).group(1).strip()
         session.warn(f"Detected CUDA version: {cuda_version}")
-        # if we need to install the CUDA extras, first install pycuda seperately, reason:
-        #   since version 2022.2 it has `oldest-supported-numpy` as a build dependency which doesn't work with Poetry
         if " not found: " in session.run("pip", "show", "pycuda", external=True, silent=True, success_codes=[0, 1]):
-            # if PyCUDA is not installed, install it
-            session.warn("PyCUDA not installed")
-            try:
-                session.install(
-                    "pycuda", "--no-cache-dir", "--force-reinstall"
-                )  # Attention: if changed, check `pycuda` in pyproject.toml as well
-            except Exception as error:
-                session.log(error)
-                session.warn(install_warning)
+            # if we need to install the CUDA extras, first install pycuda seperately, reason:
+            #   between version 2022.2 and 2025.1 PyCUDA had `oldest-supported-numpy` as a build dependency which doesn't work with Poetry
+            # No longer needed as of 2025.1
+            # commented as no longer needed
+            # # if PyCUDA is not installed, install it
+            # session.warn("PyCUDA not installed")
+            # try:
+            #     session.install(
+            #         "pycuda", "--no-cache-dir", "--force-reinstall"
+            #     )  # Attention: if changed, check `pycuda` in pyproject.toml as well
+            # except Exception as error:
+            #     session.log(error)
+            #     session.warn(install_warning)
+            pass
         else:
             session.warn("PyCUDA installed")
             # if PyCUDA is already installed, check whether the CUDA version PyCUDA was installed with matches the current CUDA version # noqa: E501
@@ -260,7 +266,7 @@ def tests(session: Session) -> None:
                 )
                 try:
                     session.install(
-                        "pycuda", "--no-cache-dir", "--force-reinstall"
+                        "pycuda>=2025.1", "--no-cache-dir", "--force-reinstall"
                     )  # Attention: if changed, check `pycuda` in pyproject.toml as well
                 except Exception as error:
                     session.log(error)

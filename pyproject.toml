@@ -98,7 +98,7 @@ cuda = ["pycuda>=2025.1", "nvidia-ml-py>=12.535.108", "pynvml>=11.4.1"] # Attent
 opencl = ["pyopencl"]                                                   # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
 cuda_opencl = ["pycuda>=2024.1", "pyopencl"]                            # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 hip = ["hip-python"]
-julia = ["juliacall>=0.9.31"]                                           # Attention: if juliacall is changed here, also change `session.install("juliacall")` in the Noxfile
+julia = ["juliacall>=0.9.31"]
 tutorial = ["jupyter>=1.0.0", "matplotlib>=3.5.0", "nvidia-ml-py>=12.535.108"]
 
 # ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt --output doc/requirements.txt`
