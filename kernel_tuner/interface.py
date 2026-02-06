@@ -43,6 +43,7 @@ from kernel_tuner.kernel_sources.kernel_source import KernelSource
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.language import Language
 
 try:
     import torch
@@ -588,12 +589,15 @@ def tune_kernel(
     observers=None,
     objective=None,
     objective_higher_is_better=None,
+    call_function=None,
+    decorator=None
 ):
+  
     start_overhead_time = perf_counter()
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime("%Y%m%d-%H:%M:%S") + ".log", level=log)
 
-    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines)
+    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, call_function, decorator)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
@@ -774,11 +778,13 @@ def run_kernel(
     block_size_names=None,
     quiet=False,
     log=None,
+    call_function=None,
+    decorator=None
 ):
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime("%Y%m%d-%H:%M:%S") + ".log", level=log)
 
-    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines)
+    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, call_function, decorator)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
@@ -806,8 +812,11 @@ def run_kernel(
         # see if the kernel arguments have correct type
         util.check_argument_list(instance.name, instance.kernel_string, arguments)
 
-        # compile the kernel
-        func = dev.compile_kernel(instance, False)
+        # compile the kernel, Extra logic needed to check if we have a python function
+        if lang.upper() == "TRITON" or lang.upper() == "GENERIC_PYTHON":
+            func = dev.compile_kernel(instance, False, gpu_args)
+        else: 
+            func = dev.compile_kernel(instance, False)
         if func is None:
             raise RuntimeError("cannot compile kernel, too much shared memory used")
 
@@ -829,16 +838,26 @@ def run_kernel(
     if not dev.run_kernel_check(func, gpu_args, instance):
         raise RuntimeError("runtime error occured, too many resources requested")
 
+
+
     # copy data in GPU memory back to the host
     results = []
-    for i, arg in enumerate(arguments):
-        if numpy.isscalar(arg):
-            results.append(arg)
-        elif isinstance(arg, torch.Tensor):
-            results.append(arg.cpu())
-        else:
-            results.append(numpy.zeros_like(arg))
-            dev.memcpy_dtoh(results[-1], gpu_args[i])
+    if instance.kernel_source.lang == Language.GENERIC_PYTHON:
+        for arg in gpu_args:
+            if isinstance(arg, torch.Tensor):
+                results.append(arg.cpu())
+            else:
+                results.append(arg)
+    else:
+        for i, arg in enumerate(arguments):
+            if numpy.isscalar(arg):
+                results.append(arg)
+            elif isinstance(arg, torch.Tensor):
+                results.append(arg.cpu())
+            else:
+                results.append(numpy.zeros_like(arg))
+                dev.memcpy_dtoh(results[-1], gpu_args[i])
+
 
     return results
 

@@ -2,13 +2,15 @@ from enum import Enum
 
 class Language(Enum):
     CUDA = "CUDA"
-    OpenCL = "OPENCL"
+    OPENCL = "OPENCL"
     C = "C"
     HIP = "HIP"
     TRITON = "TRITON"
     FORTRAN = "FORTRAN"
     NVCUDA = "NVCUDA"
     GENERIC_PYTHON = "GENERIC_PYTHON"
+    CUPY = "CUPY"
+    HYPERTUNER = "HYPERTUNER"
 
     @classmethod
     def is_valid(cls, value: str) -> bool:

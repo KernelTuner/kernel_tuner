@@ -18,40 +18,62 @@ from kernel_tuner.kernel_sources.model.prepared_kernel_source_data import Prepar
 
 class KernelSourceFn(KernelSource):
 
-    def __init__(self, kernel_name, kernel_source, lang, defines=None):
+    def __init__(self, kernel_name, kernel_source, lang, defines=None, call_function=None, decorator=None):
         super().__init__(kernel_name, kernel_source, lang, defines)
         if isinstance(kernel_source, list):
             raise ValueError("KernelSourceFn only supports a single kernel source function")
 
-
         try:
-            self.lang = Language(lang)
+            self.lang = Language(lang.upper())
         except ValueError:
             raise TypeError(f"Supported languages are {[l.value for l in Language]}")
+        
+        if call_function is None:
+            raise ValueError("call_function must be supplied for language Generic Python")
+        if not callable(call_function):
+            raise TypeError(f"call_function {call_function} is not a callable object.")
+        self.call_function = call_function # TODO ceck signature
+
+        if decorator:
+            if not isinstance(decorator, str):
+                raise TypeError(f"{decorator} is not a decorator")
+            if decorator[0] != '@':
+                raise ValueError(f"{decorator} is not a valid decorator")
+        self.decorator = decorator 
+
         self.source_kernel_fn = kernel_source
         self.kernel_fn = self.source_kernel_fn
-        self.source = inspect.getsource(kernel_source)
+        self.signature = inspect.signature(kernel_source)
+        try:
+            self.source = inspect.getsource(kernel_source)
+        except TypeError as e:
+            raise TypeError(
+                f"{e}. Did you forget to remove a decorator before tuning?"
+            ) from e
         self.source_tree = ast.parse(self.source)
-        if self.lang == Language.TRITON:
-            self.import_nodes = [
-                ast.Import(names=[ast.alias(name='triton', asname=None)]),
-                ast.ImportFrom(
-                    module='triton',
-                    names=[ast.alias(name='language', asname='tl')],
-                    level=0
-                )
-            ]
-        else:
-            self.import_nodes = [n for n in self.source_tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
-
+        self.import_nodes = self._find_import_nodes(inspect.getfile(kernel_source))
 
         # Find the module where the kernel function is defined
         self.module = inspect.getmodule(kernel_source)
         # Get dependencies by analyzing the AST
-        if self.lang == Language.lang:
+        if self.lang == Language.TRITON:
             self.dependencies = self._find_triton_dependencies()
         else:
-            self.dependencies = None # TODO
+            self.dependencies = self._find_dependencies()
+
+        
+
+
+    def _find_import_nodes(self, source_file):
+        with open(source_file, "r") as f:
+            tree = ast.parse(f.read(), filename=source_file)
+
+        import_nodes = []
+        for node in tree.body:
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                import_nodes.append(node)
+
+        return import_nodes
 
     def _find_function_dependencies(self):
         """Find all function calls in the kernel."""
@@ -99,6 +121,49 @@ class KernelSourceFn(KernelSource):
                 
         return dependencies
 
+    def _find_function_dependecies2(self, tree, local_funcs):
+        # Non triton specific
+        class FunctionCallVisitor(ast.NodeVisitor):
+            def __init__(self):
+                self.called = set()
+
+            def visit_Call(self, node):
+                if isinstance(node.func, ast.Name):
+                    name = node.func.id
+                    if name in local_funcs:
+                        self.called.add(name)
+                self.generic_visit(node)
+        
+        visitor = FunctionCallVisitor()
+        visitor.visit(tree)
+        return visitor.called
+
+    def _find_local_functions(self, tree):
+        local_funcs = set()
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef):
+                local_funcs.add(node.name)
+        return local_funcs
+
+    def _find_dependencies(self):
+        source_file = inspect.getfile(self.source_kernel_fn)
+        with open(source_file, "r") as f: 
+            source_code = f.read() 
+        tree = ast.parse(source_code, filename=source_file) 
+        local_funcs = self._find_local_functions(tree)
+        called_functions = self._find_function_dependecies2(self.source_tree, local_funcs)
+
+        dependencies = {}
+        for node in tree.body:
+            if (isinstance(node, ast.FunctionDef) and node.name in called_functions and 
+                node.name != self.kernel_name):  # Skip the main kernel itself
+                dependencies[node.name] = node
+
+        return dependencies
+
+    def _add_decorator(self, function):
+        pass
+    
     def prepare_kernel_instance(self, kernel_options, params, grid, threads):
         new_kernel_fn, temp_file_path = self.apply_params_to_source_fn(params)
         self.kernel_fn = new_kernel_fn
@@ -122,21 +187,33 @@ class KernelSourceFn(KernelSource):
         # Add imports
         new_module.body.extend(self.import_nodes)
         
-        if self.lang == Language.TRITON:
-            # Add all Triton JIT dependencies first
-            for dep_node in self.dependencies.values():
-                new_module.body.append(copy.deepcopy(dep_node))
-
-        # TODO the kernel can not have dependencies yet. Obviously this needs fixing.
+        # Add dependencies (functions)
+        for dep_node in self.dependencies.values():
+            dep_node_copy = copy.deepcopy(dep_node)
+            transformed_dep_node = transformer.visit(dep_node_copy)
+            #new_module.body.append(copy.deepcopy(dep_node))
+            new_module.body.append(transformed_dep_node)
         
         # Add transformed main kernel
         source_tree_copy = copy.deepcopy(self.source_tree)
         transformed_tree = transformer.visit(source_tree_copy)
+        
+        # Add decorator if needed
+        if self.decorator:
+            dummy = f"{self.decorator}\ndef _dummy():\n pass\n" 
+            decorator_node = ast.parse(dummy).body[0].decorator_list[0]
+            for node in transformed_tree.body:
+                if isinstance(node, ast.FunctionDef):
+                    node.decorator_list.insert(0, decorator_node)
+                    break   # only apply to the top level function
+
         new_module.body.extend(transformed_tree.body)
         
         # Fix locations and generate source
         ast.fix_missing_locations(new_module)
         new_source = astor.to_source(new_module)
+
+        #print(new_source)
 
         # Create a unique module name
         module_name = f'temp_kernel_module_{uuid.uuid4().hex}'
@@ -173,5 +250,45 @@ class ReplaceVars(ast.NodeTransformer):
                 ast.Constant(value=self.params[node.id]),
                 node
             )
-
         return node
+    
+    def visit_Attribute(self, node: ast.Attribute):
+        self.generic_visit(node)
+    
+        # Replace self.<param> with constant, but only if it's being read
+        if (
+            isinstance(node.value, ast.Name)
+            and node.value.id == "self"
+            and node.attr in self.params
+            and isinstance(node.ctx, ast.Load)  # <- check context
+        ):
+            return ast.copy_location(ast.Constant(self.params[node.attr]), node)
+        
+        return node
+
+
+    def visit_Assign(self, node: ast.Assign):
+        # Replace assignments like: mock_param = ...
+        if (
+            len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id in self.params
+        ):
+            node.value = ast.Constant(value=self.params[node.targets[0].id])
+            return node  
+
+        # Replace assignment like self.<attr> = ...
+        if (
+            len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Attribute)
+            and isinstance(node.targets[0].value, ast.Name)
+            and node.targets[0].value.id == "self"
+            and node.targets[0].attr in self.params
+        ):
+            node.value = ast.Constant(value=self.params[node.targets[0].attr])
+            return node
+
+        return self.generic_visit(node)
+
+    
+

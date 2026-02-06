@@ -6,34 +6,47 @@ from abc import abstractmethod
 from kernel_tuner.language import Language
 from kernel_tuner.kernel_sources.model.prepared_kernel_source_data import PreparedKernelSourceData
 
-
-
-
-class KernelSource:
-    def __new__(cls, kernel_name, kernel_sources, lang, defines=None):
+# We use this pattern because we would otherwise get an init twice 
+# We create a kernelsouce by calling KernelSource(...). The call method for KernelSource is
+# replaced by the call method in KernelSourceFactory, because KernelSource uses that class as
+# metaclass. Inside the call method, a call to create either KernelSourceStr or KernelSourceFN
+# is done. This triggers the __init__ call of those subclasses. In both subclasses, we call super().__init__
+# which initializes some sublclass specific variables and triggers the __init__ call of the KernelSource class.
+class KernelSourceFactory(type):
+    def __call__(cls, kernel_name, kernel_sources, lang, defines=None, call_function=None, decorator=None):
         """Factory behavior"""
         if lang == None:
             language = None 
         else:
             try:
-                language = Language(lang)
+                language = Language(lang.upper())
             except ValueError:
                 raise TypeError(f"Supported languages are {[l.value for l in Language]}")
+            
         
+        # Determine if we need to create a KernelSourceStr or a KernelSourceFn
+        if (language and (language == Language.TRITON or language == Language.GENERIC_PYTHON)): 
+            ks_str = False 
+        else:
+            ks_str = True
+        
+        from kernel_tuner.kernel_sources.kernel_source_str import KernelSourceStr
+        from kernel_tuner.kernel_sources.kernel_source_fn import KernelSourceFn
         if cls is KernelSource:  
-            if inspect.isfunction(kernel_sources) and (language and (language == Language.TRITON or language == Language.GENERIC_PYTHON)): # TODO should this be isfunction?
-                from kernel_tuner.kernel_sources.kernel_source_fn import KernelSourceFn
-                print("CREATING KSFN")
-                return KernelSourceFn(kernel_name, kernel_sources, lang, defines)
-            else:
-                from kernel_tuner.kernel_sources.kernel_source_str import KernelSourceStr
-                print("CREATING KSSTR")
+            if ks_str:
                 return KernelSourceStr(kernel_name, kernel_sources, lang, defines)
-        
-        # otherwise, normal subclass init
-        return super().__new__(cls)
+            else:
+                return KernelSourceFn(kernel_name, kernel_sources, lang, defines, call_function, decorator)
 
+        # Else, normal behaviour for subclasses
+        if ks_str:
+            return super().__call__(kernel_name, kernel_sources, lang, defines)
+        else:
+            return super().__call__(kernel_name, kernel_sources, lang, defines, call_function, decorator)
     
+# TODO do we really want the Language enum? it's a lot of changes
+class KernelSource(metaclass=KernelSourceFactory):
+
     def __init__(self, kernel_name, kernel_sources, lang, defines=None):
         if not isinstance(kernel_sources, list):
             kernel_sources = [kernel_sources]
@@ -45,9 +58,18 @@ class KernelSource:
             if callable(self.kernel_sources[0]):
                 raise TypeError("Please specify language when using a code generator function")
             kernel_string = self.get_kernel_string(0)
-            self.lang = util.detect_language(kernel_string)
+            language = util.detect_language(kernel_string)
+            try:
+                self.lang = Language(language.upper())
+            except ValueError:
+                # TODO this should never happen
+                raise TypeError(f"Supported languages are {[l.value for l in Language]}, found {language}")
         else:
-            self.lang = lang
+            try:
+                self.lang = Language(lang.upper())
+            except ValueError:
+                raise TypeError(f"Supported languages are {[l.value for l in Language]}")
+            
 
     @abstractmethod
     def prepare_kernel_instance(self, kernel_options, params, grid, threads) -> PreparedKernelSourceData:
@@ -58,31 +80,3 @@ class KernelSource:
         raise NotImplementedError("check_argument_lists not implemented")
 
 
-
-'''
-class KernelSource:
-    def __init__(self, kernel_name, kernel_sources, lang, defines=None):
-        if not isinstance(kernel_sources, list):
-            kernel_sources = [kernel_sources]
-
-        self.kernel_sources = kernel_sources
-        self.kernel_name = kernel_name
-        self.defines = defines
-
-        if lang is None:
-            if callable(self.kernel_sources[0]):
-                raise TypeError("Please specify language when using a code generator function")
-            kernel_string = self.get_kernel_string(0)
-            self.lang = util.detect_language(kernel_string)
-        else:
-            self.lang = lang
-
-    @abstractmethod
-    def prepare_kernel_instance(self, kernel_options, params, grid, threads) -> PreparedKernelSourceData:
-        raise NotImplementedError("create_kernel_instance not implemented")
-
-    @abstractmethod
-    def check_argument_lists(self, kernel_name, arguments):
-        raise NotImplementedError("check_argument_lists not implemented")
-
-'''

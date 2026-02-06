@@ -22,11 +22,12 @@ from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.pycuda import PyCudaFunctions
 from kernel_tuner.backends.triton import TritonFunctions
-from kernel_tuner.backends.tilus import TilusFunctions
+from kernel_tuner.backends.generic_python import GenericPythonFunctions
 from kernel_tuner.kernel_sources.kernel_source import KernelSource
 from kernel_tuner.observers.nvml import NVMLObserver
 from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
 from kernel_tuner.observers.tegra import TegraObserver
+from kernel_tuner.language import Language
 
 try:
     import torch
@@ -58,12 +59,12 @@ class KernelInstance(_KernelInstance):
     """Class that represents the specific parameterized instance of a kernel."""
 
     def __new__(cls, *args, **kwargs):
-        # Detect old-style calls (without kernel_fn)
+        # Detect old-style calls (without kernel_fn and gpu_kwargs) for old tests
         if len(args) == 8:  # old version
             name, kernel_source, kernel_string, temp_files, threads, grid, params, arguments = args
             kernel_fn = None
             args = (name, kernel_source, kernel_string, kernel_fn, temp_files, threads, grid, params, arguments)
-        elif "kernel_fn" not in kwargs and len(args) == 8:
+        elif "kernel_fn" not in kwargs and len(args) < 9:
             kwargs["kernel_fn"] = None
         return super().__new__(cls, *args, **kwargs)
     
@@ -76,7 +77,7 @@ class KernelInstance(_KernelInstance):
     def prepare_temp_files_for_error_msg(self):
         """Prepare temp file with source code, and return list of temp file names."""
         if type(self.kernel_source).__name__ == "KernelSourceFn":
-            return [] # TODO what do we want to return here?
+            return [] # already done during compilation
 
         temp_filename = util.get_temp_filename(suffix=self.kernel_source.get_suffix())
         util.write_file(temp_filename, self.kernel_string)
@@ -136,28 +137,28 @@ class DeviceInterface(object):
 
         logging.debug("DeviceInterface instantiated, lang=%s", lang)
 
-        if lang.upper() == "CUDA":
+        if lang == Language.CUDA:
             dev = PyCudaFunctions(
                 device,
                 compiler_options=compiler_options,
                 iterations=iterations,
                 observers=observers,
             )
-        elif lang.upper() == "CUPY":
+        elif lang == Language.CUPY:
             dev = CupyFunctions(
                 device,
                 compiler_options=compiler_options,
                 iterations=iterations,
                 observers=observers,
             )
-        elif lang.upper() == "NVCUDA":
+        elif lang == Language.NVCUDA:
             dev = CudaFunctions(
                 device,
                 compiler_options=compiler_options,
                 iterations=iterations,
                 observers=observers,
             )
-        elif lang.upper() == "OPENCL":
+        elif lang == Language.OPENCL:
             dev = OpenCLFunctions(
                 device,
                 platform,
@@ -165,35 +166,35 @@ class DeviceInterface(object):
                 iterations=iterations,
                 observers=observers,
             )
-        elif lang.upper() in ["C", "FORTRAN"]:
+        elif lang == Language.C or lang == Language.FORTRAN:
             dev = CompilerFunctions(
                 compiler=compiler,
                 compiler_options=compiler_options,
                 iterations=iterations,
                 observers=observers,
             )
-        elif lang.upper() == "HIP":
+        elif lang == Language.HIP:
             dev = HipFunctions(
                 device,
                 compiler_options=compiler_options,
                 iterations=iterations,
                 observers=observers,
             )
-        elif lang.upper() == "HYPERTUNER":
+        elif lang == Language.HYPERTUNER:
             dev = HypertunerFunctions(
                 iterations=iterations,
                 compiler_options=compiler_options
             )
             self.requires_warmup = False
-        elif lang.upper() == "TRITON":
+        elif lang == Language.TRITON:
             dev = TritonFunctions(
                 device,
                 compiler_options=compiler_options,
                 iterations=iterations,
                 observers=observers
             )
-        elif lang.upper() == "GENERIC_PYTHON":
-            dev = TilusFunctions(
+        elif lang == Language.GENERIC_PYTHON:
+            dev = GenericPythonFunctions( 
                 device,
                 compiler_options=compiler_options,
                 iterations=iterations,
@@ -241,7 +242,7 @@ class DeviceInterface(object):
             print("Using: " + self.dev.name)
 
     def run_kernel_bench(self, func, gpu_args, threads, grid, stream=None, params=None):
-        if isinstance(self.dev, TritonFunctions):
+        if isinstance(self.dev, TritonFunctions) or isinstance(self.dev, GenericPythonFunctions):
             self.dev.run_kernel(func, gpu_args, threads, grid, params=params)
         else:
             self.dev.run_kernel(func, gpu_args, threads, grid)
@@ -392,31 +393,44 @@ class DeviceInterface(object):
         self.dev.refresh_memory(gpu_args, instance.arguments, should_sync)
 
         # run the kernel
+        self.dev.synchronize()
         check = self.run_kernel_check(func, gpu_args, instance)
+        self.dev.synchronize()
         if not check:
             # runtime failure occurred that should be ignored, skip correctness check
             return
 
         # retrieve gpu results to host memory
         result_host = []
-        for i, arg in enumerate(instance.arguments):
-            if should_sync[i]:
-                if isinstance(arg, (np.ndarray, cp.ndarray)):
-                    result_host.append(np.zeros_like(arg))
-                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
-                elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
-                    if not answer[i].is_cuda:
-                        # if the answer is on the host, copy gpu output to host as well
-                        result_host.append(torch.zeros_like(answer[i]))
-                        self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
+        if instance.kernel_source is not None and instance.kernel_source.lang == Language.GENERIC_PYTHON:
+            # Python DSLs do not explicitly manage memory. Therefore, we can use gpu args direclty
+            for i, arg in enumerate(gpu_args):
+                if should_sync[i]:
+                    if isinstance(arg, torch.Tensor):
+                        result_host.append(arg.cpu())
                     else:
-                        result_host.append(gpu_args[i].tensor)
-                else:
-                    # We should sync this argument, but we do not know how to transfer this type of argument
-                    # What do we do? Should we throw an error?
+                        result_host.append(arg)
+                else: 
                     result_host.append(None)
-            else:
-                result_host.append(None)
+        else:
+            for i, arg in enumerate(instance.arguments):
+                if should_sync[i]:
+                    if isinstance(arg, (np.ndarray, cp.ndarray)):
+                        result_host.append(np.zeros_like(arg))
+                        self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
+                    elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
+                        if not answer[i].is_cuda:
+                            # if the answer is on the host, copy gpu output to host as well
+                            result_host.append(torch.zeros_like(answer[i]))
+                            self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
+                        else:
+                            result_host.append(gpu_args[i].tensor)
+                    else:
+                        # We should sync this argument, but we do not know how to transfer this type of argument
+                        # What do we do? Should we throw an error?
+                        result_host.append(None)
+                else:
+                    result_host.append(None)
 
         # Call the output observers
         for obs in self.output_observers:
@@ -434,6 +448,7 @@ class DeviceInterface(object):
             correct = True
 
         if not correct:
+            print("expected: ", answer, "\ngot: ", result_host)
             raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, to):
@@ -449,7 +464,6 @@ class DeviceInterface(object):
         instance_string = util.get_instance_string(params)
 
         logging.debug("compile_and_benchmark " + instance_string)
-
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
             result[to.objective] = util.InvalidConfig()
@@ -515,33 +529,55 @@ class DeviceInterface(object):
 
         # compile kernel_string into device func
         func = None
-        try:
-            if isinstance(self.dev, TritonFunctions):
+        
+        if isinstance(self.dev, TritonFunctions) or isinstance(self.dev, GenericPythonFunctions):
+            try:
                 func = self.dev.compile(instance, gpu_args)
-            else:
-                func = self.dev.compile(instance)
-        except Exception as e:
-            # compiles may fail because certain kernel configurations use too
-            # much shared memory for example, the desired behavior is to simply
-            # skip over this configuration and try the next one
-            shared_mem_error_messages = [
-                "uses too much shared data",
-                "local memory limit exceeded",
-                r"local memory \(\d+\) exceeds limit \(\d+\)",
-            ]
-            error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
-            if any(re.search(msg, error_message) for msg in shared_mem_error_messages):
-                logging.debug(
-                    "compile_kernel failed due to kernel using too much shared memory"
-                )
-                if verbose:
-                    print(
-                        f"skipping config {util.get_instance_string(instance.params)} reason: too much shared memory used"
+            except Exception as e:
+                if isinstance(self.dev, GenericPythonFunctions):
+                    exception_type = self.dev.classify_compile_exception(e)
+                else:
+                    exception_type = "unkown"
+                
+                if exception_type == "user_error":
+                    error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
+                    print("compile_kernel failed due to error: " + error_message)
+                    print("Error while compiling:", instance.name)
+                    raise e
+                else:
+                    logging.debug(
+                        "compile_kernel failed due to kernel using too many resources"
                     )
-            else:
-                print("compile_kernel failed due to error: " + error_message)
-                print("Error while compiling:", instance.name)
-                raise e
+                    if verbose:
+                        print(
+                            f"skipping config {util.get_instance_string(instance.params)} reason: too many resources"
+                        )
+
+        else:
+            try:
+                func = self.dev.compile(instance)
+            except Exception as e:  
+                # compiles may fail because certain kernel configurations use too
+                # much shared memory for example, the desired behavior is to simply
+                # skip over this configuration and try the next one
+                shared_mem_error_messages = [
+                    "uses too much shared data",
+                    "local memory limit exceeded",
+                    r"local memory \(\d+\) exceeds limit \(\d+\)",
+                ]
+                error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
+                if any(re.search(msg, error_message) for msg in shared_mem_error_messages):
+                    logging.debug(
+                        "compile_kernel failed due to kernel using too much shared memory"
+                    )
+                    if verbose:
+                        print(
+                            f"skipping config {util.get_instance_string(instance.params)} reason: too much shared memory used"
+                        )
+                else:
+                    print("compile_kernel failed due to error: " + error_message)
+                    print("Error while compiling:", instance.name)
+                    raise e
         return func
 
     @staticmethod
@@ -580,7 +616,8 @@ class DeviceInterface(object):
             params,
             kernel_options.block_size_names,
         )
-        if kernel_source.lang != 'TRITON' and np.prod(threads) > self.dev.max_threads:
+
+        if kernel_source.lang not in [Language.TRITON, Language.GENERIC_PYTHON] and np.prod(threads) > self.dev.max_threads:
             if verbose:
                 print(f"skipping config {util.get_instance_string(params)} reason: too many threads per block")
             return util.InvalidConfig()

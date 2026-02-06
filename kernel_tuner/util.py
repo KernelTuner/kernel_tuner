@@ -165,7 +165,7 @@ def check_argument_list(kernel_name, kernel_string, args):
             if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray)):
                 raise TypeError(
                     f"Argument at position {i} of type: {type(arg)} should be of type "
--                   "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
+                    "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
                 )
 
             correct = True

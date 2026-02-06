@@ -375,6 +375,7 @@ class PyCudaFunctions(GPUBackend):
         drv.memset_d8(allocation, value, size)
 
     def memcpy_dtoh(self, dest, src):
+        print("dtoh called")
         """Perform a device to host memory copy.
 
         :param dest: A numpy array in host memory to store the data
@@ -389,6 +390,7 @@ class PyCudaFunctions(GPUBackend):
             dest[:] = src
 
     def memcpy_htod(self, dest, src):
+        print("htod called")
         """Perform a host to device memory copy.
 
         :param dest: A GPU memory allocation unit

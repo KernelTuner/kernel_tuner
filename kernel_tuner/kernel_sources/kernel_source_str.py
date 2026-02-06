@@ -60,7 +60,7 @@ class KernelSourceStr(KernelSource):
         """
         logging.debug("get_kernel_string called")
 
-        if hasattr(self, 'lang') and self.lang.upper() == "HYPERTUNER":
+        if hasattr(self, 'lang') and self.lang == Language.HYPERTUNER:
             return ""
 
         kernel_source = self.kernel_sources[index]
@@ -102,7 +102,7 @@ class KernelSourceStr(KernelSource):
         """
         temp_files = dict()
 
-        if self.lang.upper() == "HYPERTUNER":
+        if self.lang == Language.HYPERTUNER:
             return tuple(["", "", temp_files])
 
         for i, f in enumerate(self.kernel_sources):
@@ -156,7 +156,7 @@ class KernelSourceStr(KernelSource):
         if suffix is not None:
             return suffix
 
-        _suffixes = {"CUDA": ".cu", "OpenCL": ".cl", "C": ".c"}
+        _suffixes = {Language.CUDA: ".cu", Language.OPENCL: ".cl", Language.C: ".c"}
         try:
             return _suffixes[self.lang]
         except KeyError:

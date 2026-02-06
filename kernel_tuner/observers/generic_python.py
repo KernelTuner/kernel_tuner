@@ -9,8 +9,7 @@ except (ImportError, RuntimeError):
 
 
 class GenericPythonRuntimeObserver(BenchmarkObserver):
-    """Observer that measures time using CUDA events during benchmarking.
-    TODO think about: do we need torch? Does CUDA work for all languages?"""
+    """Observer that measures time using CUDA events during benchmarking."""
 
     def __init__(self, dev):
         if torch is None:
