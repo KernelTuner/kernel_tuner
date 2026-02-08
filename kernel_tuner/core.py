@@ -911,7 +911,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                 print("Error: " + util.get_config_string(instance.params) + " detected during correctness check")
                 print("this error occurred when checking value of the %oth kernel argument" % (i,))
                 print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
-                np.set_printoptions(edgeitems=50)
+                np.set_printoptions(edgeitems=30)
                 print("Kernel output:")
                 print(result)
                 print("Expected:")
