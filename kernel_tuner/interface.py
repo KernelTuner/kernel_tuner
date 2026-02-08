@@ -605,6 +605,7 @@ def tune_kernel(
         tune_params = dict(tune_params)
     restrictions = util.possible_julia_vector_to_list(restrictions)
     block_size_names = util.possible_julia_vector_to_list(block_size_names)
+    answer = [None if a is None else numpy.array(a) for a in util.possible_julia_vector_to_list(answer)]
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
@@ -799,6 +800,14 @@ def run_kernel(
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
+    if lang == "Julia":
+        if isinstance(params, dict) or "DictValue" in params.__class__.__name__:
+            raise ValueError(
+                "tune_params should not be a Julia dict, because it does not preserve order. Use a list of pairs instead."
+            )
+        params = [tuple([k, util.possible_julia_vector_to_list(tp)]) for k, tp in params]
+        params = dict(params)
+
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     # sort options into separate dicts
@@ -808,6 +817,7 @@ def run_kernel(
 
     # detect language and create the right device function interface
     dev = core.DeviceInterface(kernelsource, iterations=1, **device_options)
+    dev.last_instance_params = params
 
     # Preprocess GPU arguments. Require for handling `Tunable` arguments
     arguments = dev.preprocess_gpu_arguments(arguments, params)
@@ -919,9 +929,9 @@ def tune_kernel_T1(
         # if it is a path, import the strategy from the file
         opt_path: Path = Path(strategy_options["custom_search_method_path"])
         class_name: str = strategy
-        assert (
-            opt_path.exists()
-        ), f"Custom search method path '{opt_path}' does not exist relative to current working directory {Path.cwd()}"
+        assert opt_path.exists(), (
+            f"Custom search method path '{opt_path}' does not exist relative to current working directory {Path.cwd()}"
+        )
         optimizer_class = import_class_from_file(opt_path, class_name)
         filter_keys = ["custom_search_method_path", "max_fevals", "time_limit", "constraint_aware"]
         adjusted_strategy_options = {k: v for k, v in strategy_options.items() if k not in filter_keys}

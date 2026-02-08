@@ -12,6 +12,10 @@ import textwrap
 import time
 import warnings
 from inspect import getsource, signature
+from math import (
+    ceil,  # noqa: F401
+    floor,  # noqa: F401
+)  # importing here to make available for eval in restrictions / metrics / problem size etc.
 from pathlib import Path
 from types import FunctionType
 from typing import Union
@@ -1328,5 +1332,7 @@ def dump_cache(obj: str, tuning_options):
 def possible_julia_vector_to_list(obj):
     """Convert a Julia vector to a Python list if needed."""
     if obj.__class__.__name__ == "VectorValue":
-        return list(obj)
+        l = list(obj)
+        l = [possible_julia_vector_to_list(e) for e in l]
+        return l
     return obj

@@ -524,6 +524,11 @@ class DeviceInterface(object):
         """Runs the kernel once and checks the result against answer."""
         logging.debug("check_kernel_output")
 
+        # convert juliacall array to numpy array
+        for i, arg in enumerate(instance.arguments):
+            if isinstance(answer[i], np.ndarray) and "juliacall" in str(type(arg)):
+                instance.arguments[i] = np.array(arg, dtype=answer[i].dtype)
+
         # if not using custom verify function, check if the length is the same
         if answer:
             if len(instance.arguments) != len(answer):
@@ -874,7 +879,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                     answer[i], np.number
                 ):
                     raise TypeError(
-                        f"Element {i} of expected results list is not a numpy/cupy ndarray, torch Tensor or numpy scalar."
+                        f"Arg or Element {i} of expected results list is {type(arg)} / {type(answer[i])}, not a numpy/cupy ndarray, torch Tensor or numpy scalar."  # noqa: E501
                     )
                 else:
                     raise TypeError(f"Element {i} of expected results list and kernel arguments have different types.")
