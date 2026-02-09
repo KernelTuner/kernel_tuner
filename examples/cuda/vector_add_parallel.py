@@ -7,9 +7,15 @@ from kernel_tuner import tune_kernel
 def tune():
     kernel_string = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {
-        int i = (blockIdx.x * block_size_x) + threadIdx.x;
-        if ( i < n ) {
-            c[i] = a[i] + b[i];
+        int base = ((blockIdx.x * block_size_x) + threadIdx.x) * elements_per_thread;
+
+        #pragma unroll unroll_factor
+        for (int offset = 0; offset < elements_per_thread; offset++) {
+            int i = base + offset;
+
+            if ( i < n ) {
+                c[i] = a[i] + b[i];
+            }
         }
     }
     """
@@ -25,6 +31,8 @@ def tune():
 
     tune_params = dict()
     tune_params["block_size_x"] = [32 * i for i in range(1, 33)]
+    tune_params["elements_per_thread"] = [1, 2, 3, 4, 5, 6, 7, 8]
+    tune_params["unroll_factor"] = [1, 2, 3, 4, 5, 6, 7, 8]
 
     results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, parallel=True)
     print(env)
