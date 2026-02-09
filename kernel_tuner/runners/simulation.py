@@ -138,10 +138,7 @@ class SimulationRunner(Runner):
             params_dict = dict(zip(tuning_options['tune_params'].keys(), element))
             check = util.check_restrictions(tuning_options.restrictions, params_dict, True)
             if not check:
-                result = params_dict
-                result['compile_time'] = 0
-                result['verification_time'] = 0
-                result['benchmark_time'] = 0
+                result = util.disable_benchmark_timings(params_dict) # Set timings to zero
                 result['strategy_time'] = strategy_time_per_config
 
                 total_time = 1000 * (perf_counter() - self.start_time)

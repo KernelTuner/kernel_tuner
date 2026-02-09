@@ -649,6 +649,16 @@ def get_thread_block_dimensions(params, block_size_names=None):
     return (int(block_size_x), int(block_size_y), int(block_size_z))
 
 
+def disable_benchmark_timings(result: dict) -> dict:
+    """Returns a new dict where all the timing information related 
+    to benchmarking a single configurations have been disable. """
+    result = dict(result)  # Copy
+    result["compile_time"] = 0
+    result["verification_time"] = 0
+    result["benchmark_time"] = 0
+    return result
+
+
 def get_total_timings(results, env, overhead_time):
     """Sum all timings and put their totals in the env."""
     total_framework_time = 0

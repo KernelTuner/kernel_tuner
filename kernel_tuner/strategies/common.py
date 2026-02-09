@@ -189,12 +189,10 @@ class CostFunc:
             # set in the results array
             for index in pending_indices_by_key[key]:
                 legal_indices.append(index)
-                final_results[index] = dict(result)
+                final_results[index] = result
 
                 # Disable the timings. Only the first result must get these.
-                result["compile_time"] = 0
-                result["verification_time"] = 0
-                result["benchmark_time"] = 0
+                result = util.disable_benchmark_timings(result)
 
             # Put result in `unique_results`
             self.unique_results[key] = result

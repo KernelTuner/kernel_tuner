@@ -5,7 +5,7 @@ from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
-from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache
+from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache, disable_benchmark_timings
 
 
 class SequentialRunner(Runner):
@@ -85,7 +85,8 @@ class SequentialRunner(Runner):
             # check if configuration is in the cache
             x_int = ",".join([str(i) for i in element])
             if tuning_options.cache and x_int in tuning_options.cache:
-                params.update(tuning_options.cache[x_int])
+                cache_entry = tuning_options.cache[x_int]
+                params.update(disable_benchmark_timings(cache_entry))
             else:
                 # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
                 if not self.warmed_up:
@@ -109,8 +110,20 @@ class SequentialRunner(Runner):
             if tuning_options.metrics and not isinstance(params.get(tuning_options.objective), ErrorConfig):
                 params = process_metrics(params, tuning_options.metrics)
 
+            if result:
+                # print configuration to the console
+                print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
+
+                # add configuration to cache
+                store_cache(x_int, params, tuning_options.cachefile, tuning_options.cache)
+
+            # all visited configurations are added to results to provide a trace for optimization strategies
+            results.append(params)
+
             # get the framework time by estimating based on other times
             total_time = 1000 * (perf_counter() - self.start_time) - warmup_time
+            self.start_time = perf_counter()
+
             params["strategy_time"] = strategy_time_per_config
             params["framework_time"] = max(
                 total_time
@@ -122,16 +135,5 @@ class SequentialRunner(Runner):
                 0,
             )
             params["timestamp"] = str(datetime.now(timezone.utc))
-            self.start_time = perf_counter()
-
-            if result:
-                # print configuration to the console
-                print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
-
-                # add configuration to cache
-                store_cache(x_int, params, tuning_options.cachefile, tuning_options.cache)
-
-            # all visited configurations are added to results to provide a trace for optimization strategies
-            results.append(params)
 
         return results

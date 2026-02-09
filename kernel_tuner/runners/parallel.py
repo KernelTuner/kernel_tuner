@@ -8,7 +8,7 @@ from kernel_tuner.core import DeviceInterface
 from kernel_tuner.interface import Options
 from kernel_tuner.runners.runner import Runner
 from kernel_tuner.util import (
-    BudgetExceededConfig,
+    disable_benchmark_timings,
     ErrorConfig,
     TuningBudget,
     print_config_output,
@@ -117,7 +117,7 @@ class DeviceActorState:
         try:
             self.actor.shutdown.remote()
         except Exception:
-            logger.exception("Failed to request actor shutdown: %s", self)
+            logger.exception("Failed to request actor shutdown: worker %s", self)
 
     def submit(self, key, config):
         logger.info(f"job submitted to worker {self}: {key}")
@@ -204,6 +204,13 @@ class ParallelRunner(Runner):
         self.units = {"time": "ms"}
         self.quiet = device_options.quiet
 
+        # Print some debugging information
+        if tuning_options.verbose:
+            print(f"parallel tuning on {self.device_name} with {num_workers} workers")
+            for worker in self.workers:
+                print(f" - worker {worker}")
+
+
     def get_device_info(self):
         # TODO: Get this from the device?
         return Options({"max_threads": 1024})
@@ -283,8 +290,11 @@ class ParallelRunner(Runner):
             key = ",".join([str(i) for i in config])
 
             if key in tuning_options.cache:
-                params.update(tuning_options.cache[key])
-                results.append(params)
+                cache_entry = tuning_options.cache[key]
+                
+                # We must disable the timings as otherwise these will counted
+                # as part of the total_compile/benchmark/verification_time
+                results.append(disable_benchmark_timings(cache_entry))
             else:
                 assert key not in key2index, "duplicate jobs submitted"
                 key2index[key] = index
