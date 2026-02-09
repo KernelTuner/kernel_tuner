@@ -837,7 +837,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                         + "."
                     )
                 if answer[i].size != arg.size:
-                    raise TypeError(
+                    raise ValueError(
                         f"Element {i} of the expected results list has a size different from "
                         + "the kernel argument: "
                         + str(answer[i].size)
@@ -855,7 +855,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                         + "."
                     )
                 if answer[i].size() != arg.size():
-                    raise TypeError(
+                    raise ValueError(
                         f"Element {i} of the expected results list has a size different from "
                         + "the kernel argument: "
                         + str(answer[i].size)

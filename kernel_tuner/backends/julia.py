@@ -172,6 +172,7 @@ class JuliaFunctions(GPUBackend):
         jl.seval(f"tmp_arr = {info['GPUArrayType']}(Float32.(zeros(2)))")
         self.backend = jl.seval("KernelAbstractions.get_backend(tmp_arr)")
         self.GPUArrayType = info["GPUArrayType"]
+        jl.seval("tmp_arr = nothing; GC.gc()")  # free temporary array
 
         # Select device
         try:
@@ -244,24 +245,22 @@ class JuliaFunctions(GPUBackend):
                 del a
         except Exception:
             pass
+        jl.seval("GC.gc()")
 
     # -------------------------
     # Memory and argument setup
     # -------------------------
 
     def ready_argument_list(self, arguments):
-        """Convert numpy arrays to GPU Array in Julia."""
+        """Convert arrays to GPU Array in Julia."""
         gpu_args = []
         for arg in arguments:
-            if isinstance(arg, np.ndarray):
-                try:
-                    arr = self.to_gpuarray(arg)
-                    gpu_args.append(arr)
-                    self.allocations.append(arr)
-                except Exception as e:
-                    raise RuntimeError(f"Failed to move array to GPU: {e}")
-            else:
-                gpu_args.append(arg)
+            try:
+                arr = self.to_gpuarray(arg)
+                gpu_args.append(arr)
+                self.allocations.append(arr)
+            except Exception as e:
+                raise RuntimeError(f"Failed to move array to GPU: {e}")
         return gpu_args
 
     # -------------------------
@@ -360,6 +359,7 @@ end
             jl.Main.KernelAbstractions.synchronize(self.backend)
         except JuliaError as e:
             raise RuntimeError(f"Julia synchronize failed: {e}")
+        jl.seval("GC.gc()")  # trigger GC to free GPU memory after synchronization
 
     # -------------------------
     # Memory utilities
@@ -377,28 +377,20 @@ end
 
     @staticmethod
     def memcpy_dtoh(dest, src):
+        """Perform a device to host memory copy."""
         try:
-            jl.src_tmp = src
-            jl.seval("host_tmp = Array(src_tmp)")
-            host = np.array(jl.host_tmp)
-            np.copyto(dest, host)
-            del jl.src_tmp
-            del jl.host_tmp
+            np.copyto(dest, src)
         except JuliaError as e:
             raise RuntimeError(f"Julia memcpy_dtoh failed: {e}")
 
-    # @staticmethod
+    @staticmethod
     def memcpy_htod(dest, src):
-        raise NotImplementedError("memcpy_htod not yet implemented for Julia backend.", dest, src)
-        try:
-            jl.src_tmp = src
-            jl.seval(f"arr_tmp = {self.GPUArrayType}(src_tmp)")
-            arr_tmp = jl.arr_tmp
-            del jl.src_tmp
-            del jl.arr_tmp
-            return arr_tmp
-        except JuliaError as e:
-            raise RuntimeError(f"Julia memcpy_htod failed: {e}")
+        """Perform a host to device memory copy."""
+        dest_ptr = repr(jl.UInt64(jl.pointer_from_objref(dest)))
+        jl.dest_tmp = dest
+        jl.src_tmp = src
+        jl.seval("copyto!(dest_tmp, Array(src_tmp))")
+        assert dest_ptr == repr(jl.UInt64(jl.pointer_from_objref(jl.dest_tmp)))
 
     def copy_constant_memory_args(self, cmem_args):
         raise NotImplementedError(
@@ -431,8 +423,7 @@ end
                 jl.seval(f"import {package}")
             except Exception as e:
                 raise ImportError(
-                    f"{package}.jl not found in your Julia environment. "
-                    f'Run `using Pkg; Pkg.add("{package}")` in Julia.'
+                    f'{package}.jl not found in your Julia environment. Run `using Pkg; Pkg.add("{package}")` in Julia.'
                 ) from e
 
     def create_metal_buffer(self):

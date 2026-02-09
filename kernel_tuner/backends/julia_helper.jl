@@ -1,6 +1,7 @@
 export to_gpuarray, launch_kernel
 
 function to_gpuarray(a)
+    a = deepcopy(a) # ensure we have a separate copy of the array to avoid unintended side effects
     if isa(a, AbstractArray)
         a = GPUArrayType(a)
     end
