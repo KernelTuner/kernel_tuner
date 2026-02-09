@@ -31,7 +31,14 @@ To enable parallel tuning, pass the ``parallel`` argument to ``tune_kernel``:
     )
 
 If ``parallel`` is set to ``True``, Kernel Tuner will use all available Ray workers for tuning.
-Alternatively, ``parallel`` can be set to an integer ``n`` to use exactly ``n`` workers.
+The ``parallel`` option can also be set to an integer ``n`` to use exactly ``n`` workers.
+
+Alternatively, define the environment variable ``KERNEL_TUNER_PARALLEL`` to enable parallel execution without modifying your Python code.
+
+.. code-block:: bash
+
+   $ KERNEL_TUNER_PARALLEL=true python3 my_tuning_script.py
+
 
 
 Parallel tuning and optimization strategies

@@ -28,6 +28,7 @@ import logging
 from argparse import ArgumentParser
 from ast import literal_eval
 from datetime import datetime
+import os
 from pathlib import Path
 from time import perf_counter
 from copy import deepcopy
@@ -66,6 +67,8 @@ from kernel_tuner.strategies import (
     skopt
 )
 from kernel_tuner.strategies.wrapper import OptAlgWrapper
+
+environment_key_parallel = "KERNEL_TUNER_PARALLEL"
 
 strategy_map = {
     "brute_force": brute_force,
@@ -585,7 +588,7 @@ def tune_kernel(
     strategy_options=None,
     cache=None,
     metrics=None,
-    simulation_mode=False,
+    simulation_mode=None,
     parallel=None,
     observers=None,
     objective=None,
@@ -662,6 +665,12 @@ def tune_kernel(
     # TODO: we could use the "match case" syntax when removing support for 3.9
     tuning_options.simulated_time = 0
 
+    # Get runner from environment if possible
+    if parallel is None:
+        parallel = bool(os.environ.get(environment_key_parallel))
+
+
+    # Create runner
     if parallel and simulation_mode:
         raise ValueError("Enabling `parallel` and `simulation_mode` together is not supported")
     elif simulation_mode:
