@@ -26,7 +26,7 @@ except ImportError as e:
 
 
 @ray.remote(num_gpus=1)
-class DeviceActor:
+class WorkerActor:
     def __init__(
         self, kernel_source, kernel_options, device_options, tuning_options, iterations, observers
     ):
@@ -65,9 +65,8 @@ class DeviceActor:
 
         return env
 
-    def run(self, key, element):
+    def run(self, params):
         # TODO: logging.debug("sequential runner started for " + self.kernel_options.kernel_name)
-        params = dict(element)
         result = None
         warmup_time = 0
 
@@ -85,28 +84,30 @@ class DeviceActor:
         )
 
         params.update(result)
-
         params["timestamp"] = datetime.now(timezone.utc).isoformat()
         params["ray_actor_id"] = ray.get_runtime_context().get_actor_id()
         params["host_name"] = socket.gethostname()
 
         # all visited configurations are added to results to provide a trace for optimization strategies
-        return key, params
+        return params
 
 
-class DeviceActorState:
+class Worker:
     def __init__(self, index, actor):
         self.index = index
-        self.actor = actor
         self.running_jobs = []
-        self.maximum_running_jobs = 1
+        self.maximum_running_jobs = 2
         self.is_running = True
+        self.actor = actor
         self.env = ray.get(actor.get_environment.remote())
 
     def __repr__(self):
-        actor_id = self.env["ray"]["actor_id"]
-        host_name = self.env["host_name"]
-        return f"{self.index} ({host_name}, {actor_id})"
+        try:
+            actor_id = self.env["ray"]["actor_id"]
+            host_name = self.env["host_name"]
+            return f"{self.index} ({host_name}, {actor_id})"
+        except Exception:
+            return f"{self.index}"
 
     def shutdown(self):
         if not self.is_running:
@@ -117,11 +118,10 @@ class DeviceActorState:
         try:
             self.actor.shutdown.remote()
         except Exception:
-            logger.exception("Failed to request actor shutdown: worker %s", self)
+            logger.exception("failed to request actor shutdown: worker %s", self)
 
-    def submit(self, key, config):
-        logger.info(f"job submitted to worker {self}: {key}")
-        job = self.actor.run.remote(key, config)
+    def submit(self, config):
+        job = self.actor.run.remote(config)
         self.running_jobs.append(job)
         return job
 
@@ -130,17 +130,36 @@ class DeviceActorState:
             return False
 
         # Check for ready jobs, but do not block
-        ready_jobs, self.running_jobs = ray.wait(self.running_jobs, timeout=0)
-
-        for job in ready_jobs:
-            try:
-                key, _result = ray.get(job)
-                logger.info(f"job finished on worker {self}: {key}")
-            except Exception:
-                logger.exception(f"job failed on worker {self}")
+        _, self.running_jobs = ray.wait(self.running_jobs, timeout=0)
 
         # Available if this actor can now run another job
         return len(self.running_jobs) < self.maximum_running_jobs
+
+
+def launch_workers(n, *args):
+    actors = []
+    workers = []
+
+    try:
+        # Start all actors in parallel
+        for _ in range(n):
+            actors.append(WorkerActor.remote(*args))
+
+        # Create `Worker` objects. This blocks until each worker is ready
+        for index, actor in enumerate(actors):
+            worker = Worker(index, actor)
+            workers.append(worker)
+            logging.info("connected: worker %s", worker)
+
+        return workers
+    except:
+        # Attempt to shut down actors
+        for actor in actors:
+            try:
+                actor.shutdown.remote()
+            except:
+                logger.exception("failed to request actor shutdown: %s", actor)
+        raise
 
 
 class ParallelRunner(Runner):
@@ -168,48 +187,36 @@ class ParallelRunner(Runner):
                 f"failed to initialize parallel runner: invalid number of GPUs specified: {num_workers}"
             )
 
-        self.workers = []
+        self.workers = launch_workers(
+            num_workers,
+            kernel_source,
+            kernel_options,
+            device_options,
+            tuning_options,
+            iterations,
+            observers,
+        )
 
-        try:
-            # Start workers
-            for index in range(num_workers):
-                actor = DeviceActor.remote(
-                    kernel_source,
-                    kernel_options,
-                    device_options,
-                    tuning_options,
-                    iterations,
-                    observers,
-                )
-                worker = DeviceActorState(index, actor)
-                self.workers.append(worker)
-
-                logger.info(f"connected to worker {worker}")
-
-            # Check if all workers have the same device
-            device_names = {w.env.get("device_name") for w in self.workers}
-            if len(device_names) != 1:
-                raise RuntimeError(
-                    f"failed to initialize parallel runner: workers have different devices: {sorted(device_names)}"
-                )
-        except:
-            # If an exception occurs, shut down the worker and reraise error
-            self.shutdown()
-            raise
+        # Check if all workers have the same device
+        device_names = {str(w.env.get("device_name")) for w in self.workers}
+        if len(device_names) != 1:
+            raise RuntimeError(
+                f"failed to initialize parallel runner: workers have different devices: {sorted(device_names)}"
+            )
 
         self.device_name = device_names.pop()
 
         # TODO: Get units from the device?
-        self.start_time = perf_counter()
         self.units = {"time": "ms"}
         self.quiet = device_options.quiet
+        self.start_time = perf_counter()
+        self.last_strategy_time = 0
 
         # Print some debugging information
         if tuning_options.verbose:
             print(f"parallel tuning on {self.device_name} with {num_workers} workers")
             for worker in self.workers:
                 print(f" - worker {worker}")
-
 
     def get_device_info(self):
         # TODO: Get this from the device?
@@ -228,51 +235,54 @@ class ParallelRunner(Runner):
     def available_parallelism(self):
         return len(self.workers)
 
+    def find_available_worker(self) -> Optional[Worker]:
+        for i, worker in enumerate(list(self.workers)):
+            if worker.is_available():
+                # Push worker to back of list
+                self.workers.pop(i)
+                self.workers.append(worker)
+                return worker
+
+        return None
+
     def submit_jobs(self, jobs, budget: TuningBudget):
         pending_jobs = deque(jobs)
-        running_jobs = []
+        running_jobs = dict()
 
-        while pending_jobs and not budget.is_done():
-            job_was_submitted = False
+        while pending_jobs or running_jobs:
+            # If there are pending jobs, try to submit one
+            if pending_jobs:
+                # If there are still pending jobs and the budget has been exceeded.
+                # We return `None` to indicate that no result is available for these jobs.
+                if budget.is_done():
+                    key, config = pending_jobs.popleft()
+                    yield (key, None)
+                    continue
 
-            # If there is still work left, submit it now
-            for i, worker in enumerate(list(self.workers)):
-                if worker.is_available():
-                    # Push worker to back of list
-                    self.workers.pop(i)
-                    self.workers.append(worker)
-
+                # Find a worker that is available
+                worker = self.find_available_worker()
+                if worker is not None:
                     # Pop job and submit it
                     key, config = pending_jobs.popleft()
-                    ref = worker.submit(key, config)
-                    running_jobs.append(ref)
+                    ref = worker.submit(config)
+                    running_jobs[ref] = (key, worker)
 
-                    job_was_submitted = True
+                    logger.info(f"job submitted to worker {worker}: {key}")
                     budget.add_evaluations(1)
-                    break
+                    continue
 
-            # If no work was submitted, wait until a worker is available
-            if not job_was_submitted:
-                if not running_jobs:
-                    raise RuntimeError("invalid state: no ray workers available")
+            # If we there pending jobs left but no running jobs and
+            # no available worker, then we are in an invalid state.
+            if not running_jobs:
+                raise RuntimeError("invalid state: no ray workers available")
 
-                ready_jobs, running_jobs = ray.wait(running_jobs, num_returns=1)
+            # Wait for jobs to finish
+            ready_jobs, _ = ray.wait(list(running_jobs), num_returns=1)
 
-                for result in ready_jobs:
-                    yield ray.get(result)
-
-        # If there are still pending jobs, then the budget has been exceeded.
-        # We return `None` to indicate that no result is available for these jobs.
-        while pending_jobs:
-            key, _ = pending_jobs.popleft()
-            yield (key, None)
-
-        # Wait until running jobs complete
-        while running_jobs:
-            ready_jobs, running_jobs = ray.wait(running_jobs, num_returns=1)
-
-            for result in ready_jobs:
-                yield ray.get(result)
+            for job in ready_jobs:
+                key, worker = running_jobs.pop(job)
+                logger.info(f"job finished on worker {worker}: {key}")
+                yield (key, ray.get(job))
 
     def run(self, parameter_space, tuning_options) -> List[Optional[dict]]:
         metrics = tuning_options.metrics
@@ -291,7 +301,7 @@ class ParallelRunner(Runner):
 
             if key in tuning_options.cache:
                 cache_entry = tuning_options.cache[key]
-                
+
                 # We must disable the timings as otherwise these will counted
                 # as part of the total_compile/benchmark/verification_time
                 results.append(disable_benchmark_timings(cache_entry))
@@ -301,7 +311,6 @@ class ParallelRunner(Runner):
 
                 jobs.append((key, params))
                 results.append(None)
-
 
         # Submit jobs and wait for them to finish
         for key, result in self.submit_jobs(jobs, tuning_options.budget):
@@ -341,7 +350,7 @@ class ParallelRunner(Runner):
         runner_time = total_time - strategy_time
         framework_time = max(runner_time * len(self.workers) - total_worker_time, 0)
 
-        num_valid_results = sum(bool(r) for r in results) # Count the number of valid results
+        num_valid_results = sum(bool(r) for r in results)  # Count the number of valid results
 
         # Post-process all the results
         for result in results:
