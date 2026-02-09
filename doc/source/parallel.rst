@@ -17,7 +17,7 @@ Parallel/remote tuning is implemented using `Ray <https://docs.ray.io/en/latest/
 How to use
 ----------
 
-To enable parallel tuning, pass the ``parallel_workers`` argument to ``tune_kernel``:
+To enable parallel tuning, pass the ``parallel`` argument to ``tune_kernel``:
 
 .. code-block:: python
 
@@ -27,11 +27,11 @@ To enable parallel tuning, pass the ``parallel_workers`` argument to ``tune_kern
         size,
         args,
         tune_params,
-        parallel_workers=True,
+        parallel=True,
     )
 
-If ``parallel_workers`` is set to ``True``, Kernel Tuner will use all available Ray workers for tuning.
-Alternatively, ``parallel_workers`` can be set to an integer ``n`` to use exactly ``n`` workers.
+If ``parallel`` is set to ``True``, Kernel Tuner will use all available Ray workers for tuning.
+Alternatively, ``parallel`` can be set to an integer ``n`` to use exactly ``n`` workers.
 
 
 Parallel tuning and optimization strategies

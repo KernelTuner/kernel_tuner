@@ -474,7 +474,7 @@ _tuning_options = Options(
         ),
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
-        ("parallel_workers", ("Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.", "int|bool")),
+        ("parallel", ("Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.", "int|bool")),
         ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
     ]
 )
@@ -586,7 +586,7 @@ def tune_kernel(
     cache=None,
     metrics=None,
     simulation_mode=False,
-    parallel_workers=None,
+    parallel=None,
     observers=None,
     objective=None,
     objective_higher_is_better=None,
@@ -662,14 +662,14 @@ def tune_kernel(
     # TODO: we could use the "match case" syntax when removing support for 3.9
     tuning_options.simulated_time = 0
 
-    if parallel_workers and simulation_mode:
-        raise ValueError("Enabling `parallel_workers` and `simulation_mode` together is not supported")
+    if parallel and simulation_mode:
+        raise ValueError("Enabling `parallel` and `simulation_mode` together is not supported")
     elif simulation_mode:
         from kernel_tuner.runners.simulation import SimulationRunner
         runner = SimulationRunner(kernelsource, kernel_options, device_options, iterations, observers)
-    elif parallel_workers:
+    elif parallel:
         from kernel_tuner.runners.parallel import ParallelRunner
-        num_workers = None if parallel_workers is True else parallel_workers
+        num_workers = None if parallel is True else parallel
         runner = ParallelRunner(kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers)
     else:
         from kernel_tuner.runners.sequential import SequentialRunner

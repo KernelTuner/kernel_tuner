@@ -26,7 +26,7 @@ def tune():
     tune_params = dict()
     tune_params["block_size_x"] = [32 * i for i in range(1, 33)]
 
-    results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, parallel_workers=True)
+    results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, parallel=True)
     print(env)
     return results
 
