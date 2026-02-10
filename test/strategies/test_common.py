@@ -20,7 +20,6 @@ def fake_runner():
         'time': 5
     }
     runner = Mock()
-    runner.last_strategy_start_time = perf_counter()
     runner.run.return_value = [fake_result]
     return runner
 

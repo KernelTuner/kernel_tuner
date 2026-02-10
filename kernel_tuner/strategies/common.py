@@ -98,6 +98,7 @@ class CostFunc:
         self.results = []
         self.budget_spent_fraction = 0.0
         self.invalid_return_value = invalid_value
+        self.strategy_timer = util.Timer()
 
     def _normalize_and_validate_config(self, x, check_restrictions=True):
         # snap values in x to nearest actual value for each parameter, unscale x if needed
@@ -129,8 +130,8 @@ class CostFunc:
 
     def _run_configs(self, xs, check_restrictions=True):
         """ Takes a list of Euclidian coordinates and evaluates the configurations at those points. """
-        self.runner.last_strategy_time += 1000 * (perf_counter() - self.runner.last_strategy_start_time)
-        self.runner.start_time = perf_counter() # start framework time
+        strategy_time = self.strategy_timer.get()
+        self.runner.add_strategy_time(strategy_time)
 
         # error value to return for numeric optimizers that need a numerical value
         logging.debug("_cost_func called")
@@ -176,9 +177,6 @@ class CostFunc:
             self.unique_results.setdefault(key, result)
             self.results.append(result)
 
-        # upon returning from this function control will be given back to the strategy, so reset the start time
-        self.runner.last_strategy_start_time = perf_counter()
-
         # this check is necessary because some strategies cannot handle partially completed requests
         # for example when only half of the configs in a population have been evaluated
         self.tuning_options.budget.raise_exception_if_done()
@@ -188,6 +186,9 @@ class CostFunc:
         # because the budget has been exceed or some other reason causing the runner to fail.
         if not all(final_results):
             raise util.StopCriterionReached("runner did not evaluate all given configurations")
+
+        # upon returning from this function control will be given back to the strategy, so reset the start time
+        self.strategy_timer.reset()
 
         return final_results
 

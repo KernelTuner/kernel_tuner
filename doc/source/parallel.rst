@@ -69,7 +69,7 @@ Setting up Ray
 --------------
 
 Kernel Tuner uses `Ray <https://docs.ray.io/en/latest/>`_ to distribute kernel evaluations across multiple GPUs.
-ay is an open-source framework for distributed computing in Python.
+Ray is an open-source framework for distributed computing in Python.
 
 To use parallel tuning, you must first install Ray itself:
 

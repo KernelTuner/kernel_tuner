@@ -188,6 +188,26 @@ def check_argument_list(kernel_name, kernel_string, args):
         warnings.warn(errors[0], UserWarning)
 
 
+class Timer:
+    def __init__(self):
+        self._start_ns = time.perf_counter_ns()
+
+    def get(self) -> float:
+        """Elapsed time in seconds."""
+        now = time.perf_counter_ns()
+        return (now - self._start_ns) * 1e-9
+
+    def get_and_reset(self) -> float:
+        """Elapsed time in seconds, then reset."""
+        now = time.perf_counter_ns()
+        elapsed_ns = now - self._start_ns
+        self._start_ns = now
+        return elapsed_ns * 1e-9
+
+    def reset(self) -> None:
+        self.get_and_reset()
+
+
 class TuningBudget:
     def __init__(self, time_limit=None, max_fevals=None):
         if time_limit is not None and not isinstance(time_limit, timedelta):
@@ -199,7 +219,7 @@ class TuningBudget:
         if time_limit is not None and time_limit <= timedelta(seconds=0):
             raise ValueError("time_limit must be greater than zero")
 
-        self.start_time_seconds = time.perf_counter()
+        self.start_timer = Timer()
         self.time_spent_extra = timedelta()
         self.time_limit = time_limit
         self.num_fevals = 0
@@ -212,7 +232,7 @@ class TuningBudget:
         self.time_spent_extra += timedelta(seconds=seconds, milliseconds=milliseconds)
     
     def get_time_spent(self) -> timedelta:
-        seconds_passed = time.perf_counter() - self.start_time_seconds
+        seconds_passed = self.start_timer.get()
         return timedelta(seconds=seconds_passed) + self.time_spent_extra
     
     def get_time_remaining(self) -> timedelta:
@@ -258,7 +278,6 @@ class TuningBudget:
             return 0.0
 
     
-
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
     """Raise an exception if a tune parameter has a forbidden name."""

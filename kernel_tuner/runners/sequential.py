@@ -5,7 +5,7 @@ from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
-from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache, disable_benchmark_timings
+from kernel_tuner.util import ErrorConfig, Timer, print_config_output, process_metrics, store_cache, disable_benchmark_timings
 
 
 class SequentialRunner(Runner):
@@ -27,16 +27,14 @@ class SequentialRunner(Runner):
         :type iterations: int
         """
         # detect language and create high-level device interface
-        self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
+        super().__init__()
 
+        self.dev = DeviceInterface(kernel_source, iterations=iterations, observers=observers, **device_options)
         self.units = self.dev.units
         self.quiet = device_options.quiet
         self.kernel_source = kernel_source
         self.warmed_up = False if self.dev.requires_warmup else True
         self.simulation_mode = False
-        self.start_time = perf_counter()
-        self.last_strategy_start_time = self.start_time
-        self.last_strategy_time = 0
         self.kernel_options = kernel_options
 
         # move data to the GPU
@@ -64,7 +62,7 @@ class SequentialRunner(Runner):
         logging.debug("sequential runner started for " + self.kernel_options.kernel_name)
 
         results = []
-        total_worker_time = 0
+        worker_time = 0
 
         # iterate over parameter space
         for element in parameter_space:
@@ -88,21 +86,21 @@ class SequentialRunner(Runner):
             else:
                 # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
                 if not self.warmed_up:
-                    warmup_time = perf_counter()
+                    warmup_timer = Timer()
                     self.dev.compile_and_benchmark(
                         self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options
                     )
                     self.warmed_up = True
-                    warmup_time = 1e3 * (perf_counter() - warmup_time)
+                    warmup_time = warmup_timer.get()
 
                 result = self.dev.compile_and_benchmark(
                     self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options
                 )
 
-                # Collect total time spent by worker
+                # Collect total time spent by worker in seconds
                 worker_time += (
                     result["compile_time"] + result["verification_time"] + result["benchmark_time"]
-                )
+                ) / 1000
 
                 params.update(result)
 
@@ -128,20 +126,17 @@ class SequentialRunner(Runner):
         num_valid_results = sum(bool(r) for r in results)  # Count the number of valid results
 
         if num_valid_results > 0:
+            strategy_time = self.accumulated_strategy_time
+            self.accumulated_strategy_time = 0
+
             # get the framework time by estimating based on other times
-            total_time = 1000 * (perf_counter() - self.start_time)
-            self.start_time = perf_counter()
-
-            strategy_time = self.last_strategy_time
-            self.last_strategy_time = 0
-
+            total_time = self.timer.get_and_reset() - warmup_time
             framework_time = max(total_time - strategy_time - worker_time, 0)
 
-            # Post-process all the results
+            # Amortize the time over all the results
             for result in results:
-                # Amortize the time over all the results
                 if result:
-                    result["strategy_time"] = strategy_time / num_valid_results
-                    result["framework_time"] = framework_time / num_valid_results
+                    result["strategy_time"] = 1000 * strategy_time / num_valid_results
+                    result["framework_time"] = 1000 * framework_time / num_valid_results
 
         return results

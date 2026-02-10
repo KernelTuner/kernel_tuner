@@ -46,6 +46,7 @@ class SimulationRunner(Runner):
         :param iterations: The number of iterations used for benchmarking each kernel instance.
         :type iterations: int
         """
+        super().__init__()
         self.quiet = device_options.quiet
         self.dev = SimulationDevice(1024, dict(device_name="Simulation"), self.quiet)
 
@@ -53,10 +54,7 @@ class SimulationRunner(Runner):
         self.simulation_mode = True
         self.kernel_options = kernel_options
 
-        self.start_time = perf_counter()
         self.total_simulated_time = 0
-        self.last_strategy_start_time = self.start_time
-        self.last_strategy_time = 0
         self.visited_results = set()
         self.units = {}
 
@@ -84,9 +82,6 @@ class SimulationRunner(Runner):
         logging.debug("simulation runner started for " + self.kernel_options.kernel_name)
 
         results = []
-
-        # self.last_strategy_time is set by cost_func
-        strategy_time_per_config = self.last_strategy_time / len(parameter_space) if len(parameter_space) > 0 else 0
 
         # iterate over parameter space
         for element in parameter_space:
@@ -120,9 +115,6 @@ class SimulationRunner(Runner):
                     util.print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
                     self.visited_results.add(key)
 
-                # Everything but the strategy time and framework time are simulated,
-                result["strategy_time"] = strategy_time_per_config
-
                 # Simulate the evaluation of this configuration
                 tuning_options.budget.add_evaluations(1)
                 tuning_options.budget.add_time(milliseconds=result["compile_time"])
@@ -136,10 +128,6 @@ class SimulationRunner(Runner):
                         "Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations"
                     )
 
-                total_time = 1000 * (perf_counter() - self.start_time)
-                self.start_time = perf_counter()
-                result["framework_time"] = total_time
-
                 results.append(result)
                 continue
 
@@ -148,12 +136,6 @@ class SimulationRunner(Runner):
             check = util.check_restrictions(tuning_options.restrictions, params_dict, True)
             if not check:
                 result = util.disable_benchmark_timings(params_dict) # Set timings to zero
-                result['strategy_time'] = strategy_time_per_config
-
-                total_time = 1000 * (perf_counter() - self.start_time)
-                self.start_time = perf_counter()
-                result['framework_time'] = total_time
-
                 result[tuning_options.objective] = util.InvalidConfig()
                 results.append(result)
                 warn(f"Configuration {element} not in cache, does not pass restrictions. Will be treated as an InvalidConfig, but make sure you are evaluating the correct cache file.")
@@ -163,5 +145,22 @@ class SimulationRunner(Runner):
             err_string = f"kernel configuration {element} not in cache, does {'' if check else 'not '}pass extra restriction check ({check})"
             logging.debug(err_string)
             raise ValueError(f"{err_string} - in simulation mode, all configurations must be present in the cache")
+
+        num_valid_results = sum(bool(r) for r in results)
+        if num_valid_results:
+            total_time = self.timer.get_and_reset()
+
+            strategy_time = self.accumulated_strategy_time
+            self.accumulated_strategy_time = 0
+
+            framework_time = max(total_time - strategy_time, 0)
+
+            # Amortize the time over all the results
+            for result in results:
+                if result:
+                    # Time must be in ms
+                    result["strategy_time"] = strategy_time / num_valid_results
+                    result["framework_time"] = framework_time / num_valid_results
+
 
         return results

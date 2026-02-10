@@ -68,16 +68,13 @@ class WorkerActor:
     def run(self, params):
         # TODO: logging.debug("sequential runner started for " + self.kernel_options.kernel_name)
         result = None
-        warmup_time = 0
 
         # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
         if not self.warmed_up:
-            warmup_time = perf_counter()
             self.dev.compile_and_benchmark(
                 self.kernel_source, self.gpu_args, params, self.kernel_options, self.tuning_options
             )
             self.warmed_up = True
-            warmup_time = 1e3 * (perf_counter() - warmup_time)
 
         result = self.dev.compile_and_benchmark(
             self.kernel_source, self.gpu_args, params, self.kernel_options, self.tuning_options
@@ -173,6 +170,8 @@ class ParallelRunner(Runner):
         observers,
         num_workers=None,
     ):
+        super().__init__()
+
         if not ray.is_initialized():
             ray.init()
 
@@ -209,8 +208,6 @@ class ParallelRunner(Runner):
         # TODO: Get units from the device?
         self.units = {"time": "ms"}
         self.quiet = device_options.quiet
-        self.start_time = perf_counter()
-        self.last_strategy_time = 0
 
         # Print some debugging information
         if tuning_options.verbose:
@@ -332,7 +329,7 @@ class ParallelRunner(Runner):
             # Collect total time spent by worker
             total_worker_time += (
                 result["compile_time"] + result["verification_time"] + result["benchmark_time"]
-            )
+            ) / 1000
 
             # only compute metrics on configs that have not errored
             if not isinstance(result.get(objective), ErrorConfig):
@@ -365,19 +362,18 @@ class ParallelRunner(Runner):
 
         # If there are valid results, set timings
         if num_valid_results > 0:
-            total_time = 1000 * (perf_counter() - self.start_time)
-            self.start_time = perf_counter()
+            total_time = self.timer.get_and_reset()
 
-            strategy_time = self.last_strategy_time
-            self.last_strategy_time = 0
+            strategy_time = self.accumulated_strategy_time
+            self.accumulated_strategy_time = 0
 
             runner_time = total_time - strategy_time
             framework_time = max(runner_time * len(self.workers) - total_worker_time, 0)
 
-            # Post-process all the results
+            # Amortize the time over all the results
             for result in results:
-                # Amortize the time over all the results
                 if result:
+                    # Time must be in ms
                     result["strategy_time"] = strategy_time / num_valid_results
                     result["framework_time"] = framework_time / num_valid_results
 
