@@ -64,9 +64,7 @@ class SequentialRunner(Runner):
         logging.debug("sequential runner started for " + self.kernel_options.kernel_name)
 
         results = []
-
-        # self.last_strategy_time is set by cost_func
-        strategy_time_per_config = self.last_strategy_time / len(parameter_space) if len(parameter_space) > 0 else 0
+        total_worker_time = 0
 
         # iterate over parameter space
         for element in parameter_space:
@@ -101,14 +99,21 @@ class SequentialRunner(Runner):
                     self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options
                 )
 
+                # Collect total time spent by worker
+                worker_time += (
+                    result["compile_time"] + result["verification_time"] + result["benchmark_time"]
+                )
+
                 params.update(result)
 
-                if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):
+                if isinstance(result.get(tuning_options.objective), ErrorConfig):
                     logging.debug("kernel configuration was skipped silently due to compile or runtime failure")
 
             # only compute metrics on configs that have not errored
-            if tuning_options.metrics and not isinstance(params.get(tuning_options.objective), ErrorConfig):
+            if not isinstance(params.get(tuning_options.objective), ErrorConfig):
                 params = process_metrics(params, tuning_options.metrics)
+
+            params["timestamp"] = str(datetime.now(timezone.utc))
 
             if result:
                 # print configuration to the console
@@ -120,20 +125,23 @@ class SequentialRunner(Runner):
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)
 
+        num_valid_results = sum(bool(r) for r in results)  # Count the number of valid results
+
+        if num_valid_results > 0:
             # get the framework time by estimating based on other times
-            total_time = 1000 * (perf_counter() - self.start_time) - warmup_time
+            total_time = 1000 * (perf_counter() - self.start_time)
             self.start_time = perf_counter()
 
-            params["strategy_time"] = strategy_time_per_config
-            params["framework_time"] = max(
-                total_time
-                - (
-                    params["compile_time"]
-                    + params["verification_time"]
-                    + params["benchmark_time"]
-                ),
-                0,
-            )
-            params["timestamp"] = str(datetime.now(timezone.utc))
+            strategy_time = self.last_strategy_time
+            self.last_strategy_time = 0
+
+            framework_time = max(total_time - strategy_time - worker_time, 0)
+
+            # Post-process all the results
+            for result in results:
+                # Amortize the time over all the results
+                if result:
+                    result["strategy_time"] = strategy_time / num_valid_results
+                    result["framework_time"] = framework_time / num_valid_results
 
         return results

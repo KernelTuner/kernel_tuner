@@ -129,7 +129,7 @@ class CostFunc:
 
     def _run_configs(self, xs, check_restrictions=True):
         """ Takes a list of Euclidian coordinates and evaluates the configurations at those points. """
-        self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
+        self.runner.last_strategy_time += 1000 * (perf_counter() - self.runner.last_strategy_start_time)
         self.runner.start_time = perf_counter() # start framework time
 
         # error value to return for numeric optimizers that need a numerical value
@@ -138,68 +138,43 @@ class CostFunc:
         # check if max_fevals is reached or time limit is exceeded
         self.tuning_options.budget.raise_exception_if_done()
 
+        batch_indices = []  # Where to store result in `final_results`
         batch_configs = []  # The configs to run
-        batch_keys = [] # The keys of the configs to run
-        pending_indices_by_key = dict()  # Maps key => where to store result in `final_results`
         final_results = []  # List returned to the user
-        legal_indices = []  # Indices in `final_results` that are legal
 
-        # Loop over all configurations. For each configurations there are four cases:
-        # 1. The configuration is invalid, we can skip it
-        # 2. The configuration is in  `unique_results`, we can get it from there
-        # 3. The configuration is in  `pending_indices_by_key`, it is duplicate in `xs`
-        # 4. The configuration must be evaluated by the runner.
+        # Loop over all configurations.
         for index, x in enumerate(xs):
             config, is_legal = self._normalize_and_validate_config(x, check_restrictions=check_restrictions)
             logging.debug("normalize config: %s -> %s (legal: %s)", str(x), str(config), is_legal)
             key = ",".join([str(i) for i in config])
 
-            # 1. Not legal, just return `InvalidConfig`
+            # Not legal, just return `InvalidConfig`
             if not is_legal:
                 result = dict(zip(self.searchspace.tune_params.keys(), config))
                 result[self.objective] = util.InvalidConfig()
                 final_results.append(result)
 
-            # 2. Attempt to retrieve from `unique_results` 
-            elif key in self.unique_results:
-                result = dict(self.unique_results[key])
-                legal_indices.append(index)
-                final_results.append(result)
-
-            # 3. We have already seen this config in the current batch
-            elif key in pending_indices_by_key:
-                pending_indices_by_key[key].append(index)
-                final_results.append(None)
-
-            # 4. A new config, we must evaluate this
+            # Legal config, we must evaluate this
             else:
-                batch_keys.append(key)
+                batch_indices.append(index)
                 batch_configs.append(config)
-                pending_indices_by_key[key] = [index]
                 final_results.append(None)
 
         # compile and benchmark the batch
         batch_results = self.runner.run(batch_configs, self.tuning_options)
 
-        for key, result in zip(batch_keys, batch_results):
+        for index, config, result in zip(batch_indices, batch_configs, batch_results):
             # Skip. Result is missing because the runner has exhausted the budget
             if result is None:
                 continue
 
             # set in the results array
-            for index in pending_indices_by_key[key]:
-                legal_indices.append(index)
-                final_results[index] = result
-
-                # Disable the timings. Only the first result must get these.
-                result = util.disable_benchmark_timings(result)
+            final_results[index] = result
 
             # Put result in `unique_results`
-            self.unique_results[key] = result
-
-        # Only things in `legal_indices` are valid results
-        for index in sorted(legal_indices):
-            self.results.append(final_results[index])
+            key = ",".join([str(i) for i in config])
+            self.unique_results.setdefault(key, result)
+            self.results.append(result)
 
         # upon returning from this function control will be given back to the strategy, so reset the start time
         self.runner.last_strategy_start_time = perf_counter()

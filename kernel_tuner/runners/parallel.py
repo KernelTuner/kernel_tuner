@@ -291,26 +291,36 @@ class ParallelRunner(Runner):
         jobs = []  # Jobs that need to be executed
         results = []  # Results that will be returned at the end
         key2index = dict()  # Used to insert job result back into `results`
-
-        total_worker_time = 0
+        duplicate_entries = []  # Stores (i, j) if `i` is a duplicate of `j`.
 
         # Select jobs which are not in the cache
         for index, config in enumerate(parameter_space):
             params = dict(zip(tuning_options.tune_params.keys(), config))
             key = ",".join([str(i) for i in config])
 
+            # Element is in cache
             if key in tuning_options.cache:
-                cache_entry = tuning_options.cache[key]
-
                 # We must disable the timings as otherwise these will counted
                 # as part of the total_compile/benchmark/verification_time
-                results.append(disable_benchmark_timings(cache_entry))
-            else:
-                assert key not in key2index, "duplicate jobs submitted"
-                key2index[key] = index
+                result = disable_benchmark_timings(tuning_options.cache[key])
 
+                # recompute matrics for this entry
+                result = process_metrics(result, metrics)
+
+                results.append(result)
+
+            # Element is duplicate entry in `parameter_space`
+            elif key in key2index:
+                duplicate_entries.append((index, key2index[key]))
+                results.append(None)
+
+            # Element must become a job
+            else:
+                key2index[key] = index
                 jobs.append((key, params))
                 results.append(None)
+
+        total_worker_time = 0
 
         # Submit jobs and wait for them to finish
         for key, result in self.submit_jobs(jobs, tuning_options.budget):
@@ -319,15 +329,15 @@ class ParallelRunner(Runner):
             if result is None:
                 continue
 
-            # Store the result into the output array
-            results[key2index[key]] = result
-
             # Collect total time spent by worker
             total_worker_time += (
                 result["compile_time"] + result["verification_time"] + result["benchmark_time"]
             )
 
-            if isinstance(result.get(objective), ErrorConfig):
+            # only compute metrics on configs that have not errored
+            if not isinstance(result.get(objective), ErrorConfig):
+                result = process_metrics(result, metrics)
+            else:
                 logging.error(
                     "kernel configuration {key} was skipped silently due to compile or runtime failure",
                     key,
@@ -341,29 +351,34 @@ class ParallelRunner(Runner):
             # add configuration to cache
             store_cache(key, result, tuning_options.cachefile, tuning_options.cache)
 
-        total_time = 1000 * (perf_counter() - self.start_time)
-        self.start_time = perf_counter()
+            # Store the result into the output array
+            results[key2index[key]] = result
 
-        strategy_time = self.last_strategy_time
-        self.last_strategy_time = 0
+        # Fix duplicate entries. Duplicate entires do not get benchmark timings
+        # as otherwise we would count them multiple times in the total
+        for i, j in duplicate_entries:
+            if results[j]:
+                results[i] = disable_benchmark_timings(results[j])
 
-        runner_time = total_time - strategy_time
-        framework_time = max(runner_time * len(self.workers) - total_worker_time, 0)
+        # Count the number of valid results
+        num_valid_results = sum(bool(r) for r in results)
 
-        num_valid_results = sum(bool(r) for r in results)  # Count the number of valid results
+        # If there are valid results, set timings
+        if num_valid_results > 0:
+            total_time = 1000 * (perf_counter() - self.start_time)
+            self.start_time = perf_counter()
 
-        # Post-process all the results
-        for result in results:
-            # Skip missing results
-            if not result:
-                continue
+            strategy_time = self.last_strategy_time
+            self.last_strategy_time = 0
 
-            # Amortize the time over all the results
-            result["strategy_time"] = strategy_time / num_valid_results
-            result["framework_time"] = framework_time / num_valid_results
+            runner_time = total_time - strategy_time
+            framework_time = max(runner_time * len(self.workers) - total_worker_time, 0)
 
-            # only compute metrics on configs that have not errored
-            if not isinstance(result.get(objective), ErrorConfig):
-                result = process_metrics(result, metrics)
+            # Post-process all the results
+            for result in results:
+                # Amortize the time over all the results
+                if result:
+                    result["strategy_time"] = strategy_time / num_valid_results
+                    result["framework_time"] = framework_time / num_valid_results
 
         return results

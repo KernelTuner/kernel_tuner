@@ -57,6 +57,7 @@ class SimulationRunner(Runner):
         self.total_simulated_time = 0
         self.last_strategy_start_time = self.start_time
         self.last_strategy_time = 0
+        self.visited_results = set()
         self.units = {}
 
     def get_device_info(self):
@@ -106,10 +107,18 @@ class SimulationRunner(Runner):
                 if tuning_options.metrics and not isinstance(result.get(tuning_options.objective), util.ErrorConfig):
                     result = util.process_metrics(result, tuning_options.metrics)
 
-                # configuration is evaluated for the first time, print to the console
-                util.print_config_output(
-                    tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units
-                )
+                # Simulate behavior of sequential runner that when a configuration is
+                # served from the cache by the sequential runner, the compile_time,
+                # verification_time, and benchmark_time are set to 0.
+                # This step is only performed in the simulation runner when a configuration
+                # is served from the cache beyond the first timel. That is, when the
+                # configuration is already counted towards the unique_results.
+                if key in self.visited_results:
+                    result = util.disable_benchmark_timings(result)
+                else:
+                    # configuration is evaluated for the first time, print to the console
+                    util.print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
+                    self.visited_results.add(key)
 
                 # Everything but the strategy time and framework time are simulated,
                 result["strategy_time"] = strategy_time_per_config
