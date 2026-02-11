@@ -12,7 +12,8 @@ from pymoo.core.termination import NoTermination, Termination
 from pymoo.core.sampling import Sampling
 from pymoo.core.mutation import Mutation
 from pymoo.core.repair import Repair
-from pymoo.operators.crossover.pntx import TwoPointCrossover
+from pymoo.operators.crossover.ux import UniformCrossover
+from pymoo.operators.crossover.pntx import SinglePointCrossover, TwoPointCrossover
 
 from kernel_tuner import util
 from kernel_tuner.runners.runner import Runner
@@ -30,15 +31,16 @@ class SupportedAlgos(StrEnum):
 
 supported_algos = [ algo.value for algo in SupportedAlgos ]
 
-supported_crossover_opers = [
-    # "uniform-crossover",
-    # "single-point-crossover",
-    "two-point-crossover",
-]
+crossover_oper_dict = {
+    "uniform-crossover": UniformCrossover,
+    "single-point-crossover": SinglePointCrossover,
+    "two-point-crossover": TwoPointCrossover,
+}
+supported_crossover_oper_names = list(crossover_oper_dict.keys())
 
 _options = {
     "pop_size": ("Initial population size", 20),
-    "crossover_operator": ("The crossover operator", "two-point-crossover"),
+    "crossover_operator": (f"The crossover operator, can be one of {supported_crossover_oper_names}", "two-point-crossover"),
     "crossover_prob": ("Crossover probability", 1.0),
     "mutation_prob": ("Mutation probability", 0.1),
     "ref_dirs_list": ("The list of reference directions on the unit hyperplane in the objective space to guide NSGA-III, see https://pymoo.org/misc/reference_directions.html for more information.", []),
@@ -56,18 +58,24 @@ def tune(
     strategy_options = tuning_options.strategy_options
 
     algo_name = algo_name.lower()
-    if algo_name not in SupportedAlgos:
-        raise ValueError(f"\"{algo_name}\" is not supported. The supported algorithms are: {supported_algos}\n")
-    else:
+    if algo_name in SupportedAlgos:
         algo_name = SupportedAlgos(algo_name)
+    else:
+        raise ValueError(f"\"{algo_name}\" is not supported. The supported algorithms are: {supported_algos}\n")
 
     pop_size = strategy_options.get("pop_size", _option_defaults["pop_size"])
+    crossover_oper = strategy_options.get("crossover_operator", _option_defaults["crossover_operator"])
     crossover_prob = strategy_options.get("crossover_prob", _option_defaults["crossover_prob"])
     mutation_prob = strategy_options.get("mutation_prob", _option_defaults["mutation_prob"])
     ref_dirs_list = strategy_options.get("ref_dirs_list", _option_defaults["ref_dirs_list"])
 
     if algo_name == "nsga3" and len(ref_dirs_list) == 0:
         raise ValueError("NSGA-III requires reference directions to be specified, but they are missing.")
+
+    if crossover_oper in crossover_oper_dict:
+        crossover_oper = crossover_oper_dict[crossover_oper]
+    else:
+        raise ValueError(f"Unsupported crossover method {crossover_oper}")
 
     cost_func = CostFunc(searchspace, tuning_options, runner, scaling=False)
 
@@ -78,7 +86,7 @@ def tune(
     )
 
     sampling = TuningSearchspaceRandomSampling(searchspace)
-    crossover = TwoPointCrossover(prob = crossover_prob)
+    crossover = crossover_oper(prob = crossover_prob)
     mutation = TuningParamConfigNeighborhoodMutation(prob = mutation_prob, searchspace = searchspace)
     repair = TuningParamConfigRepair()
     eliminate_duplicates = TuningParamConfigDuplicateElimination()
