@@ -282,7 +282,10 @@ class DeviceInterface(object):
 
         logging.debug("DeviceInterface instantiated, lang=%s", lang)
 
-        # Observers can either be an object that extends BenchmarkObserver or 
+        # Ensure observers is a list
+        observers = observers or []
+
+        # Observers can either be an object that extends BenchmarkObserver or
         # lambda function that returns such an object.
         observer_args = dict(device=device, platform=platform, compiler=compiler, lang=lang)
         observers = [instantiate_observer(ob, observer_args) for ob in observers]
