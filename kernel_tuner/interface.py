@@ -478,7 +478,14 @@ _tuning_options = Options(
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
         ("parallel", ("Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.", "int|bool")),
-        ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
+        (
+            "observers", 
+            (
+                """A list of Observers to use during tuning, please see :ref:`observers`.
+                Each entry must be either: an instance of :class:`BenchmarkObserver` or a callable (e.g., lambda) returning a :class:`BenchmarkObserver`. """, 
+                "list"
+            )
+        ),
     ]
 )
 
