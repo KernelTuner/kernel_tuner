@@ -286,6 +286,7 @@ def test_runner(env):
                               for k in _tuning_options.keys()])
     device_options = Options([(k, opts.get(k, None))
                               for k in _device_options.keys()])
+    tuning_options.budget = util.TuningBudget()
     tuning_options.cachefile = None
     tuning_options.unique_results = {}
 
