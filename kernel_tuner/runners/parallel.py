@@ -8,6 +8,7 @@ from kernel_tuner.core import DeviceInterface
 from kernel_tuner.interface import Options
 from kernel_tuner.runners.runner import Runner
 from kernel_tuner.util import (
+    Timer,
     disable_benchmark_timings,
     ErrorConfig,
     TuningBudget,
@@ -245,6 +246,7 @@ class ParallelRunner(Runner):
     def submit_jobs(self, jobs, budget: TuningBudget):
         pending_jobs = deque(jobs)
         running_jobs = dict()
+        last_submit_timer = Timer()
 
         while pending_jobs or running_jobs:
             # If there are pending jobs, try to submit one
@@ -262,7 +264,8 @@ class ParallelRunner(Runner):
                     # Pop job and submit it
                     key, config = pending_jobs.popleft()
                     ref = worker.submit(config)
-                    running_jobs[ref] = (key, worker)
+                    last_submit_timer = Timer()
+                    running_jobs[ref] = (key, worker, last_submit_timer)
 
                     logger.info(f"job submitted to worker {worker}: {key}")
                     budget.add_evaluations(1)
@@ -274,12 +277,22 @@ class ParallelRunner(Runner):
                 raise RuntimeError("invalid state: no ray workers available")
 
             # Wait for jobs to finish
-            ready_jobs, _ = ray.wait(list(running_jobs), num_returns=1)
+            ready_jobs, _ = ray.wait(list(running_jobs), num_returns=1, timeout=60)
 
+            # Process finished jobs
             for job in ready_jobs:
-                key, worker = running_jobs.pop(job)
-                logger.info(f"job finished on worker {worker}: {key}")
+                key, worker, timer = running_jobs.pop(job)
+                logger.info(f"job finished on worker {worker}: {key} (took {timer})")
                 yield (key, ray.get(job))
+
+            # No ready jobs? Timeout expired. Print warning
+            if not ready_jobs:
+                print(
+                    f"warning: no progress made on {len(running_jobs)} jobs in {last_submit_timer}, are we stuck?"
+                )
+
+                for key, worker, timer in running_jobs.values():
+                    print(f"- job {key} submitted to worker {worker}: {timer.get():.2f} ago")
 
     def run(self, parameter_space, tuning_options) -> List[Optional[dict]]:
         metrics = tuning_options.metrics

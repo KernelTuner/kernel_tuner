@@ -190,6 +190,9 @@ def check_argument_list(kernel_name, kernel_string, args):
 
 class Timer:
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self._start_ns = time.perf_counter_ns()
 
     def get(self) -> float:
@@ -204,8 +207,18 @@ class Timer:
         self._start_ns = now
         return elapsed_ns * 1e-9
 
-    def reset(self) -> None:
-        self.get_and_reset()
+    def __str__(self) -> str:
+        """Human-readable elapsed time."""
+        elapsed = self.get()
+
+        if elapsed < 1:
+            return f"{elapsed * 1e3:.2f} ms"
+        elif elapsed < 60:
+            return f"{elapsed:.3f} s"
+        elif elapsed < 3600:
+            return f"{elapsed / 60:.2f} min"
+        else:
+            return f"{elapsed / 3600:.2f} h"
 
 
 class TuningBudget:
