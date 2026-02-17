@@ -43,19 +43,17 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
         # determine fitness of population members
         weighted_population = []
-        for dna in population:
-            try:
-                # if we are not constraint-aware we should check restrictions upon evaluation
-                time = cost_func(dna, check_restrictions=not constraint_aware)
-                num_evaluated += 1
-            except StopCriterionReached as e:
-                if tuning_options.verbose:
-                    print(e)
-                return cost_func.results
-
-            weighted_population.append((dna, time))
+        try:
+            # if we are not constraint-aware we should check restrictions upon evaluation
+            times = cost_func.eval_all(population, check_restrictions=not constraint_aware)
+            num_evaluated += len(population)
+        except StopCriterionReached as e:
+            if tuning_options.verbose:
+                print(e)
+            return cost_func.results
 
         # population is sorted such that better configs have higher chance of reproducing
+        weighted_population = list(zip(population, times))
         weighted_population.sort(key=lambda x: x[1])
 
         # 'best_score' is used only for printing

@@ -20,16 +20,13 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         num_samples = min(tuning_options.max_fevals, searchspace.size)
 
     samples = searchspace.get_random_sample(num_samples)
-
     cost_func = CostFunc(searchspace, tuning_options, runner)
 
-    for sample in samples:
-        try:
-            cost_func(sample, check_restrictions=False)
-        except StopCriterionReached as e:
-            if tuning_options.verbose:
-                print(e)
-            return cost_func.results
+    try:
+        cost_func.eval_all(samples, check_restrictions=False)
+    except StopCriterionReached as e:
+        if tuning_options.verbose:
+            print(e)
 
     return cost_func.results
 

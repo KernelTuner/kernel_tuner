@@ -1,6 +1,7 @@
 import shutil
 import subprocess
 import sys
+import ctypes.util
 
 import pytest
 
@@ -32,7 +33,7 @@ except Exception:
 
 gcc_present = shutil.which("g++") is not None
 gfortran_present = shutil.which("gfortran") is not None
-openmp_present = "libgomp" in subprocess.getoutput(["ldconfig -p | grep libgomp"])
+openmp_present = ctypes.util.find_library('gomp') is not None
 openacc_present = shutil.which("nvc++") is not None
 
 try:

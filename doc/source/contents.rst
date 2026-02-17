@@ -36,6 +36,7 @@ The Kernel Tuner documentation
    optimization
    metrics
    observers
+   parallel
 
 .. toctree::
    :maxdepth: 1

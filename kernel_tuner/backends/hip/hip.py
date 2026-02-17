@@ -3,6 +3,8 @@
 import ctypes
 import ctypes.util
 import logging
+import json
+import uuid
 
 import numpy as np
 
@@ -32,8 +34,35 @@ dtype_map = {
 
 hipSuccess = 0
 
+
+def extract_safe_properties(props):
+    """Extract those properties that are 'safe' (i.e, json serializable)"""
+    result = dict()
+
+    for key in props.PROPERTIES():
+        try:
+            value = getattr(props, key)
+            if isinstance(value, (str, int, float)):
+                # These are safe
+                result[key] = value
+            elif isinstance(value, (bytes, bytearray)):
+                # bytes/bytearray is typically a string
+                result[key] = value.decode("utf-8").rstrip("\x00")
+            else:
+                # As last option, try to convert to json
+                result[key] = json.loads(json.dumps(value))
+        except Exception:
+            continue
+
+    # Remove the 'reserved' fields as they are just filled with zeros
+    result.pop("reserved", None)
+    result.pop("hipReserved", None)
+
+    return result
+
+
 class HipFunctions(GPUBackend):
-    """Class that groups the HIP functions on maintains state about the device."""
+    """Class that groups the HIP functions and maintains state about the device."""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
         """Instantiate HipFunctions object used for interacting with the HIP device.
@@ -72,6 +101,13 @@ class HipFunctions(GPUBackend):
         env["device_name"] = self.name
         env["iterations"] = self.iterations
         env["compiler_options"] = compiler_options
+        env["pci_bus_id"] = props.pciBusID
+        env["pci_domain_id"] = props.pciDomainID
+        env["pci_device_id"] = props.pciDeviceID
+        env["uuid"] = str(uuid.UUID(bytes=props.uuid.bytes))
+        env["hip_driver_version"] = hip_check(hip.hipDriverGetVersion())
+        env["hip_runtime_version"] = hip_check(hip.hipRuntimeGetVersion())
+        env["device_properties"] = extract_safe_properties(props)
         self.env = env
 
         # Create stream and events
