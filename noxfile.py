@@ -217,6 +217,7 @@ def tests(session: Session) -> None:
         julia_envdir = Path(session_envdir) / ".julia"
         if julia_envdir is not None:
             session.env["JULIA_DEPOT_PATH"] = str(Path(julia_envdir).resolve())
+            # session.env["JULIAUP_DEPOT_PATH"] = session.env["JULIA_DEPOT_PATH"]
             # session.env["PYTHON_JULIACALL_PROJECT"] = str(Path(julia_envdir).resolve())
 
     # separately install optional dependencies with weird dependencies / build process

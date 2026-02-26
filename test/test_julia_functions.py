@@ -10,8 +10,6 @@ from .test_runners import env  # noqa: F401
 from .context import skip_if_no_julia
 from juliacall import ValueBase
 
-import subprocess
-
 
 kernel_name = "vector_add!"
 kernel_string = r"""
@@ -31,7 +29,6 @@ kernel_string = r"""
 @skip_if_no_julia
 def test_ready_argument_list():
     """Ensure Julia backend correctly converts arguments into Julia objects."""
-
     size = 1000
     a = np.int32(75)
     b = np.random.randn(size).astype(np.float32)
