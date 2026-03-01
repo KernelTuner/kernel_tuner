@@ -108,9 +108,11 @@ _kernel_options = Options(
         (
             "kernel_source",
             (
-                """The CUDA, OpenCL, HIP, or C kernel code.
+                """The CUDA, OpenCL, HIP, C or Python DSL kernel code.
             It is allowed for the code to be passed as a string, a filename, a function
             that returns a string of code, or a list when the code needs auxilliary files.
+            In the case of a kernel in a Python DSL such as Triton, the reference to the
+            Python callable should be passed.
 
             To support combined host and device code tuning, a list of
             filenames can be passed. The first file in the list should be the
@@ -134,7 +136,7 @@ _kernel_options = Options(
                 """Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
         the language using this argument, currently supported: "CUDA", "CuPy",
-        "nvcuda", "OpenCL", "HIP", or "C".""",
+        "nvcuda", "OpenCL", "HIP", "C", or "Generic_Python.""",
                 "string",
             ),
         ),
@@ -181,7 +183,9 @@ _kernel_options = Options(
             "arguments",
             (
                 """A list of kernel arguments, use numpy arrays for
-            arrays, use numpy.int32 or numpy.float32 for scalars.""",
+            arrays, use numpy.int32 or numpy.float32 for scalars. When the language
+            Generic Python is used, Torch Tensors and built-in Python data types are also 
+            excepted""",
                 "list",
             ),
         ),
@@ -283,6 +287,31 @@ _kernel_options = Options(
             a function that returns a string. If an emtpy dictionary is passed, no definitions are inserted.
             If None is passed, each tunable parameter is inserted as a preprocessor definition.""",
                 "dict",
+            ),
+        ),
+        (
+            "call_function",
+            (
+                """When the language Generic Python is used, a call function that calls the kernel in the Python
+                 DSL must be specified. The function must take the following arguments:
+                :kernel_function: the callable function with the tuning parameters inserted. If provided, the 
+                    kernel_function is decorated with the de decorator. 
+                :args: list of kernel arguments, as provided by the user in the <args> argument.
+                :kwargs: dictionary of kernel keyword arguments. If a tuning parameter is in the kernel signature, 
+                    the tuning parameter will be added as a keyword argument.
+                :grid: the launch grid (tuple with 3 values), as computed by KernelTuner
+                :threads: the thread block size (tuple with 3 values), as computed by KernelTuner
+                :params: dictionary with the values of the tuning params for the specific configuration.""",
+                "function",
+            ),
+        ),
+        (
+            "decorator",
+            (
+                """When the language Generic Python is used, a decorator can be provided in which the kernel source
+                will be wrapped internally by KernelTuner. Note that when passing the kernel to KernelTuner with the
+                ``kernel_source`` argument, the decorator should be removed from the kernel.""",
+                "string",
             ),
         ),
     ]

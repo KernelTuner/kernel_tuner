@@ -3,7 +3,8 @@ import torch
 import triton
 import triton.language as tl
 
-DEVICE = triton.runtime.driver.active.get_active_torch_device()
+from kernel_tuner import tune_kernel
+from kernel_tuner import run_kernel
 
 def get_cuda_autotune_config():
     return [
@@ -48,7 +49,7 @@ def get_cuda_autotune_config():
     key=['M', 'N', 'K'],
 )
 '''
-@triton.jit
+#@triton.jit
 def matmul_kernel(
         # Pointers to matrices
         a_ptr, b_ptr, c_ptr,
@@ -62,7 +63,7 @@ def matmul_kernel(
         stride_cm, stride_cn,
         # Meta-parameters
         BLOCK_SIZE_M: tl.constexpr, BLOCK_SIZE_N: tl.constexpr, BLOCK_SIZE_K: tl.constexpr,  #
-        GROUP_SIZE_M: tl.constexpr,  #
+        GROUP_SIZE_M: tl.constexpr,  num_stages, num_warps#
 ):
     """Kernel for computing the matmul C = A x B.
     A has shape (M, K), B has shape (K, N) and C has shape (M, N)
@@ -132,23 +133,251 @@ def matmul_kernel(
     tl.store(c_ptrs, c, mask=c_mask)
 
 
-def matmul(a, b):
-    # Check constraints.
-    assert a.shape[1] == b.shape[0], "Incompatible dimensions"
-    assert a.is_contiguous(), "Matrix A must be contiguous"
-    M, K = a.shape
-    K, N = b.shape
-    # Allocates output.
-    c = torch.empty((M, N), device=a.device, dtype=torch.float16)
-    # 1D launch kernel where each block gets its own program.
-    grid = lambda META: (triton.cdiv(M, META['BLOCK_SIZE_M']) * triton.cdiv(N, META['BLOCK_SIZE_N']), )
+def run_matmul(m, n, k):
+    a = torch.rand(m, k, dtype=torch.float16).cuda()
+    b = torch.rand(k, n, dtype=torch.float16).cuda() 
+    c_actual = torch.empty(m, n, dtype=torch.float16).cuda()
+    c_expect = a @ b
+
+    grid = lambda META: (triton.cdiv(m, META['BLOCK_SIZE_M']) * triton.cdiv(n, META['BLOCK_SIZE_N']), )
+
     matmul_kernel[grid](
-        a, b, c,  #
-        M, N, K,  #
+        a, b, c_actual,  #
+        m, n, k,  #
         a.stride(0), a.stride(1),  #
         b.stride(0), b.stride(1),  #
-        c.stride(0), c.stride(1)
+        c_actual.stride(0), c_actual.stride(1),
+        128, 256, 64, 8
     )
-    return c
+
+    torch.testing.assert_close(c_expect, c_actual, atol=1e-2, rtol=1e-2)
+
+
+def run_matmul_kt(m, n, k):
+    a = torch.rand(m, k, dtype=torch.float16).cuda()
+    b = torch.rand(k, n, dtype=torch.float16).cuda() 
+    c_actual = torch.empty(m, n, dtype=torch.float16).cuda()
+    c_expect = a @ b
+
+    size = m * n 
+
+    args = [a, b, c_actual, m, n, k, a.stride(0), a.stride(1), b.stride(0), b.stride(1), 
+        c_actual.stride(0), c_actual.stride(1)]
+
+    params = {"BLOCK_SIZE_M": 64, "BLOCK_SIZE_N": 64, "BLOCK_SIZE_K": 32, "GROUP_SIZE_M":4, "num_stages":3, "num_warps":4}
+
+    result = run_kernel("matmul_kernel", matmul_kernel, size, args, params=params, grid_div_x=["BLOCK_SIZE_N", "BLOCK_SIZE_M"],
+                               lang="generic_python", decorator="@triton.jit", call_function=call_triton, 
+                               block_size_names=["BLOCK_SIZE_M", "BLOCK_SIZE_N", "BLOCK_SIZE_K"])
+    c_res = result[2]
+
+    assert torch.allclose(c_res, c_expect.cpu(), atol=1e-2, rtol=1e-1)
+
+
+    
+
+
+
+def call_triton(kernel_function, args, kwargs, grid, threads, params):
+    #print("using grid: ", grid)
+    #print("args: ", args)
+    #print("kwargs: ", kwargs)
+    kernel_function[grid](*args, **kwargs)
+
+
+
+
+def check_time(m, n, k):
+    a = torch.rand(m, k, dtype=torch.float16).cuda()
+    b = torch.rand(k, n, dtype=torch.float16).cuda() 
+    c_actual = torch.empty(m, n, dtype=torch.float16).cuda()
+    c_expect = a @ b
+
+    size = m * n
+    args = [a, b, c_actual, m, n, k, a.stride(0), a.stride(1), b.stride(0), b.stride(1), 
+        c_actual.stride(0), c_actual.stride(1)]
+    tune_params = dict()
+    tune_params["BLOCK_SIZE_M"] = [64, 128]
+    tune_params["BLOCK_SIZE_N"] = [64, 128]
+    tune_params["BLOCK_SIZE_K"] = [32, 64]
+    tune_params["GROUP_SIZE_M"] = [4, 8]
+    tune_params["num_stages"] = [3]
+    tune_params["num_warps"] = [4]
+
+    restrictions = [
+        # tile size budget
+        "BLOCK_SIZE_M * BLOCK_SIZE_N <= 16384",
+
+        # aspect ratio <= 4 (no max/min allowed, so expand manually)
+        "BLOCK_SIZE_M <= 4 * BLOCK_SIZE_N",
+        "BLOCK_SIZE_N <= 4 * BLOCK_SIZE_M",
+
+        # large K only with reasonably large M/N
+        "not (BLOCK_SIZE_K == 128 and BLOCK_SIZE_M < 64 and BLOCK_SIZE_N < 64)",
+
+        # 32x32 requires 8 warps
+        "not (BLOCK_SIZE_M == 32 and BLOCK_SIZE_N == 32 and num_warps < 8)",
+    ]
+
+    grid_div = ["BLOCK_SIZE_N", "BLOCK_SIZE_M"]
+
+    answer = [None] * 12
+    answer[2] = c_expect.cpu()
+    atol = 1e-2 #m * 2**(-11)
+
+
+    
+    results_ours, _ = tune_kernel("matmul_kernel", matmul_kernel, size, args, tune_params, grid_div_x = grid_div, 
+                               restrictions=restrictions, iterations=100, answer=answer, atol=atol,
+                               lang="generic_python", decorator="@triton.jit", call_function=call_triton, 
+                               block_size_names=["BLOCK_SIZE_M", "BLOCK_SIZE_N", "BLOCK_SIZE_K"])
+    
+
+    results_prev, _ = tune_kernel("matmul_kernel", matmul_kernel, size, args, tune_params, grid_div_x = grid_div, 
+                              restrictions=restrictions, iterations=100, answer=answer, atol=atol,
+                               lang="triton", block_size_names=["BLOCK_SIZE_M", "BLOCK_SIZE_N", "BLOCK_SIZE_K"])
+    
+    
+    
+    import time
+    num_repeats = 100
+    times_direct = []
+    for config in results_prev:
+
+        bs_m = config["BLOCK_SIZE_M"]
+        bs_n = config["BLOCK_SIZE_N"]
+        bs_k = config["BLOCK_SIZE_K"]
+        gs_m = config["GROUP_SIZE_M"]
+        num_stages = config["num_stages"]
+        num_warps = config["num_warps"]
+
+        c_actual = torch.empty(m, n, dtype=torch.float16).cuda()
+        
+        grid = (triton.cdiv(m, bs_m) * triton.cdiv(n, bs_n, ), )
+        jit_function = triton.jit(matmul_kernel)
+
+       
+        jit_function[grid](
+                a, b, c_actual,  
+                m, n, k,  
+                a.stride(0), a.stride(1),  
+                b.stride(0), b.stride(1),  
+                c_actual.stride(0), c_actual.stride(1),
+                bs_m, bs_n, bs_k, gs_m, num_stages, num_warps
+            )
+        
+
+        torch.allclose(c_expect.cpu(), c_actual.cpu(), atol=1e-2)
+       
+
+        
+        for i in range(num_repeats):
+            times = []
+            
+            #c_actual = torch.empty(m, n, dtype=torch.float16).cuda()
+           
+            torch.cuda.synchronize()
+            start = time.time()
+            jit_function[grid](
+                a, b, c_actual,  
+                m, n, k,  
+                a.stride(0), a.stride(1),  
+                b.stride(0), b.stride(1),  
+                c_actual.stride(0), c_actual.stride(1),
+                bs_m, bs_n, bs_k, gs_m, num_stages, num_warps
+            )
+
+            torch.cuda.synchronize()
+            times.append(time.time() - start)
+
+        avg_time_ms = round((1000 * sum(times) / len(times)), 3)
+        times_direct.append(avg_time_ms)
+        print(f"BLOCK_SIZE_M={bs_m}, BLOCK_SIZE_N={bs_n}, BLOCK_SIZE_K={bs_k}, GROUP_SIZE_M={gs_m}, num_stages={num_stages}, num_warps={num_warps}, time={avg_time_ms}ms")
+
+
+    import matplotlib.pyplot as plt
+
+    # Extract times
+    times_prev = [cfg['time'] for cfg in results_prev]
+    times_ours = [cfg['time'] for cfg in results_ours]
+
+    # x-axis labels
+    configs = [f"config{i}" for i in range(len(times_prev))]
+    x = range(len(configs))
+    
+    plt.figure(figsize=(10,6))
+    plt.plot(configs, times_prev, marker='o', label='Triton tuned')
+    plt.plot(configs, times_ours, marker='s', label='Generic tuned')
+    plt.plot(configs, times_direct, marker='x', label='Direct')
+    plt.ylabel('Time (ms)')
+    plt.xlabel('Configuration')
+    plt.title('Kernel execution time per configuration')
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("ouptut.png")
+
+
+
+    
+    
+    
+def tune_matmul(m, n, k):
+    a = torch.rand(m, k, dtype=torch.float16).cuda()
+    b = torch.rand(k, n, dtype=torch.float16).cuda() 
+    c_actual = torch.empty(m, n, dtype=torch.float16).cuda()
+    c_expect = a @ b
+
+    size = m * n
+    args = [a, b, c_actual, m, n, k, a.stride(0), a.stride(1), b.stride(0), b.stride(1), 
+        c_actual.stride(0), c_actual.stride(1)]
+    tune_params = dict()
+    tune_params["BLOCK_SIZE_M"] = [64, 128, 256]
+    tune_params["BLOCK_SIZE_N"] = [64, 128, 256]
+    tune_params["BLOCK_SIZE_K"] = [32, 64, 128]
+    tune_params["GROUP_SIZE_M"] = [4, 8]
+    tune_params["num_stages"] = [2, 3, 4]
+    tune_params["num_warps"] = [4, 8]
+
+    restrictions = [
+    # tile size budget
+    "BLOCK_SIZE_M * BLOCK_SIZE_N <= 16384",
+
+    # aspect ratio <= 4 (no max/min allowed, so expand manually)
+    "BLOCK_SIZE_M <= 4 * BLOCK_SIZE_N",
+    "BLOCK_SIZE_N <= 4 * BLOCK_SIZE_M",
+
+    # large K only with reasonably large M/N
+    "not (BLOCK_SIZE_K == 128 and BLOCK_SIZE_M < 64 and BLOCK_SIZE_N < 64)",
+
+    # 32x32 requires 8 warps
+    "not (BLOCK_SIZE_M == 32 and BLOCK_SIZE_N == 32 and num_warps < 8)",
+    ]
+
+    grid_div = ["BLOCK_SIZE_N", "BLOCK_SIZE_M"]
+
+    answer = [None] * 12
+    answer[2] = c_expect.cpu()
+
+    results, env = tune_kernel("matmul_kernel", matmul_kernel, size, args, tune_params, grid_div_x = grid_div, 
+                               answer = answer, atol=4.0, restrictions=restrictions, 
+                               lang="generic_python", decorator="@triton.jit", call_function=call_triton, 
+                               block_size_names=["BLOCK_SIZE_M", "BLOCK_SIZE_N", "BLOCK_SIZE_K"], strategy="simulated_annealing")
+
+    
+
+
+
+if __name__ == "__main__":
+    m, n, k = 8192, 8192, 8192
+    #m, n, k = 4096, 4096, 4096
+    #tune_matmul(m, n, k)
+    #check_time(m, n, k)
+    #run_matmul_kt(m, n, k)
+
+
+    
+    
 
 

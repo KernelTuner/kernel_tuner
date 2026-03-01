@@ -41,13 +41,10 @@ def call_tilus(kernel_function, args, kwargs, grid, threads, params):
     kernel_function(*args, **kwargs) 
 
 
-def main():
-
-    size = 1024000
-
-    a = torch.randn(size, dtype=torch.float32)
-    b = torch.randn(size, dtype=torch.float32)
-    c = torch.zeros_like(b)
+def tune_vecadd(size):
+    a = torch.randn(size, dtype=torch.float32).cuda()
+    b = torch.randn(size, dtype=torch.float32).cuda()
+    c = torch.empty(size, dtype=torch.float32).cuda()
     c_expect = a + b
     
 
@@ -55,8 +52,6 @@ def main():
     tune_params = dict()
     tune_params["block_size_x"] = [32, 64, 128, 256, 512, 1024]
 
-
-    
     results, env = tune_kernel(
         kernel_name="VecAddV", 
         kernel_source=VecAddV,
@@ -69,7 +64,50 @@ def main():
         verbose=True,
     )
 
+
+# TODO run kernel error handling same as tune_kernel
+def run_vecadd(size):
+    a = torch.randn(size, dtype=torch.float32).cuda()
+    b = torch.randn(size, dtype=torch.float32).cuda()
+    c = torch.empty(size, dtype=torch.float32).cuda()
+    c_expect = a + b
     
 
+    args = [size, a, b, c]
+
+    results = run_kernel(
+        kernel_name="VecAddV", 
+        kernel_source=VecAddV,
+        problem_size=size,
+        arguments=args,
+        params={"block_size_x": 32},
+        lang="generic_python",
+        call_function=call_tilus,
+        #verbose=True,
+    )
+
+    c_expect = c_expect.cpu()
+
+    assert torch.allclose(results[-1], c_expect)
+    
+
+
+def run_normal(size):
+    a = torch.randn(size, dtype=torch.float32).cuda()
+    b = torch.randn(size, dtype=torch.float32).cuda()
+    c = torch.empty(size, dtype=torch.float32).cuda()
+    c_expect = a + b
+
+    vecadd = VecAddV()
+    vecadd(size, a, b, c)
+    print(c)
+    print(c_expect)
+    assert torch.allclose(c, c_expect)
+
+
+
 if __name__ == "__main__":
-    main()
+    size = 1024
+    tune_vecadd(size)
+    #run_vecadd(size)
+    #run_normal(size)

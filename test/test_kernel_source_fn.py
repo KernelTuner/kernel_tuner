@@ -61,7 +61,7 @@ def test_initiation():
     with pytest.raises(ValueError, match=r"call_function must be supplied for language .*"):
         KernelSource("mock_kernel", mock_kernel, "generic_python")
     
-    with pytest.raises(TypeError, match=r".* is not a callable object"):
+    with pytest.raises(TypeError, match=r".* Did you forget to remove a decorator before tuning\?"):
         KernelSource("mock_kernel", "This is a string Kernel", "generic_python", call_function=call_mock)
 
     with pytest.raises(ValueError, match=r"KernelSourceFn only supports a single kernel source function"):
@@ -70,10 +70,10 @@ def test_initiation():
     with pytest.raises(TypeError, match=r".* is not a callable object"):
         KernelSource("mock_kernel", mock_kernel, "generic_python", call_function="not a function")
     
-    with pytest.raises(ValueError, match=r".* is not a valid decorator"):
+    with pytest.raises(ValueError, match=r"The decorator should start with a '@', got .* instead."):
         KernelSource("mock_kernel", mock_kernel, "generic_python", call_function=call_mock, decorator="not a decorator")
     
-    with pytest.raises(TypeError, match=r".* is not a decorator"):
+    with pytest.raises(TypeError, match=r"The decorator should be a string, got .* instead."):
         KernelSource("mock_kernel", mock_kernel, "generic_python", call_function=call_mock, decorator=mock_kernel)
 
 

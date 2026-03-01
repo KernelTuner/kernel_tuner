@@ -1,6 +1,9 @@
 import warp as wp
 import numpy as np
 from kernel_tuner import tune_kernel, run_kernel
+import torch
+
+wp.init()
 
 
 
@@ -13,9 +16,9 @@ def add_op(x: float, y: float):
 def vec_add(a: wp.array(dtype=float),
             b: wp.array(dtype=float),
             c: wp.array(dtype=float),
-            n: int,
-            work_per_thread: int):
+            n: int):
 
+    work_per_thread = 8
     tid = wp.tid()
     base = tid * work_per_thread
 
@@ -28,10 +31,14 @@ def vec_add(a: wp.array(dtype=float),
 # TODO do we allways want the call function to have the same parameters
 # or do we only require some of them?
 def call_warp(kernel_function, args, kwargs, grid, threads, params):
-    final_args = list(args)
-    final_args.extend(kwargs.values())
+    warp_args = []
+    for arg in args:
+        if isinstance(arg, torch.Tensor):
+            warp_args.append(wp.from_torch(arg))
+        else:
+            warp_args.append(arg)
     dim = args[3]  
-    wp.launch(kernel=kernel_function, dim=dim, inputs=final_args)
+    wp.launch(kernel=kernel_function, dim=dim, inputs=warp_args)
     
 
 # NOTE default verify function only works for numpy/cupy ndarray, torch Tensor or numpy scalar
@@ -41,6 +48,8 @@ def verify(answer, result_host, atol):
     for i, ans in enumerate(answer):
         if ans is None:
             continue
+        print("res: ", type(result_host[i]))
+        print("expect: ", type(ans))
         res = result_host[i].numpy()
         if not np.allclose(ans, res, atol=atol):
             correct = False 
@@ -53,19 +62,15 @@ def tune():
     n = 1024
 
     # Create host arrays
-    a_np = np.arange(n, dtype=np.float32)
-    b_np = np.arange(n, 0, -1, dtype=np.float32)
-    c_np = np.zeros(n, dtype=np.float32)
-    c_expect = a_np + b_np
+    a_torch = torch.arange(n, dtype=torch.float32, device="cuda")
+    b_torch = torch.arange(n, 0, -1, dtype=torch.float32, device="cuda")
+    c_torch = torch.zeros(n, dtype=torch.float32, device="cuda")
+    c_expect = a_torch + b_torch
 
-    # Create Warp arrays on GPU
-    a = wp.array(a_np, dtype=float)
-    b = wp.array(b_np, dtype=float)
-    c = wp.array(c_np, dtype=float)
 
     tune_params = dict()
     tune_params["work_per_thread"] = [2**i for i in range(10)]
-    args = [a, b, c, n]
+    args = [a_torch, b_torch, c_torch, n]
 
 
     '''
@@ -88,8 +93,7 @@ def tune():
         arguments=args,
         tune_params=tune_params,
         lang="generic_python",
-        answer=[None, None, c_expect, None],
-        verify=verify,
+        answer=[None, None, c_expect.cpu(), None],
         call_function=call_warp,
         decorator="@wp.kernel"
     )

@@ -5,7 +5,6 @@ class Language(Enum):
     OPENCL = "OPENCL"
     C = "C"
     HIP = "HIP"
-    TRITON = "TRITON"
     FORTRAN = "FORTRAN"
     NVCUDA = "NVCUDA"
     GENERIC_PYTHON = "GENERIC_PYTHON"

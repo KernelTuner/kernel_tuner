@@ -8,7 +8,7 @@ from kernel_tuner.language import Language
 
 
 class KernelSourceStr(KernelSource):
-    """Class that holds the kernel sources.
+    """Class that holds the string-based kernel sources.
 
     There is a primary kernel source for string-based kernels., which can be either a source string,
     a filename (indicating a file containing the kernel source code),

@@ -21,7 +21,6 @@ from kernel_tuner.backends.hypertuner import HypertunerFunctions
 from kernel_tuner.backends.nvcuda import CudaFunctions
 from kernel_tuner.backends.opencl import OpenCLFunctions
 from kernel_tuner.backends.pycuda import PyCudaFunctions
-from kernel_tuner.backends.triton import TritonFunctions
 from kernel_tuner.backends.generic_python import GenericPythonFunctions
 from kernel_tuner.kernel_sources.kernel_source import KernelSource
 from kernel_tuner.observers.nvml import NVMLObserver
@@ -86,7 +85,7 @@ class KernelInstance(_KernelInstance):
         return ret
 
 
-# KernelSource has been moved to kernel_sources/kernel_source_str.py
+# KernelSource has been moved to kernel_sources/kernel_source_str.py to support Generic Python
 
 
 class DeviceInterface(object):
@@ -186,13 +185,6 @@ class DeviceInterface(object):
                 compiler_options=compiler_options
             )
             self.requires_warmup = False
-        elif lang == Language.TRITON:
-            dev = TritonFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers
-            )
         elif lang == Language.GENERIC_PYTHON:
             dev = GenericPythonFunctions( 
                 device,
@@ -202,7 +194,7 @@ class DeviceInterface(object):
             )
         else:
             raise NotImplementedError(
-                "Sorry, support for languages other than CUDA, OpenCL, HIP, C, Triton and Fortran is not implemented yet"
+                "Sorry, support for languages other than CUDA, OpenCL, HIP, C, Fortran and Generic Python is not implemented yet"
             )
         self.dev = dev
 
@@ -242,7 +234,7 @@ class DeviceInterface(object):
             print("Using: " + self.dev.name)
 
     def run_kernel_bench(self, func, gpu_args, threads, grid, stream=None, params=None):
-        if isinstance(self.dev, TritonFunctions) or isinstance(self.dev, GenericPythonFunctions):
+        if isinstance(self.dev, GenericPythonFunctions): # Generic Python needs params to compile.
             self.dev.run_kernel(func, gpu_args, threads, grid, params=params)
         else:
             self.dev.run_kernel(func, gpu_args, threads, grid)
@@ -403,7 +395,7 @@ class DeviceInterface(object):
         # retrieve gpu results to host memory
         result_host = []
         if instance.kernel_source is not None and instance.kernel_source.lang == Language.GENERIC_PYTHON:
-            # Python DSLs do not explicitly manage memory. Therefore, we can use gpu args direclty
+            # arguments are either Torch tensors or built-in Python types
             for i, arg in enumerate(gpu_args):
                 if should_sync[i]:
                     if isinstance(arg, torch.Tensor):
@@ -530,15 +522,12 @@ class DeviceInterface(object):
         # compile kernel_string into device func
         func = None
         
-        if isinstance(self.dev, TritonFunctions) or isinstance(self.dev, GenericPythonFunctions):
+        # Python DSLs have different error handling, so we make a case distinction.
+        if isinstance(self.dev, GenericPythonFunctions):
             try:
                 func = self.dev.compile(instance, gpu_args)
             except Exception as e:
-                if isinstance(self.dev, GenericPythonFunctions):
-                    exception_type = self.dev.classify_compile_exception(e)
-                else:
-                    exception_type = "unkown"
-                
+                exception_type = self.dev.classify_compile_exception(e)
                 if exception_type == "user_error":
                     error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
                     print("compile_kernel failed due to error: " + error_message)
@@ -550,10 +539,9 @@ class DeviceInterface(object):
                     )
                     if verbose:
                         print(
-                            f"skipping config {util.get_instance_string(instance.params)} reason: too many resources"
+                            f"skipping config {util.get_instance_string(instance.params)} reason: \n{e}"
                         )
-
-        else:
+        else: # All other languages
             try:
                 func = self.dev.compile(instance)
             except Exception as e:  
@@ -617,7 +605,7 @@ class DeviceInterface(object):
             kernel_options.block_size_names,
         )
 
-        if kernel_source.lang not in [Language.TRITON, Language.GENERIC_PYTHON] and np.prod(threads) > self.dev.max_threads:
+        if kernel_source.lang is not Language.GENERIC_PYTHON and np.prod(threads) > self.dev.max_threads:
             if verbose:
                 print(f"skipping config {util.get_instance_string(params)} reason: too many threads per block")
             return util.InvalidConfig()

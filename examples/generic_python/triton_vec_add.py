@@ -12,7 +12,7 @@ def add_op(x, y):
     return x + y
     
 
-#triton.jit
+#@triton.jit
 def add_kernel(x_ptr,  # *Pointer* to first input vector.
                y_ptr,  # *Pointer* to second input vector.
                output_ptr,  # *Pointer* to output vector.
@@ -50,11 +50,12 @@ def tune_with_generic():
     tune_params = dict()
     tune_params["block_size_x"] = [2**i for i in range(10)]
 
-    '''
+    
     result = run_kernel("add_kernel", add_kernel, size, args, {"block_size_x": 256}, 
                lang="generic_python", call_function=call_triton, decorator="@triton.jit")   
     print(np.allclose(c_expect.cpu(), result[2]))
-    '''
+    
+    
     
     results, env = tune_kernel(
         kernel_name="add_kernel",
@@ -67,6 +68,7 @@ def tune_with_generic():
         call_function=call_triton,
         decorator="@triton.jit"
     )
+    
     
     
 
