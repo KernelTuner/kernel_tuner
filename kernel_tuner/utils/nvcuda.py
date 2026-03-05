@@ -56,6 +56,10 @@ def cuda_error_check(error):
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
             _, desc = nvrtc.nvrtcGetErrorString(error)
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
+    elif isinstance(error, tuple) and len(error) > 0:
+        cuda_error_check(error[0])
+    else:
+        raise RuntimeError(f"unknown error type returned by CUDA: {error!r} (type: {type(error).__name__})")
 
 
 def to_valid_nvrtc_gpu_arch_cc(compute_capability: str) -> str:
