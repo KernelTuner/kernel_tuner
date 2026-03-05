@@ -18,7 +18,7 @@ class KernelSourceFactory(type):
     __init__ call of the corresponding subclass. In both subclasses, we call super().__init__, which triggers 
     the __init__ call of the KernelSource class to initalize some common variables.
     '''
-    def __call__(cls, kernel_name, kernel_sources, lang, defines=None, call_function=None, decorator=None):
+    def __call__(cls, kernel_name, kernel_sources, lang, defines=None, call_function=None):
         if lang == None:
             language = None 
         else:
@@ -39,13 +39,13 @@ class KernelSourceFactory(type):
             if ks_str:
                 return KernelSourceStr(kernel_name, kernel_sources, lang, defines)
             else:
-                return KernelSourceFn(kernel_name, kernel_sources, lang, defines, call_function, decorator)
+                return KernelSourceFn(kernel_name, kernel_sources, lang, defines, call_function)
 
         # Else, normal behaviour for subclasses
         if ks_str:
             return super().__call__(kernel_name, kernel_sources, lang, defines)
         else:
-            return super().__call__(kernel_name, kernel_sources, lang, defines, call_function, decorator)
+            return super().__call__(kernel_name, kernel_sources, lang, defines, call_function)
     
 
 

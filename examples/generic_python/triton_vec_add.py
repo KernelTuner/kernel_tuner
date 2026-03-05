@@ -1,18 +1,18 @@
 import numpy as np
-import triton.language as tl
 import torch
-from kernel_tuner import tune_kernel, run_kernel
-from kernel_tuner.file_utils import store_output_file, store_metadata_file
 import triton
-from math import ceil
+import triton.language as tl
+from pathlib import Path
 
+from kernel_tuner import tune_kernel, run_kernel
+
+FULL_PATH = Path(__file__).resolve() 
 
 @triton.jit
 def add_op(x, y):
     return x + y
-    
 
-#@triton.jit
+@triton.jit
 def add_kernel(x_ptr,  # *Pointer* to first input vector.
                y_ptr,  # *Pointer* to second input vector.
                output_ptr,  # *Pointer* to output vector.
@@ -33,11 +33,8 @@ def add_kernel(x_ptr,  # *Pointer* to first input vector.
 def call_triton(kernel_function, args, kwargs, grid, threads, params):
     kernel_function[grid](*args, **kwargs)
 
-# NOTE: can the python file be changed in between? what happens?
-# NOTE: tune params in the funcion signature are supported as key word arguments. Do not pass them as args, these 
-# will be inserted automatically. You can use them in the call function (kwargs). 
 
-def tune_with_generic():
+def tune():
     size = 10000000
 
     a = torch.randn(size, device='cuda', dtype=torch.float32)
@@ -48,31 +45,27 @@ def tune_with_generic():
 
     args = [a, b, c, size] 
     tune_params = dict()
-    tune_params["block_size_x"] = [2**i for i in range(10)]
+    tune_params["block_size_x"] = [2**i for i in range(11)]
 
     
-    result = run_kernel("add_kernel", add_kernel, size, args, {"block_size_x": 256}, 
-               lang="generic_python", call_function=call_triton, decorator="@triton.jit")   
-    print(np.allclose(c_expect.cpu(), result[2]))
+    result = run_kernel("add_kernel", FULL_PATH, size, args, {"block_size_x": 256}, 
+               lang="generic_python", call_function=call_triton)   
+    assert np.allclose(c_expect.cpu(), result[2])
     
     
-    
+ 
     results, env = tune_kernel(
         kernel_name="add_kernel",
-        kernel_source=add_kernel,
+        kernel_source=FULL_PATH,
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
         lang="generic_python",
         answer=[None, None, c_expect.cpu(), None],
         call_function=call_triton,
-        decorator="@triton.jit"
     )
-    
-    
-    
 
     
     
-
-tune_with_generic()
+if __name__ == "__main__":
+    tune()

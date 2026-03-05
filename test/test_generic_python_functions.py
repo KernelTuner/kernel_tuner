@@ -1,8 +1,10 @@
 from .context import skip_if_no_torch
-from .test_kernel_source_fn import mock_kernel, kernel_with_kwarg, call_mock
+from .test_kernel_source_fn import call_mock
 from kernel_tuner.core import DeviceInterface, KernelInstance
 from kernel_tuner.kernel_sources.kernel_source import KernelSource
 import numpy as np
+from pathlib import Path
+import os
 
 try:
     import torch
@@ -10,6 +12,7 @@ try:
 except ImportError:
     pass
 
+KS_FILE = os.path.join(Path(__file__).resolve().parent, "test_kernel_source_fn.py")
 
 # Helper functions ------------------------------
 
@@ -30,7 +33,7 @@ def get_context():
     a = 42
     b = torch.randn(12, device='cuda', dtype=torch.float32)
     args = [a, b]
-    ks = KernelSource("mock_kernel", mock_kernel, "generic_python", call_function=call_mock)
+    ks = KernelSource("mock_kernel", KS_FILE, "generic_python", call_function=call_mock)
     return ks, args, params
 
 
@@ -40,14 +43,24 @@ def get_context():
 def test_ready_argument_list():
     ks, args, params = get_context()
     dev = DeviceInterface(ks)
+
     gpu_args = dev.ready_argument_list(args)
 
     assert len(args) == len(gpu_args)
 
-    for i, _ in enumerate(gpu_args):
-        assert value_equal(args[i], gpu_args[i])
-        if type(gpu_args[i]) in (list, dict, torch.Tensor, np.ndarray):
-            assert gpu_args[i] is not args[i] # Assure deep copy
+    # arg 0: python scalar
+    assert isinstance(gpu_args[0], int)
+    assert gpu_args[0] == args[0]
+
+    # arg 1: torch cuda tensor
+    assert isinstance(gpu_args[1], torch.Tensor)
+    assert gpu_args[1].is_cuda
+
+    # values equal
+    assert torch.allclose(gpu_args[1], args[1])
+
+    # ensure deep copy
+    assert gpu_args[1] is not args[1]
 
 
 @skip_if_no_torch
@@ -85,7 +98,7 @@ def test_gpu_kwargs():
     params = {'mock_param': 64}
     a = torch.randn(12, device='cuda', dtype=torch.float32)
     args = [a] # we do not have to specify the kwarg here
-    ks = KernelSource("kernel_with_kwarg", kernel_with_kwarg, "generic_python", call_function=call_mock)
+    ks = KernelSource("kernel_with_kwarg", KS_FILE, "generic_python", call_function=call_mock)
     dev = DeviceInterface(ks)
 
     instance_data = ks.prepare_kernel_instance(

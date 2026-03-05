@@ -88,7 +88,6 @@ class MatmulV4(tilus.Script):
         self.store_global(gc, casted_acc, offsets=[offset_m, offset_n])
 
 
-
 class MatmulGroupedOrdering(tilus.Script):
     def __init__(self):
         super().__init__()

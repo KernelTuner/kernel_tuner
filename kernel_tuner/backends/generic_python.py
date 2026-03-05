@@ -104,7 +104,7 @@ class GenericPythonFunctions(GPUBackend):
             elif type(arg) in vars(builtins).values():
                 torch_args.append(arg)
             else:
-                raise TypeError("Unknown argument type: ", type(arg))
+                raise TypeError("Unknown argument type: ", type(arg), ". Accepted types are Torch tenors, NumPy arrays and scalars and built-in Python types.")
 
         return torch_args
         
@@ -150,9 +150,9 @@ class GenericPythonFunctions(GPUBackend):
         # the values of the tuning params.
         self.gpu_kwargs = {}
         if params is not None:
-            for name, p in self.signature.parameters.items():
-                if name in params:
-                    self.gpu_kwargs[name] = params[name]
+            for arg_name in self.signature:
+                if arg_name in params:
+                    self.gpu_kwargs[arg_name] = params[arg_name]
 
         # Call the user-defined call function in order to compile the kernel.
         self.synchronize()
@@ -173,7 +173,7 @@ class GenericPythonFunctions(GPUBackend):
         """Returns True if the kernel has finished, False otherwise."""
         return self.end.query()
 
-    def run_kernel(self, func, gpu_args, threads, grid, stream=None, params=None):
+    def run_kernel(self, func, gpu_args, threads, grid, params=None):
         """Runs the Python kernel passed as 'func'.
 
         :param func: A cached Python kernel for this specific kernel configuration
@@ -195,10 +195,7 @@ class GenericPythonFunctions(GPUBackend):
             configuration
         :type params: dict
         """
-        if stream is None:
-            stream = self.stream
-
-        with torch.cuda.stream(stream):
+        with torch.cuda.stream(self.stream):
             logging.debug("Running Generic Python kernel")
             self.call_function(func, gpu_args, self.gpu_kwargs, grid, threads, params) 
     

@@ -418,8 +418,6 @@ def detect_language(kernel_string):
         lang = "CUDA"
     elif "__kernel" in kernel_string:
         lang = "OpenCL"
-    elif "@triton.jit" in kernel_string:
-        lang = "Triton"
     else:
         lang = "C"
     return lang
@@ -557,6 +555,82 @@ def get_kernel_string(kernel_source, params=None):
     else:
         raise TypeError("Error kernel_source is not a string nor a callable function")
     return kernel_string
+
+
+def get_kernel_ast(kernel_name, filepath):
+    '''
+    Util function for Generic Python Backend that returns the kernel function as AST. 
+
+    :param kernel_name: name of the kernel (as passed by the user)
+    :type kernel_name: string
+
+    :param filepath: the path to the file where the kernel lives. (passed by the user as kenrel_source)
+    :type filepath: string or Path containing a filename that points to the kernel source
+
+    :returns: ast.FunctionDef node in case the kernel is a function or a tuple 
+        (ast.ClassDef node, ast.FunctionDef node) in case the kernel is represented as the __call__ function
+        of a class (for Tilus support).
+    '''
+    if isinstance(filepath, Path):
+        source = read_file(filepath)
+    elif isinstance(filepath, str):
+        with open(filepath, "r") as f:
+            source = f.read()
+    else:
+        raise TypeError("Error kernel_source does not specify a path to a file")
+
+    tree = ast.parse(source)
+
+    # Function based kernels
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == kernel_name:
+            return node 
+    
+    # Class based kernels
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef) and node.name == kernel_name:
+            class_node = node
+            break
+
+    if not class_node:
+         raise ValueError(f"Kernel {kernel_name} not found in {filepath}")
+    
+    # Search for __call__ function within class
+    for node in class_node.body:
+        if isinstance(node, ast.FunctionDef) and node.name == "__call__":
+            call_node = node
+            return (class_node, call_node)
+
+    if not call_node:
+        raise ValueError(f"No __call__ function found inside Class {kernel_name}")
+   
+
+
+def get_arg_names(func_node: ast.FunctionDef):
+    """
+    Util to get the argument names from a Python AST function definition. This is needed to check
+    if there are any tunable parameters in the function signature.
+    """
+    args = func_node.args
+    names = []
+
+    names += [arg.arg for arg in args.args]
+    names += [arg.arg for arg in args.posonlyargs]
+    names += [arg.arg for arg in args.kwonlyargs]
+
+    # *args
+    if args.vararg:
+        names.append(args.vararg.arg)
+
+    # **kwargs
+    if args.kwarg:
+        names.append(args.kwarg.arg)
+
+    # Remove self for classes.
+    if 'self' in names:
+        names.remove('self')
+
+    return names
 
 
 def get_problem_size(problem_size, params):

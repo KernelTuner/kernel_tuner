@@ -3,8 +3,9 @@ from tilus import float32, int32
 from tilus.utils import cdiv, benchmark_func
 import torch 
 from kernel_tuner import tune_kernel, run_kernel
+from pathlib import Path
 
-
+FULL_PATH = Path(__file__).resolve()
 
 class VecAddV(tilus.Script):
     def __init__(self):
@@ -41,7 +42,7 @@ def call_tilus(kernel_function, args, kwargs, grid, threads, params):
     kernel_function(*args, **kwargs) 
 
 
-def tune_vecadd(size):
+def tune(size):
     a = torch.randn(size, dtype=torch.float32).cuda()
     b = torch.randn(size, dtype=torch.float32).cuda()
     c = torch.empty(size, dtype=torch.float32).cuda()
@@ -52,9 +53,10 @@ def tune_vecadd(size):
     tune_params = dict()
     tune_params["block_size_x"] = [32, 64, 128, 256, 512, 1024]
 
+
     results, env = tune_kernel(
         kernel_name="VecAddV", 
-        kernel_source=VecAddV,
+        kernel_source=FULL_PATH,
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
@@ -65,8 +67,7 @@ def tune_vecadd(size):
     )
 
 
-# TODO run kernel error handling same as tune_kernel
-def run_vecadd(size):
+def run(size):
     a = torch.randn(size, dtype=torch.float32).cuda()
     b = torch.randn(size, dtype=torch.float32).cuda()
     c = torch.empty(size, dtype=torch.float32).cuda()
@@ -77,37 +78,20 @@ def run_vecadd(size):
 
     results = run_kernel(
         kernel_name="VecAddV", 
-        kernel_source=VecAddV,
+        kernel_source=FULL_PATH,
         problem_size=size,
         arguments=args,
         params={"block_size_x": 32},
         lang="generic_python",
         call_function=call_tilus,
-        #verbose=True,
     )
 
     c_expect = c_expect.cpu()
 
     assert torch.allclose(results[-1], c_expect)
-    
-
-
-def run_normal(size):
-    a = torch.randn(size, dtype=torch.float32).cuda()
-    b = torch.randn(size, dtype=torch.float32).cuda()
-    c = torch.empty(size, dtype=torch.float32).cuda()
-    c_expect = a + b
-
-    vecadd = VecAddV()
-    vecadd(size, a, b, c)
-    print(c)
-    print(c_expect)
-    assert torch.allclose(c, c_expect)
-
 
 
 if __name__ == "__main__":
-    size = 1024
-    tune_vecadd(size)
-    #run_vecadd(size)
-    #run_normal(size)
+    size = 100000000
+    tune(size)
+    run(size)

@@ -14,21 +14,20 @@ from typing import Any
 from kernel_tuner.language import Language
 from kernel_tuner.kernel_sources.kernel_source import KernelSource
 from kernel_tuner.kernel_sources.model.prepared_kernel_source_data import PreparedKernelSourceData
-
+from kernel_tuner.util import get_kernel_ast, get_arg_names
 
 
 class KernelSourceFn(KernelSource):
     """
     Class that holds the Python-function-based kernel sources.
 
-    There is a primary kernel source for function-based kernels in Python. The source must be 
-    a callable. This can be a function of a class. The function should not be decorated, but
-    a decorator can be supplied to wrap the function. 
+    There is a primary kernel source for function-based kernels in Python. The kernel_source
+    must be a path to the file where the kernel with kernel_name lives. The kernel can be 
+    decorated by a JIT decorator. 
     
     A call function to specify how the kernel should be launched must be supplied. The call 
     function must take the following arguments:
-    - kernel_function: the callable function with the tuning parameters inserted. If provided, the 
-      kernel_function is decorated with the de decorator. 
+    - kernel_function: the callable function with the tuning parameters inserted. 
     - args: list of kernel arguments, as provided by the user in the <args> argument.
     - kwargs: dictionary of kernel keyword arguments. If a tuning parameter is in the kernel signature, 
       the tuning parameter will be added as a keyword argument.
@@ -37,10 +36,10 @@ class KernelSourceFn(KernelSource):
     - params: dictionary with the values of the tuning params for this configuration.
     """
 
-    def __init__(self, kernel_name, kernel_source, lang, defines=None, call_function=None, decorator=None):
+    def __init__(self, kernel_name, kernel_source, lang, defines=None, call_function=None):
         super().__init__(kernel_name, kernel_source, lang, defines)
         if isinstance(kernel_source, list):
-            raise ValueError("KernelSourceFn only supports a single kernel source function")
+            raise ValueError("KernelSourceFn only supports a single kernel source")
        
         if self.lang == Language.GENERIC_PYTHON: 
             if call_function is None:
@@ -49,27 +48,20 @@ class KernelSourceFn(KernelSource):
                 raise TypeError(f"call_function of type {type(call_function)} is not a callable object.")
         self.call_function = call_function # TODO ceck signature
 
-        if decorator:
-            if not isinstance(decorator, str):
-                raise TypeError(f"The decorator should be a string, got {type(decorator)} instead.")
-            if decorator[0] != '@':
-                raise ValueError(f"The decorator should start with a '@', got {decorator} instead.")
-        self.decorator = decorator 
+        if not isinstance(kernel_name, str):
+            raise TypeError("kernel_name should be a string, got ", type(kernel_name))
+        
+        source_ast = get_kernel_ast(kernel_name, kernel_source)
+        if isinstance(source_ast, tuple): # Class based kernel
+            self.source_tree = source_ast[0]
+            self.signature = get_arg_names(source_ast[1])
+        else:
+            self.source_tree = source_ast 
+            self.signature = get_arg_names(source_ast)
 
-        self.source_kernel_fn = kernel_source # This kernel source remains the original object
-        self.kernel_fn = self.source_kernel_fn # This is the kernel source that we will modify
-        
-        try:
-            self.source = inspect.getsource(self.source_kernel_fn)
-        except TypeError as e:
-            raise TypeError(
-                f"{e}. Did you forget to remove a decorator before tuning?"
-            ) from e
-        
-        self.signature = inspect.signature(self.source_kernel_fn)
-        self.source_tree = ast.parse(self.source)
-        self.import_nodes = self._find_import_nodes(inspect.getfile(self.source_kernel_fn))
-        self.dependencies = self._find_dependencies()
+        self.kernel_fn = self.source_tree # This is where we will store the transformed source.
+        self.import_nodes = self._find_import_nodes(kernel_source)
+        self.dependencies = self._find_dependencies(kernel_source)
 
 
     def prepare_kernel_instance(self, kernel_options, params, grid, threads):
@@ -123,22 +115,15 @@ class KernelSourceFn(KernelSource):
         source_tree_copy = copy.deepcopy(self.source_tree)
         transformed_tree = transformer.visit(source_tree_copy)
         
-        # Add decorator if needed
-        if self.decorator:
-            dummy = f"{self.decorator}\ndef _dummy():\n pass\n" 
-            decorator_node = ast.parse(dummy).body[0].decorator_list[0]
-            for node in transformed_tree.body:
-                if isinstance(node, ast.FunctionDef):
-                    node.decorator_list.insert(0, decorator_node)
-                    break   # only apply to the top level function
-
         # Add transformed main kernel to new module
-        new_module.body.extend(transformed_tree.body)
+        new_module.body.append(transformed_tree)
         
         # Fix locations and generate source
         ast.fix_missing_locations(new_module)
         new_source = astor.to_source(new_module)
-
+        
+        #print(new_source)
+        
         # Create a unique module name and write new source to it.
         module_name = f'temp_kernel_module_{uuid.uuid4().hex}'
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
@@ -151,10 +136,10 @@ class KernelSourceFn(KernelSource):
         sys.modules[module_name] = temp_module
         spec.loader.exec_module(temp_module)
         new_fn = getattr(temp_module, self.kernel_name)
-
+        
         return new_fn, temp_file_path
 
-        
+
     def _find_import_nodes(self, source_file):
         '''
         Parse kernel source file to find import statements. Return those
@@ -192,16 +177,15 @@ class KernelSourceFn(KernelSource):
         return visitor.called
 
 
-    def _find_dependencies(self):
+    def _find_dependencies(self, filepath):
         '''
         Find all local function dependencies in the file where the kernel source is
         defined. Return a dicionary indexed by the function node name with the function
         body as value.
         '''
-        source_file = inspect.getfile(self.source_kernel_fn)
-        with open(source_file, "r") as f: 
+        with open(filepath, "r") as f: 
             source_code = f.read() 
-        tree = ast.parse(source_code, filename=source_file) 
+        tree = ast.parse(source_code, filename=filepath) 
 
         # Find the locally defined functions in the source file
         local_funcs = set()

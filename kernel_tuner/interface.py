@@ -111,8 +111,7 @@ _kernel_options = Options(
                 """The CUDA, OpenCL, HIP, C or Python DSL kernel code.
             It is allowed for the code to be passed as a string, a filename, a function
             that returns a string of code, or a list when the code needs auxilliary files.
-            In the case of a kernel in a Python DSL such as Triton, the reference to the
-            Python callable should be passed.
+            In the case of a kernel in a Python DSL such as Triton, only a filename is accepted.
 
             To support combined host and device code tuning, a list of
             filenames can be passed. The first file in the list should be the
@@ -294,8 +293,7 @@ _kernel_options = Options(
             (
                 """When the language Generic Python is used, a call function that calls the kernel in the Python
                  DSL must be specified. The function must take the following arguments:
-                :kernel_function: the callable function with the tuning parameters inserted. If provided, the 
-                    kernel_function is decorated with the de decorator. 
+                :kernel_function: the callable function with the tuning parameters inserted.
                 :args: list of kernel arguments, as provided by the user in the <args> argument.
                 :kwargs: dictionary of kernel keyword arguments. If a tuning parameter is in the kernel signature, 
                     the tuning parameter will be added as a keyword argument.
@@ -303,15 +301,6 @@ _kernel_options = Options(
                 :threads: the thread block size (tuple with 3 values), as computed by KernelTuner
                 :params: dictionary with the values of the tuning params for the specific configuration.""",
                 "function",
-            ),
-        ),
-        (
-            "decorator",
-            (
-                """When the language Generic Python is used, a decorator can be provided in which the kernel source
-                will be wrapped internally by KernelTuner. Note that when passing the kernel to KernelTuner with the
-                ``kernel_source`` argument, the decorator should be removed from the kernel.""",
-                "string",
             ),
         ),
     ]
@@ -619,14 +608,13 @@ def tune_kernel(
     objective=None,
     objective_higher_is_better=None,
     call_function=None,
-    decorator=None
 ):
   
     start_overhead_time = perf_counter()
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime("%Y%m%d-%H:%M:%S") + ".log", level=log)
 
-    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, call_function, decorator)
+    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, call_function)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
@@ -808,12 +796,11 @@ def run_kernel(
     quiet=False,
     log=None,
     call_function=None,
-    decorator=None
 ):
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime("%Y%m%d-%H:%M:%S") + ".log", level=log)
 
-    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, call_function, decorator)
+    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, call_function)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 

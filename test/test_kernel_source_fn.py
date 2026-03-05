@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 import pytest
 import inspect
 import ast
@@ -8,7 +10,7 @@ from kernel_tuner.kernel_sources.kernel_source import KernelSource
 from kernel_tuner.kernel_sources.kernel_source_fn import KernelSourceFn
 from kernel_tuner.kernel_sources.kernel_source_str import KernelSourceStr
 
-
+KS_FILE = Path(__file__).resolve()
 # Helper functions --------------------------------------------
 
 def normalize_ast(src: str):
@@ -41,13 +43,18 @@ class TilusLike():
 
     def another_function(self):
         return self.mock_param
+
+@functools.lru_cache()   
+def kernel_with_decorator():
+    mock_param = 42
+    return mock_param
     
 
 # Tests ------------------------------------------------------
 
 def test_factory_behaviour():
     # KernelSourceFn should only be created when language generic_python is supplied
-    ks_fn = KernelSource("mock_kernel", mock_kernel, "generic_python", call_function=call_mock)
+    ks_fn = KernelSource("mock_kernel", KS_FILE, "generic_python", call_function=call_mock)
     ks_str = KernelSource("vector_add", 'extern "C" __global__ void vector_add(float *c, float *a, float *b, int n) {', lang=None)
     
     assert isinstance(ks_fn, KernelSourceFn)
@@ -59,27 +66,25 @@ def test_initiation():
     Test invalid KernelSourceFn initations    
     '''
     with pytest.raises(ValueError, match=r"call_function must be supplied for language .*"):
-        KernelSource("mock_kernel", mock_kernel, "generic_python")
+        KernelSource("mock_kernel", KS_FILE, "generic_python")
     
-    with pytest.raises(TypeError, match=r".* Did you forget to remove a decorator before tuning\?"):
+    with pytest.raises(FileNotFoundError, match=r".* No such file or directory: .*"):
         KernelSource("mock_kernel", "This is a string Kernel", "generic_python", call_function=call_mock)
 
-    with pytest.raises(ValueError, match=r"KernelSourceFn only supports a single kernel source function"):
-        KernelSource("mock_kernel", [mock_kernel, kernel_with_dependency], "generic_python", call_function=call_mock)
+    with pytest.raises(TypeError, match="Error kernel_source does not specify a path to a file"):
+        KernelSource("mock_kernel", mock_kernel, "generic_python", call_function=call_mock)
+
+    with pytest.raises(ValueError, match=r"KernelSourceFn only supports a single kernel source"):
+        KernelSource("mock_kernel", [KS_FILE, "another file"], "generic_python", call_function=call_mock)
 
     with pytest.raises(TypeError, match=r".* is not a callable object"):
-        KernelSource("mock_kernel", mock_kernel, "generic_python", call_function="not a function")
-    
-    with pytest.raises(ValueError, match=r"The decorator should start with a '@', got .* instead."):
-        KernelSource("mock_kernel", mock_kernel, "generic_python", call_function=call_mock, decorator="not a decorator")
-    
-    with pytest.raises(TypeError, match=r"The decorator should be a string, got .* instead."):
-        KernelSource("mock_kernel", mock_kernel, "generic_python", call_function=call_mock, decorator=mock_kernel)
+        KernelSource("mock_kernel", KS_FILE, "generic_python", call_function="not a function")
+
 
 
 def test_param_subsitution():
     params = {"mock_param": 128}
-    ks = KernelSourceFn("mock_kernel", mock_kernel, "generic_python", call_function=call_mock)
+    ks = KernelSourceFn("mock_kernel", KS_FILE, "generic_python", call_function=call_mock)
     new_kernel_fn, _ = ks.apply_params_to_source_fn(params)
 
     actual_src = inspect.getsource(new_kernel_fn)
@@ -101,7 +106,7 @@ def test_imports():
     '''
 
     params = {"mock_param": 128}
-    ks = KernelSourceFn("mock_kernel", mock_kernel, "generic_python", call_function=call_mock)
+    ks = KernelSourceFn("mock_kernel", KS_FILE, "generic_python", call_function=call_mock)
     _, temp_path = ks.apply_params_to_source_fn(params)
 
     # Check if imports are present
@@ -120,7 +125,7 @@ def test_param_substitution_class():
     '''
 
     params = {"mock_param": 128}
-    ks = KernelSourceFn("TilusLike", TilusLike, "generic_python", call_function=call_mock)
+    ks = KernelSourceFn("TilusLike", KS_FILE, "generic_python", call_function=call_mock)
 
     new_kernel_fn, _ = ks.apply_params_to_source_fn(params)
 
@@ -142,15 +147,22 @@ class TilusLike():
 
 def test_decorator():
     params = {"mock_param": 128}
-    ks = KernelSourceFn("mock_kernel", mock_kernel, "generic_python", call_function=call_mock, decorator="@functools.lru_cache()")
+    ks = KernelSourceFn("kernel_with_decorator", KS_FILE, "generic_python", call_function=call_mock)
     new_kernel_fn, _ = ks.apply_params_to_source_fn(params)
-
+    actual_src = inspect.getsource(new_kernel_fn)
+    expected_src = """
+@functools.lru_cache()   
+def kernel_with_decorator():
+    mock_param = 128
+    return 128
+"""
     assert hasattr(new_kernel_fn, "__wrapped__")
+    assert normalize_ast(actual_src) == normalize_ast(expected_src)
 
 
 def test_dependencies():
     params = {"mock_param": 128}
-    ks = KernelSourceFn("kernel_with_dependency", kernel_with_dependency, "generic_python", call_function=call_mock)
+    ks = KernelSourceFn("kernel_with_dependency", KS_FILE, "generic_python", call_function=call_mock)
     new_kernel_fn, _ = ks.apply_params_to_source_fn(params)
     res = new_kernel_fn() # This should not throw an error if the dependency exists in the module.
 

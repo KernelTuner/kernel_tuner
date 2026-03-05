@@ -4,6 +4,9 @@ import tilus
 from kernel_tuner import tune_kernel, run_kernel
 import math
 import torch
+from pathlib import Path
+
+FULL_PATH = Path(__file__).resolve()
 
 
 class MatmulV0(tilus.Script):
@@ -105,7 +108,7 @@ def main():
     
     results, env = tune_kernel(
         kernel_name="MatmulV0",
-        kernel_source=MatmulV0,
+        kernel_source=FULL_PATH,
         problem_size=[m, n],
         arguments=args,
         tune_params=tune_params,

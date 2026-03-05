@@ -2,8 +2,11 @@ import tilelang
 import tilelang.language as T
 import torch
 from kernel_tuner import tune_kernel
+from pathlib import Path
 
-#@tilelang.jit  # infers target from tensors at first call
+FULL_PATH = Path(__file__).resolve()
+
+@tilelang.jit  # infers target from tensors at first call
 def add(N: int, dtype: str = 'float32', block: int = 256,):
 
     @T.prim_func
@@ -51,7 +54,8 @@ def tune():
 
     answer = [None, None, (A + B).cpu()]
     
-    res, env = tune_kernel("add", add, N, args, tune_params, lang="generic_python", 
-            call_function=call_tilelang, decorator="@tilelang.jit", answer=answer)
-    
-tune()
+    res, env = tune_kernel("add", FULL_PATH, N, args, tune_params, lang="generic_python", 
+            call_function=call_tilelang, answer=answer)
+
+if __name__ == "__main__":
+    tune()

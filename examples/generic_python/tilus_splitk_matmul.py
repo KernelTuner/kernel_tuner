@@ -4,17 +4,13 @@ from tilus.utils import cdiv, benchmark_func
 import torch
 import math
 from kernel_tuner import tune_kernel, run_kernel
+from pathlib import Path
 
-'''
-@tilus.autotune("num_warps", [4, 8])
-@tilus.autotune("block_m, block_n", [(128, 128), (128, 64), (64, 128), (32, 256)])
-@tilus.autotune("block_k", [16, 32])
-@tilus.autotune("num_stages", [3, 4, 5])
-@tilus.autotune("split_k_factor", [1, 4, 12, 16])
-'''
+FULL_PATH = Path(__file__).resolve()
+
 class MatmulV5(tilus.Script):
-    '''
-    def __init__(self, block_m, block_n, block_k, num_warps, num_stages, split_k_factor):
+    def __init__(self, block_m=None, block_n=None, block_k=None, 
+                 num_warps=None, num_stages=None, split_k_factor=None):
         super().__init__()
         self.block_m = block_m
         self.block_n = block_n
@@ -22,15 +18,7 @@ class MatmulV5(tilus.Script):
         self.num_warps = num_warps
         self.num_stages = num_stages
         self.split_k_factor = split_k_factor
-    '''
-    def __init__(self):
-        super().__init__()
-        self.block_m = 128
-        self.block_n = 128
-        self.block_k = 16
-        self.num_warps = 4
-        self.num_stages = 4
-        self.split_k_factor = 4
+
 
     def __call__(
         self,
@@ -246,7 +234,7 @@ def main():
     
     results, env = tune_kernel(
         kernel_name="MatmulV5", # This has to be a string of the actual name. TODO is this always the case?
-        kernel_source=MatmulV5,
+        kernel_source=FULL_PATH,
         problem_size=[m, n],
         arguments=args,
         tune_params=tune_params,
