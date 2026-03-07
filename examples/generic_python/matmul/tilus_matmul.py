@@ -1,22 +1,98 @@
-import math
-
-import pandas
 import tilus
-import torch
 from tilus import float16, float32, int32
-from tilus.utils import benchmark_func
-from kernel_tuner import tune_kernel, run_kernel
+from tilus.utils import cdiv
 
 
-
-class MatmulV4(tilus.Script):
+# This kernel is copied from the Tilus project:
+# https://github.com/NVIDIA/tilus/blob/main/examples/matmul/matmul_v0.py
+#
+# Original example: matmul_v0.py
+# Copyright (c) the Tilus authors
+class MatmulBasic(tilus.Script):
     def __init__(self):
         super().__init__()
-        self.block_m = 128
-        self.block_n = 128
+        # we define three hyperparameters: ``block_m``, ``block_n``, and ``block_k`` to determine the tile size on
+        # m, n, and k dimensions for each `thread block` of the kernel.
+        self.block_m = 64
+        self.block_n = 64
         self.block_k = 16
-        self.num_warps = 4
-        self.num_stages = 4
+
+    def __call__(
+        self,
+        m_size: int32,  # the size of the m dimension of the input matrix A and output matrix C
+        n_size: int,  # the size of the n dimension of the input matrix B and output matrix C
+        k_size: int,  # the size of the k dimension of the input matrix A and B
+        a_ptr: ~float16,  # the pointer to the input matrix A, which is a 2D tensor of shape [m_size, k_size]
+        b_ptr: ~float16,  # the pointer to the input matrix B, which is a 2D tensor of shape [k_size, n_size]
+        c_ptr: ~float16,  # the pointer to the output matrix C, which is a 2D tensor of shape [m_size, n_size]
+    ):
+        self.attrs.blocks = [
+            cdiv(m_size, self.block_m),  # the x dimension size of the grid
+            cdiv(n_size, self.block_n),  # the y dimension size of the grid
+        ]
+        self.attrs.warps = 1  # the number of warps per thread block, must be a compile-time known integer
+
+        # define two int32 variables to store the offsets of the m and n dimensions for the current thread block.
+        offset_m: int32 = self.block_m * self.blockIdx.x
+        offset_n: int32 = self.block_n * self.blockIdx.y
+
+        # create two global tensors `ga` and `gb` to represent the input matrices A and B, respectively.
+        ga = self.global_view(a_ptr, dtype=float16, shape=[m_size, k_size])
+        gb = self.global_view(b_ptr, dtype=float16, shape=[k_size, n_size])
+
+        # create a register tensor `acc` to accumulate the results of the matrix multiplication.
+        acc = self.register_tensor(
+            dtype=float32, shape=[self.block_m, self.block_n], init=0.0
+        )
+
+        # iterate over the k dimension in blocks of size `block_k`.
+        for k in range(cdiv(k_size, self.block_k)):
+            # calculate the offset for the current block in the k dimension
+            offset_k = k * self.block_k
+
+            # load a block of matrix A and B into register tensors `a` and `b`.
+            a = self.load_global(
+                ga, offsets=[offset_m, offset_k], shape=[self.block_m, self.block_k]
+            )
+            b = self.load_global(
+                gb, offsets=[offset_k, offset_n], shape=[self.block_k, self.block_n]
+            )
+
+            # perform the dot product: acc = a @ b + acc
+            self.dot(a, b, acc, out=acc)
+
+        # after the loop, we cast the accumulated result `acc` to float16 type and store it back to the output matrix C.
+        acc_f16 = self.cast(acc, dtype=float16)
+        gc = self.global_view(c_ptr, dtype=float16, shape=[m_size, n_size])
+        self.store_global(gc, acc_f16, offsets=[offset_m, offset_n])
+
+
+
+# This kernel is copied from the Tilus project:
+# https://github.com/NVIDIA/tilus/blob/main/examples/matmul/matmul_v5.py
+#
+# Original example: matmul_v5.py
+# Copyright (c) the Tilus authors
+#
+# Modifications in file:
+# - Removed auto-tuning decorators
+class MatmulOpt(tilus.Script):
+    def __init__(
+        self,
+        num_warps=None,
+        block_m=None,
+        block_n=None,
+        block_k=None,
+        num_stages=None,
+        split_k_factor=None,
+    ):
+        super().__init__()
+        self.block_m = block_m
+        self.block_n = block_n
+        self.block_k = block_k
+        self.num_warps = num_warps
+        self.num_stages = num_stages
+        self.split_k_factor = split_k_factor
 
     def __call__(
         self,
@@ -28,10 +104,18 @@ class MatmulV4(tilus.Script):
         c_ptr: ~float16,
     ):
         self.attrs.blocks = [
-            self.utils.ceil_div(m_size, self.block_m),
-            self.utils.ceil_div(n_size, self.block_n),
+            cdiv(m_size, self.block_m),
+            cdiv(n_size, self.block_n),
+            self.split_k_factor,
         ]
         self.attrs.warps = self.num_warps
+
+        # the k_size for each thread block
+        block_k_size = (
+            cdiv(cdiv(k_size, self.split_k_factor), self.block_k) * self.block_k
+        )
+        start_offset_k = self.blockIdx.z * block_k_size
+        end_offset_k = min(start_offset_k + block_k_size, k_size)
 
         block_m, block_n, block_k = self.block_m, self.block_n, self.block_k
         offset_m: int32 = block_m * self.blockIdx.x
@@ -44,7 +128,7 @@ class MatmulV4(tilus.Script):
         acc = self.register_tensor(dtype=float32, shape=[block_m, block_n], init=0.0)
 
         for stage in range(self.num_stages - 1):
-            offset_k = stage * self.block_k
+            offset_k = start_offset_k + stage * self.block_k
             self.copy_async(src=ga, dst=sa[stage], offsets=[offset_m, offset_k])
             self.copy_async(src=gb, dst=sb[stage], offsets=[offset_k, offset_n])
             self.copy_async_commit_group()
@@ -54,7 +138,9 @@ class MatmulV4(tilus.Script):
 
         current_stage: int32 = 0
         preload_stage: int32 = self.num_stages - 1
-        for offset_k in self.range(0, k_size, block_k, unroll=self.num_stages):
+        for offset_k in self.range(
+            start_offset_k, end_offset_k, block_k, unroll=self.num_stages
+        ):
             # computation for current tile
             a = self.load_shared(sa[current_stage])
             b = self.load_shared(sb[current_stage])
@@ -62,16 +148,17 @@ class MatmulV4(tilus.Script):
 
             # preload the next tile of A and B into shared memory
             preload_offset_k = offset_k + (self.num_stages - 1) * block_k
-            self.copy_async(
-                src=ga,
-                dst=sa[preload_stage],
-                offsets=[offset_m, preload_offset_k],
-            )
-            self.copy_async(
-                src=gb,
-                dst=sb[preload_stage],
-                offsets=[preload_offset_k, offset_n],
-            )
+            if preload_offset_k < end_offset_k:
+                self.copy_async(
+                    src=ga,
+                    dst=sa[preload_stage],
+                    offsets=[offset_m, preload_offset_k],
+                )
+                self.copy_async(
+                    src=gb,
+                    dst=sb[preload_stage],
+                    offsets=[preload_offset_k, offset_n],
+                )
             self.copy_async_commit_group()
 
             # update the stage
@@ -80,187 +167,41 @@ class MatmulV4(tilus.Script):
             self.copy_async_wait_group(n=self.num_stages - 2)
             self.sync()
 
+        # free the shared memory tensors for A and B
         self.free_shared(sa)
         self.free_shared(sb)
 
+        # cast the accumulator to float16 and change the register tensor's layout
+        sc = self.shared_tensor(dtype=float16, shape=[block_m, block_n])
         casted_acc = self.cast(acc, dtype=float16)
-        gc = self.global_view(c_ptr, dtype=float16, shape=[m_size, n_size])
-        self.store_global(gc, casted_acc, offsets=[offset_m, offset_n])
-
-
-class MatmulGroupedOrdering(tilus.Script):
-    def __init__(self):
-        super().__init__()
-        self.block_m = 128
-        self.block_n = 128
-        self.block_k = 16
-        self.num_warps = 4
-        self.num_stages = 4
-        self.group_size_m = 8
-
-    def __call__(
-        self,
-        m_size: int32,
-        n_size: int,
-        k_size: int,
-        a_ptr: ~float16,
-        b_ptr: ~float16,
-        c_ptr: ~float16,
-    ):
-        block_m, block_n, block_k = self.block_m, self.block_n, self.block_k
-        
-        num_pid_m = self.utils.ceil_div(m_size, block_m)
-        num_pid_n = self.utils.ceil_div(n_size, block_n)
-        self.attrs.blocks = [num_pid_m * num_pid_n]
-
-        pid = self.blockIdx.x
-        num_pid_in_group = self.group_size_m * num_pid_n
-        group_id = pid // num_pid_in_group
-
-        first_pid_m = group_id * self.group_size_m
-        group_size_m = min(num_pid_m - first_pid_m, self.group_size_m)
-
-        pid_m = first_pid_m + ((pid % num_pid_in_group) % group_size_m)
-        pid_n = (pid % num_pid_in_group) // group_size_m
-
-        self.attrs.warps = self.num_warps
-        offset_m: int32 = pid_m * block_m
-        offset_n: int32 = pid_n * block_n
-
-        ga = self.global_view(a_ptr, dtype=float16, shape=[m_size, k_size])
-        gb = self.global_view(b_ptr, dtype=float16, shape=[k_size, n_size])
-        sa = self.shared_tensor(dtype=float16, shape=[self.num_stages, block_m, block_k])
-        sb = self.shared_tensor(dtype=float16, shape=[self.num_stages, block_k, block_n])
-        acc = self.register_tensor(dtype=float32, shape=[block_m, block_n], init=0.0)
-
-        for stage in range(self.num_stages - 1):
-            offset_k = stage * self.block_k
-            self.copy_async(src=ga, dst=sa[stage], offsets=[offset_m, offset_k])
-            self.copy_async(src=gb, dst=sb[stage], offsets=[offset_k, offset_n])
-            self.copy_async_commit_group()
-
-        self.copy_async_wait_group(n=self.num_stages - 2)
+        self.store_shared(sc, casted_acc)
         self.sync()
+        rc = self.load_shared(sc)
+        self.free_shared(sc)
 
-        current_stage: int32 = 0
-        preload_stage: int32 = self.num_stages - 1
-        for offset_k in self.range(0, k_size, block_k, unroll=self.num_stages):
-            # computation for current tile
-            a = self.load_shared(sa[current_stage])
-            b = self.load_shared(sb[current_stage])
-            self.dot(a, b, acc, out=acc)
-
-            # preload the next tile of A and B into shared memory
-            preload_offset_k = offset_k + (self.num_stages - 1) * block_k
-            self.copy_async(
-                src=ga,
-                dst=sa[preload_stage],
-                offsets=[offset_m, preload_offset_k],
-            )
-            self.copy_async(
-                src=gb,
-                dst=sb[preload_stage],
-                offsets=[preload_offset_k, offset_n],
-            )
-            self.copy_async_commit_group()
-
-            # update the stage
-            current_stage = (current_stage + 1) % self.num_stages
-            preload_stage = (preload_stage + 1) % self.num_stages
-            self.copy_async_wait_group(n=self.num_stages - 2)
-            self.sync()
-
-        self.free_shared(sa)
-        self.free_shared(sb)
-
-        casted_acc = self.cast(acc, dtype=float16)
+        m_blocks, n_blocks = cdiv(m_size, block_m), cdiv(n_size, block_n)
         gc = self.global_view(c_ptr, dtype=float16, shape=[m_size, n_size])
-        self.store_global(gc, casted_acc, offsets=[offset_m, offset_n])
+        if self.split_k_factor == 0:
+            self.store_global(gc, rc, offsets=[offset_m, offset_n])
+        else:
+            semaphores = self.global_tensor(
+                dtype=int32, shape=[m_blocks, n_blocks], requires_clean=True
+            )
+            semaphore: ~int32 = ~semaphores[self.blockIdx.x, self.blockIdx.y]
 
+            # load and accumulate the partial result in global memory
+            if self.blockIdx.z > 0:
+                self.lock_semaphore(semaphore, value=self.blockIdx.z)
+                partial_rc = self.load_global(
+                    gc, offsets=[offset_m, offset_n], shape=[block_m, block_n]
+                )
+                self.add(rc, partial_rc, out=rc)
 
+            # store the result to global memory and release the semaphore
+            self.store_global(gc, rc, offsets=[offset_m, offset_n])
 
-def main():
-    headers = ["m", "n", "k", "name", "latency (ms)", "tflops"]
-    workloads = [
-        [4096, 4096, 4096],
-        [1024, 1024, 14336],
-    ]
-
-    rows = []
-    for m, n, k in workloads:
-        matmul = MatmulGroupedOrdering() #MatmulV4()
-
-        a = (torch.rand(m, k, dtype=torch.float16).cuda() - 0.5) / math.sqrt(k)
-        b = (torch.rand(k, n, dtype=torch.float16).cuda() - 0.5) / math.sqrt(k)
-        c_actual = torch.empty(m, n, dtype=torch.float16).cuda()
-        c_expect = a @ b
-        matmul(m, n, k, a, b, c_actual)
-
-        # check correctness
-        torch.testing.assert_close(c_expect, c_actual)
-
-        # benchmark
-        for name, func in [
-            ("torch", lambda: torch.matmul(a, b, out=c_expect)),
-            ("tilus", lambda: matmul(m, n, k, a, b, c_actual)),
-        ]:
-            latency = benchmark_func(func, warmup=5, repeat=20)
-            tflops = 2 * m * n * k / latency * 1e-9
-            rows.append([m, n, k, name, latency, tflops])
-
-    df = pandas.DataFrame(rows, columns=headers)
-    print(df)
-
-def call_tilus(kernel_function, args, kwargs, grid, threads, params):
-    kernel_function(*args, **kwargs) 
-
-
-def tune_matmul(m, n, k):
-    a = (torch.rand(m, k, dtype=torch.float16).cuda() - 0.5) / math.sqrt(k)
-    b = (torch.rand(k, n, dtype=torch.float16).cuda() - 0.5) / math.sqrt(k)
-    c_actual = torch.empty(m, n, dtype=torch.float16).cuda()
-    c_expect = a @ b
-
-    size = m * n #(m, n)
-    args = [m, n, k, a, b, c_actual]
-    tune_params = dict()
-    tune_params["block_m"] = [32, 64, 128, 256]
-    tune_params["block_n"] = [32, 64, 128, 256]
-    tune_params["block_k"] = [32, 64, 128]
-    tune_params["group_size_m"] = [4, 8]
-    tune_params["num_stages"] = [2, 3, 4]
-    tune_params["num_warps"] = [4, 8]
-    
-
-    restrictions = [
-        # tile size budget
-        "block_m * block_n <= 16384",
-
-        # aspect ratio <= 4 (no max/min allowed, so expand manually)
-        "block_m <= 4 * block_n",
-        "block_n <= 4 * block_m",
-
-        # large K only with reasonably large M/N
-        "not (block_k == 128 and block_m < 64 and block_n < 64)",
-
-        # 32x32 requires 8 warps
-        "not (block_m == 32 and block_n == 32 and num_warps < 8)",
-    ]
-
-
-    answer = [None] * 6
-    answer[-1] = c_expect.cpu()
-    atol = 1e-2 #m * 2**(-11)
-
-    results, env = tune_kernel("MatmulGroupedOrdering", MatmulGroupedOrdering, size, args, tune_params, grid_div_x = ["block_m", "block_n"],
-                               answer = answer, atol=atol, restrictions=restrictions, 
-                               lang="generic_python", call_function=call_tilus, 
-                               block_size_names=["block_m", "block_n", "block_k"], strategy="simulated_annealing")
-
-
-if __name__ == "__main__":
-    #m, n, k = 4096, 4096, 4096
-    m, n, k = 8192, 8192, 8192
-    tune_matmul(m, n, k)
-
-    #main()
+            # release the semaphore
+            self.sync()  # we need to make sure the previous store_global is finished
+            self.release_semaphore(
+                semaphore, value=(self.blockIdx.z + 1) % self.split_k_factor
+            )

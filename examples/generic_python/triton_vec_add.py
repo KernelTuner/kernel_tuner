@@ -30,7 +30,7 @@ def add_kernel(x_ptr,  # *Pointer* to first input vector.
     tl.store(output_ptr + offsets, output, mask=mask)
 
 
-def call_triton(kernel_function, args, kwargs, grid, threads, params):
+def call_triton(kernel_function, args, kwargs, grid):
     kernel_function[grid](*args, **kwargs)
 
 

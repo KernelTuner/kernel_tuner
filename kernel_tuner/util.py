@@ -978,6 +978,33 @@ def normalize_verify_function(v):
     return lambda answer, result_host, atol: v(answer, result_host)
 
 
+def normalize_call_function(v):
+    """Normalize a user-specified call function for language Generic Python.
+
+    The user-specified function has three required positional arguments (kernel_function, 
+    args, kwargs), and three optional keyword arguments: grid, threads and params. The
+    optional keyword arguments should appear in that order. We normalize the function
+    so that it always accepts grid, threads and params.
+
+    Undefined behaviour if the passed function does not match the required signatures.
+    """
+    def has_kw_argument(func, name):
+        sig = signature(func)
+        return name in sig.parameters
+    
+    if v is None:
+        return None
+
+    if has_kw_argument(v, "grid"):
+        if has_kw_argument(v, "threads"):
+            if has_kw_argument(v, "params"):
+                return v
+            return lambda kernel_function, args, kwargs, grid, threads, params: v(kernel_function, args, kwargs, grid, threads)
+        return lambda kernel_function, args, kwargs, grid, threads, params: v(kernel_function, args, kwargs, grid)
+    return lambda kernel_function, args, kwargs, grid, threads, params: v(kernel_function, args, kwargs)
+
+
+
 def parse_restrictions(
     restrictions: list[str], tune_params: dict, monolithic=False, format=None
 ) -> list[tuple[Union[Constraint, str], list[str]]]:

@@ -595,6 +595,28 @@ def test_normalize_verify_function():
     assert v(1, 2, atol=3)
 
 
+
+def test_normalize_call_function_none():
+    assert normalize_call_function(None) is None
+
+@pytest.mark.parametrize(
+    "func",
+    [
+        lambda f, a, k: f(*a, **k),
+        lambda f, a, k, grid: f(*a, **k),
+        lambda f, a, k, grid, threads: f(*a, **k),
+        lambda f, a, k, grid, threads, params: f(*a, **k),
+    ],
+)
+def test_normalize_call_function(func):
+    v = normalize_call_function(func)
+
+    def kernel(x):
+        return x + 1
+
+    assert v(kernel, (1,), {}, grid=1, threads=2, params=3) == 2
+
+
 def test_process_cache():
     def assert_open_cachefile_is_correctly_parsed(cache):
         with open(cache, "r") as cachefile:

@@ -292,11 +292,12 @@ _kernel_options = Options(
             "call_function",
             (
                 """When the language Generic Python is used, a call function that calls the kernel in the Python
-                 DSL must be specified. The function must take the following arguments:
+                 DSL must be specified. The function must take the following positional arguments:
                 :kernel_function: the callable function with the tuning parameters inserted.
                 :args: list of kernel arguments, as provided by the user in the <args> argument.
                 :kwargs: dictionary of kernel keyword arguments. If a tuning parameter is in the kernel signature, 
                     the tuning parameter will be added as a keyword argument.
+                Optionally, the following arguments can be used. The order and name of the arguments must match.
                 :grid: the launch grid (tuple with 3 values), as computed by KernelTuner
                 :threads: the thread block size (tuple with 3 values), as computed by KernelTuner
                 :params: dictionary with the values of the tuning params for the specific configuration.""",
@@ -614,7 +615,7 @@ def tune_kernel(
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime("%Y%m%d-%H:%M:%S") + ".log", level=log)
 
-    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, call_function)
+    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, util.normalize_call_function(call_function))
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
@@ -652,6 +653,10 @@ def tune_kernel(
     logging.debug("kernel_options: %s", util.get_config_string(kernel_options))
     logging.debug("tuning_options: %s", util.get_config_string(tuning_options))
     logging.debug("device_options: %s", util.get_config_string(device_options))
+
+    # the user-specific call function may of may not have optional grid, threads and params
+    # arguments. We normalize it so that it always accepts all arguments.
+    kernel_options.call_function = util.normalize_call_function(kernel_options.call_function)
 
     # check whether the selected strategy and options are valid
     strategy_string = strategy
@@ -800,7 +805,7 @@ def run_kernel(
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime("%Y%m%d-%H:%M:%S") + ".log", level=log)
 
-    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, call_function)
+    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, util.normalize_call_function(call_function))
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
@@ -808,6 +813,10 @@ def run_kernel(
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
+
+    # the user-specific call function may of may not have optional grid, threads and params
+    # arguments. We normalize it so that it always accepts all arguments.
+    kernel_options.call_function = util.normalize_call_function(kernel_options.call_function)
 
     # detect language and create the right device function interface
     dev = core.DeviceInterface(kernelsource, iterations=1, **device_options)

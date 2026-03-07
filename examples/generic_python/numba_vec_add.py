@@ -16,7 +16,7 @@ def f(a, b, c):
         c[tid] = a[tid] + b[tid]
 
 
-def call_numba(kernel_function, args, kwargs, grid, threads, params):
+def call_numba(kernel_function, args, kwargs, grid, threads):
     numba_args = []
     for arg in args:
         if isinstance(arg, torch.Tensor):
@@ -24,8 +24,6 @@ def call_numba(kernel_function, args, kwargs, grid, threads, params):
         else:
             numba_args.append(arg)
     kernel_function[grid, threads](*args, **kwargs)
-
-
 
 
 def tune():

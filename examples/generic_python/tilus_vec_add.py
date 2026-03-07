@@ -8,9 +8,9 @@ from pathlib import Path
 FULL_PATH = Path(__file__).resolve()
 
 class VecAddV(tilus.Script):
-    def __init__(self):
+    def __init__(self, block_size_x=None):
         super().__init__()
-        self.block_size_x = 32  # number of threads per block
+        self.block_size_x = block_size_x  # number of threads per block
 
     def __call__(
         self,
@@ -38,7 +38,7 @@ class VecAddV(tilus.Script):
         self.store_global(gc, c, offsets=[offset])
 
 
-def call_tilus(kernel_function, args, kwargs, grid, threads, params):
+def call_tilus(kernel_function, args, kwargs):
     kernel_function(*args, **kwargs) 
 
 
@@ -91,7 +91,23 @@ def run(size):
     assert torch.allclose(results[-1], c_expect)
 
 
+def tune_with_builtin(size):
+    TunedVecAdd = tilus.autotune("block_size_x", [32, 64, 128, 256, 512, 1024])(VecAddV)
+    vecadd = TunedVecAdd()
+
+    a = torch.randn(size, dtype=torch.float32).cuda()
+    b = torch.randn(size, dtype=torch.float32).cuda()
+    c = torch.empty(size, dtype=torch.float32).cuda()
+    c_expect = a + b
+
+    vecadd(size, a, b, c)
+    torch.cuda.synchronize()
+
+    torch.testing.assert_close(c_expect, c)
+
+
 if __name__ == "__main__":
-    size = 100000000
-    tune(size)
-    run(size)
+    size = 10000000
+    #tune(size)
+    #run(size)
+    tune_with_builtin(size)

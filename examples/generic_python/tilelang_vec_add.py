@@ -37,7 +37,7 @@ def run_normal():
     print("done")
 
 
-def call_tilelang(kernel_function, args, kwargs, grid, threads, params):
+def call_tilelang(kernel_function, args, kwargs):
     compiled_kernel = kernel_function(**kwargs) # cached, so second time only cache lookup is performed
     compiled_kernel(*args)
 

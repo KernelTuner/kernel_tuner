@@ -133,7 +133,7 @@ class MatmulV5(tilus.Script):
             )
 
 
-def call_tilus(kernel_function, args, kwargs, grid, threads, params):
+def call_tilus(kernel_function, args, kwargs):
     kernel_function(*args, **kwargs) 
 
 

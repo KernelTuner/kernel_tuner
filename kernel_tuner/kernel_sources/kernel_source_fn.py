@@ -46,7 +46,7 @@ class KernelSourceFn(KernelSource):
                 raise ValueError("call_function must be supplied for language Generic Python")
             if not callable(call_function):
                 raise TypeError(f"call_function of type {type(call_function)} is not a callable object.")
-        self.call_function = call_function # TODO ceck signature
+        self.call_function = call_function
 
         if not isinstance(kernel_name, str):
             raise TypeError("kernel_name should be a string, got ", type(kernel_name))

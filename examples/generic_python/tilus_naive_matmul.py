@@ -68,7 +68,7 @@ class MatmulV0(tilus.Script):
         self.store_global(gc, acc_f16, offsets=[offset_m, offset_n])
 
 
-def call_tilus(kernel_function, args, kwargs, grid, threads, params):
+def call_tilus(kernel_function, args, kwargs):
     kernel_function(*args, **kwargs) 
 
 def main():
