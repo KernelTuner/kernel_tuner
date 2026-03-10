@@ -96,7 +96,7 @@ def acceptance_prob(old_cost, new_cost, T):
     # if start pos is not valid, always move
     if isinstance(old_cost, ErrorConfig):
         res = 1.0
-    # if we have found a valid ps before, never move to nonvalid pos
+    # if we have found a valid pos before, never move to nonvalid pos
     elif isinstance(new_cost, ErrorConfig):
         res = 0.0
     # always move if new cost is better
@@ -108,7 +108,7 @@ def acceptance_prob(old_cost, new_cost, T):
         abs_diff = old_cost - new_cost
 
         # relative to abs(old_cost), as the cost might be negative
-        rel_diff = abs_diff / np.abs(old_cost)
+        rel_diff = abs_diff / (np.abs(old_cost) if old_cost != 0.0 else 1e-20)
 
         # exponential decay
         res = np.exp(rel_diff / T)
