@@ -25,6 +25,7 @@ limitations under the License.
 """
 
 import logging
+import importlib
 from argparse import ArgumentParser
 from ast import literal_eval
 from datetime import datetime
@@ -38,7 +39,7 @@ from constraint import Constraint
 import kernel_tuner.core as core
 import kernel_tuner.util as util
 from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
-from kernel_tuner.integration import get_objective_defaults
+from kernel_tuner.util import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.searchspace import Searchspace
@@ -48,46 +49,59 @@ try:
 except ImportError:
     torch = util.TorchPlaceHolder()
 
-from kernel_tuner.strategies import (
-    basinhopping,
-    bayes_opt,
-    brute_force,
-    diff_evo,
-    dual_annealing,
-    firefly_algorithm,
-    genetic_algorithm,
-    greedy_ils,
-    greedy_mls,
-    minimize,
-    mls,
-    ordered_greedy_mls,
-    pso,
-    pyatf_strategies,
-    random_sample,
-    simulated_annealing,
-    skopt
-)
 from kernel_tuner.strategies.wrapper import OptAlgWrapper
 
-strategy_map = {
-    "brute_force": brute_force,
-    "random_sample": random_sample,
-    "minimize": minimize,
-    "basinhopping": basinhopping,
-    "diff_evo": diff_evo,
-    "genetic_algorithm": genetic_algorithm,
-    "greedy_mls": greedy_mls,
-    "ordered_greedy_mls": ordered_greedy_mls,
-    "greedy_ils": greedy_ils,
-    "dual_annealing": dual_annealing,
-    "mls": mls,
-    "pso": pso,
-    "simulated_annealing": simulated_annealing,
-    "skopt": skopt,
-    "firefly_algorithm": firefly_algorithm,
-    "bayes_opt": bayes_opt,
-    "pyatf_strategies": pyatf_strategies,
+_STRATEGY_IMPORTS = {
+    "brute_force": "kernel_tuner.strategies.brute_force",
+    "random_sample": "kernel_tuner.strategies.random_sample",
+    "minimize": "kernel_tuner.strategies.minimize",
+    "basinhopping": "kernel_tuner.strategies.basinhopping",
+    "diff_evo": "kernel_tuner.strategies.diff_evo",
+    "genetic_algorithm": "kernel_tuner.strategies.genetic_algorithm",
+    "greedy_mls": "kernel_tuner.strategies.greedy_mls",
+    "ordered_greedy_mls": "kernel_tuner.strategies.ordered_greedy_mls",
+    "greedy_ils": "kernel_tuner.strategies.greedy_ils",
+    "dual_annealing": "kernel_tuner.strategies.dual_annealing",
+    "mls": "kernel_tuner.strategies.mls",
+    "pso": "kernel_tuner.strategies.pso",
+    "simulated_annealing": "kernel_tuner.strategies.simulated_annealing",
+    "skopt": "kernel_tuner.strategies.skopt",
+    "firefly_algorithm": "kernel_tuner.strategies.firefly_algorithm",
+    "bayes_opt": "kernel_tuner.strategies.bayes_opt",
+    "pyatf_strategies": "kernel_tuner.strategies.pyatf_strategies",
 }
+
+
+def _strategy_import_error(strategy_name, module_path, err):
+    base_msg = (
+        f"Failed to import strategy '{strategy_name}' from '{module_path}'. "
+        "This strategy may require optional dependencies that are not installed."
+    )
+    return ImportError(f"{base_msg} Original error: {err}")
+
+
+class _LazyStrategyModule:
+    def __init__(self, name, module_path):
+        self._name = name
+        self._module_path = module_path
+        self._module = None
+
+    def _load(self):
+        if self._module is None:
+            try:
+                self._module = importlib.import_module(self._module_path)
+            except ImportError as err:
+                raise _strategy_import_error(self._name, self._module_path, err)
+        return self._module
+
+    def __getattr__(self, attr):
+        return getattr(self._load(), attr)
+
+    def __repr__(self):
+        return f"<lazy strategy module '{self._name}'>"
+
+
+strategy_map = {name: _LazyStrategyModule(name, path) for name, path in _STRATEGY_IMPORTS.items()}
 
 
 class Options(dict):
@@ -651,7 +665,7 @@ def tune_kernel(
         tuning_options.strategy_options = Options(strategy_options or {})
     # if no strategy selected
     else:
-        strategy = brute_force
+        strategy = strategy_map["brute_force"]
 
     # select the runner for this job based on input
     selected_runner = SimulationRunner if simulation_mode else SequentialRunner
