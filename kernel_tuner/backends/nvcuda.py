@@ -154,10 +154,7 @@ class CudaFunctions(GPUBackend):
         """
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
-
-        # mimic pycuda behavior to wrap kernel_string in extern "C" if not in kernel_string already
-        if 'extern "C"' not in kernel_string:
-            kernel_string = 'extern "C" {\n' + kernel_string + "\n}"
+        expression_name = str.encode(kernel_name)
 
         compiler_options = self.compiler_options_bytes
         if not any([b"--std=" in opt for opt in compiler_options]):
@@ -171,20 +168,37 @@ class CudaFunctions(GPUBackend):
 
         err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
         try:
+            # Add the kernel as an expression. This is necessary for templated kernels to ensure that the
+            # compiler actually instantiates the kernel that we want to compile.
+            cuda_error_check(err)
+            err = nvrtc.nvrtcAddNameExpression(program, expression_name)
+            
+            # Compile the program
             cuda_error_check(err)
             err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
+            
+            # Get the PTX
             cuda_error_check(err)
             err, size = nvrtc.nvrtcGetPTXSize(program)
             cuda_error_check(err)
             buff = b" " * size
             err = nvrtc.nvrtcGetPTX(program, buff)
             cuda_error_check(err)
+            
+            # Load the module
             err, self.current_module = driver.cuModuleLoadData(np.char.array(buff))
             if err == driver.CUresult.CUDA_ERROR_INVALID_PTX:
                 raise SkippableFailure("uses too much shared data")
             else:
                 cuda_error_check(err)
-            err, self.func = driver.cuModuleGetFunction(self.current_module, str.encode(kernel_name))
+                
+            # First, get the "lowered" name of the kernel (i.e., the name inside the PTX).
+            # After, we can use the lowered name to lookup the kernel in the module. 
+            err, lowered_name = nvrtc.nvrtcGetLoweredName(program, expression_name)
+            cuda_error_check(err)
+            err, self.func = driver.cuModuleGetFunction(
+                self.current_module, lowered_name
+            )
             cuda_error_check(err)
 
             # get the number of registers per thread used in this kernel
