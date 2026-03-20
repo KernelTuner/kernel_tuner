@@ -7,7 +7,7 @@ from kernel_tuner.interface import Options
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
-from kernel_tuner.util import StopCriterionReached
+from kernel_tuner.util import StopCriterionReached, TuningBudget
 
 try:
     from mock import Mock
@@ -20,7 +20,6 @@ def fake_runner():
         'time': 5
     }
     runner = Mock()
-    runner.last_strategy_start_time = perf_counter()
     runner.run.return_value = [fake_result]
     return runner
 
@@ -30,7 +29,7 @@ tune_params = dict([("x", [1, 2, 3]), ("y", [4, 5, 6])])
 
 def test_cost_func():
     x = [1, 4]
-    tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
+    tuning_options = Options(tune_params=tune_params, budget=TuningBudget(),
                              restrictions=None, strategy_options={}, cache={}, unique_results={},
                              objective="time", objective_higher_is_better=False, metrics=None)
     runner = fake_runner()
@@ -41,14 +40,13 @@ def test_cost_func():
     # check if restrictions are properly handled
     def restrictions(x, y):
         return False
-    tuning_options = Options(scaling=False, snap=False, tune_params=tune_params,
+    tuning_options = Options(tune_params=tune_params, budget=TuningBudget(),
                              restrictions=restrictions, strategy_options={},
                              verbose=True, cache={}, unique_results={},
                              objective="time", objective_higher_is_better=False, metrics=None)
     
-    with raises(StopCriterionReached):
-        time = CostFunc(Searchspace(tune_params, restrictions, 1024), tuning_options, runner)(x)
-        assert time == sys.float_info.max
+    time = CostFunc(Searchspace(tune_params, restrictions, 1024), tuning_options, runner)(x)
+    assert time == sys.float_info.max
 
 
 def test_setup_method_arguments():
