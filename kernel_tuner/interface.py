@@ -606,6 +606,8 @@ def tune_kernel(
         tune_params = dict(tune_params)
         if answer is not None:
             answer = [None if a is None else numpy.array(a) for a in util.possible_julia_vector_to_list(answer)]
+        if device == 0:
+            device = 1  # Julia uses 1-based indexing for devices
     restrictions = util.possible_julia_vector_to_list(restrictions)
     block_size_names = util.possible_julia_vector_to_list(block_size_names)
 

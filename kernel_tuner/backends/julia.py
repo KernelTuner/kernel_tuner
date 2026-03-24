@@ -177,7 +177,9 @@ class JuliaFunctions(GPUBackend):
 
         # Select device
         try:
-            jl.seval(info["device_select"](int(device) + 1))  # Julia uses 1-based indexing
+            if int(device) == 0:
+                device = 1  # Julia uses 1-based indexing
+            jl.seval(info["device_select"](int(device)))
             self.last_selected_device = device
         except Exception as e:
             raise RuntimeError(f"Failed to select Julia {info['module']} device {device}: {e}") from e
