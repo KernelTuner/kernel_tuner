@@ -604,7 +604,8 @@ def tune_kernel(
             )
         tune_params = [tuple([k, util.possible_julia_vector_to_list(tp)]) for k, tp in tune_params]
         tune_params = dict(tune_params)
-        answer = [None if a is None else numpy.array(a) for a in util.possible_julia_vector_to_list(answer)]
+        if answer is not None:
+            answer = [None if a is None else numpy.array(a) for a in util.possible_julia_vector_to_list(answer)]
     restrictions = util.possible_julia_vector_to_list(restrictions)
     block_size_names = util.possible_julia_vector_to_list(block_size_names)
 
@@ -698,7 +699,7 @@ def tune_kernel(
 
     # create search space
     tuning_options.restrictions_unmodified = deepcopy(restrictions)
-    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads, **searchspace_construction_options)
+    searchspace = Searchspace(tune_params, restrictions, max_threads=runner.dev.max_threads, **searchspace_construction_options)
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
     if verbose:

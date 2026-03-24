@@ -43,6 +43,7 @@ class JuliaFunctions(GPUBackend):
         if jl is None:
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
         self.available_backends = detect_julia_gpu_backends()
+        self.available_backends = "INTEL"
         if compiler_options is not None and len(compiler_options) == 1:
             if compiler_options[0].upper() not in self.available_backends:
                 raise ValueError(
@@ -137,9 +138,9 @@ class JuliaFunctions(GPUBackend):
                 "module": "oneAPI",
                 "device_select": lambda d: f"oneAPI.device!({d})",
                 "name": "oneAPI.name(oneAPI.device())",
-                "max_threads": "oneAPI.device_attribute(oneAPI.device(), :max_work_group_size)",
+                "max_threads": "oneAPI.compute_properties(oneAPI.device()).maxTotalGroupSize",
                 "capability": None,
-                "GPUArrayType": "OneArray",
+                "GPUArrayType": "oneArray",
             },
             "METAL": {
                 "pkg": "Metal",
@@ -176,7 +177,7 @@ class JuliaFunctions(GPUBackend):
 
         # Select device
         try:
-            jl.seval(info["device_select"](int(device)))
+            jl.seval(info["device_select"](int(device) + 1))
             self.last_selected_device = device
         except Exception as e:
             raise RuntimeError(f"Failed to select Julia {info['module']} device {device}: {e}") from e
@@ -208,8 +209,12 @@ class JuliaFunctions(GPUBackend):
         self.backend_device = self.backend_mod.device()
         if backend_name == "CUDA":
             self.contextqueue = self.backend_mod.context
-        elif backend_name in ("AMD", "INTEL"):
+        elif backend_name == "AMD":
             self.contextqueue = self.backend_mod.queue
+        #elif backend_name == "INTEL":
+        #    self.contextqueue = jl.seval(
+        #        f"ZeCommandQueue(ZeContext(first(drivers())), devices(first(drivers()))[{int(device) + 1}]))"
+        #    )
         elif backend_name == "METAL":
             self.contextqueue = self.backend_mod.MTLCommandQueue(self.backend_device)
 
