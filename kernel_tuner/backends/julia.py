@@ -136,7 +136,7 @@ class JuliaFunctions(GPUBackend):
             "INTEL": {
                 "pkg": "oneAPI",
                 "module": "oneAPI",
-                "device_select": lambda d: f"devices(first(drivers()))[{d}])",
+                "device_select": lambda d: f"devices(first(drivers()))[{d}]",
                 "name": "oneAPI.name(oneAPI.device())",
                 "max_threads": "oneAPI.compute_properties(oneAPI.device()).maxTotalGroupSize",
                 "capability": None,
@@ -177,8 +177,8 @@ class JuliaFunctions(GPUBackend):
 
         # Select device
         try:
-            if int(device) == 0:
-                device = 1  # Julia uses 1-based indexing
+            if int(device) == 0 and not info["pkg"] == "CUDA":
+                device = 1  # Julia uses 1-based indexing, but the CUDA backend uses 0-based so we skip that
             jl.seval(info["device_select"](int(device)))
             self.last_selected_device = device
         except Exception as e:
