@@ -43,7 +43,6 @@ class JuliaFunctions(GPUBackend):
         if jl is None:
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
         self.available_backends = detect_julia_gpu_backends()
-        self.available_backends = "INTEL"
         if compiler_options is not None and len(compiler_options) == 1:
             if compiler_options[0].upper() not in self.available_backends:
                 raise ValueError(
