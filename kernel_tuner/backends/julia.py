@@ -126,7 +126,7 @@ class JuliaFunctions(GPUBackend):
             "AMD": {
                 "pkg": "AMDGPU",
                 "module": "AMDGPU",
-                "device_select": lambda d: f"AMDGPU.device!({d})",
+                "device_select": lambda d: f"AMDGPU.device!(AMDGPU.devices()[{d}])",
                 "name": "AMDGPU.name(AMDGPU.device())",
                 "max_threads": "AMDGPU.device_attribute(AMDGPU.device(), :maxthreadsperblock)",
                 "capability": None,
