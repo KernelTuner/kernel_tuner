@@ -65,7 +65,9 @@ from kernel_tuner.strategies import (
     pyatf_strategies,
     random_sample,
     simulated_annealing,
-    skopt
+    skopt,
+    gen_hybrid_vndx,
+    gen_adaptive_tabu_greywolf,
 )
 from kernel_tuner.strategies.wrapper import OptAlgWrapper
 
@@ -87,6 +89,8 @@ strategy_map = {
     "firefly_algorithm": firefly_algorithm,
     "bayes_opt": bayes_opt,
     "pyatf_strategies": pyatf_strategies,
+    "hybrid_vndx": gen_hybrid_vndx,
+    "adaptive_tabu_greywolf": gen_adaptive_tabu_greywolf,
 }
 
 
@@ -397,6 +401,8 @@ _tuning_options = Options(
             * "random_sample" takes a random sample of the search space
             * "simulated_annealing" simulated annealing strategy
             * "skopt" uses the minimization methods from `skopt`
+            * "HybridVNDX" a hybrid variable neighborhood descent strategy
+            * "AdaptiveTabuGreyWolf" an adaptive tabu-guided grey wolf optimization strategy
 
         Strategy-specific parameters and options are explained under strategy_options.
 
