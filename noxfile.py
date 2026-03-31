@@ -7,15 +7,17 @@ Be careful that the general setup of tests is left to pyproject.toml.
 
 import platform
 import re
-import subprocess
-from json import JSONDecodeError
-from json import loads as json_loads
+import sys
 from pathlib import Path
-from re import search as regex_search
-from warnings import warn
 
 import nox
 from nox_poetry import Session, session
+
+# Create a repository root path to access the Julia helper functions
+# TODO this should be changed to something more robust
+REPO_ROOT = Path(__file__).parent.joinpath(Path("kernel_tuner/backends")).resolve()
+sys.path.append(str(REPO_ROOT))
+from julia_helper import backend_map, detect_julia_gpu_backends  # noqa: E402, F401
 
 # set the test parameters
 verbose = False
@@ -325,7 +327,9 @@ def tests(session: Session) -> None:
         # call Julia to precompile packages in the session environment
         session.run("julia", "-e", "using Pkg; Pkg.precompile(); Pkg.instantiate()", external=True)
         # install any additional dependencies used by the tests, as `check_package_and_install` won't work from Nox
-        gpu_backends_string = "".join(f'Pkg.add("{backend}"); ' for backend in detect_julia_gpu_backends())
+        gpu_backends_string = "".join(
+            f'Pkg.add("{backend_map[backend]["pkg"]}"); ' for backend in detect_julia_gpu_backends()
+        )
         session.run("julia", "-e", f'using Pkg; Pkg.add("KernelAbstractions"); {gpu_backends_string}', external=True)
 
     # if applicable, install the dependencies for additional tests
@@ -373,55 +377,3 @@ def tests(session: Session) -> None:
                      Run with 'additional-tests' and without 'skip-gpu', 'skip-cuda' etc. to avoid this.
                     """
         )
-
-
-### Helper functions ###
-
-
-# lifted from backends/julia.py
-def detect_julia_gpu_backends():
-    """Detect the Julia backends available, return the assiociated package."""
-    available_backends = []
-    for backend_name in ["CUDA", "AMD", "METAL", "INTEL"]:
-        if backend_name == "CUDA":
-            try:
-                subprocess.check_output("nvidia-smi")
-                available_backends.append("CUDA")
-            except (FileNotFoundError, subprocess.CalledProcessError):
-                pass
-        elif backend_name == "AMD":
-            try:
-                subprocess.check_output("rocm-smi")
-                available_backends.append("AMDGPU")
-            except (FileNotFoundError, subprocess.CalledProcessError):
-                pass
-        elif backend_name == "METAL":
-            try:
-                output = subprocess.check_output("system_profiler -json SPDisplaysDataType".split())
-                json_output = json_loads(output)["SPDisplaysDataType"]
-                for gpu in json_output:
-                    if "spdisplays_mtlgpufamilysupport" in gpu:
-                        supported = gpu["spdisplays_mtlgpufamilysupport"].lower()
-                        if "metal" in supported:
-                            version = regex_search(r".*metal([\d.]+)", supported).group(1)
-                            if float(version) < 3:
-                                warn(
-                                    f"Metal backend detected, but {supported} < 3. "
-                                    "Metal.jl requires Metal version 3 or higher."
-                                )
-                            else:
-                                available_backends.append(backend_name)
-            except (FileNotFoundError, subprocess.CalledProcessError, JSONDecodeError):
-                pass
-        elif backend_name == "INTEL":
-            # this can give false positives for other backends too, so skip if we've already detected another backend
-            if len(available_backends) > 0:
-                continue
-            try:
-                subprocess.check_output(
-                    "ls /dev/dri/by-path/".split()
-                )  # not a perfect check but should work in most cases
-                available_backends.append("oneAPI")
-            except (FileNotFoundError, subprocess.CalledProcessError):
-                pass
-    return available_backends
