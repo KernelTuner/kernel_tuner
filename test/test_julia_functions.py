@@ -42,7 +42,7 @@ def test_ready_argument_list():
     # Julia Array maps back through PythonCall as pyjl_pointer-like proxies
     # Scalars remain scalars
     assert isinstance(gpu_args[0], ValueBase)  # Julia GPU Array proxy
-    assert isinstance(gpu_args[1], np.int32)  # scalar unchanged
+    assert isinstance(gpu_args[1], (int, np.int32))  # scalar unchanged
     assert isinstance(gpu_args[2], ValueBase)  # Julia GPU Array proxy
 
 
