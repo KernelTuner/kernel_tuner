@@ -40,7 +40,7 @@ Steps with :bash:`sudo` access (e.g. on a local device):
     * Activate the environment with :bash:`pyenv activate kerneltuner`.
     * Make sure :bash:`which python` and :bash:`which pip` point to the expected Python location and version. 
     * Update Pip with :bash:`pip install --upgrade pip`.
-#. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system. To go all-out, use :bash:`--all-extras`
+#. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip -E julia`, leaving out :bash:`-E cuda`, :bash:`-E opencl` etc. if this does not apply on your system. To go all-out, use :bash:`--all-extras`
     * Depending on the environment, it may be necessary or convenient to install extra packages such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.
     * Do not forget to make sure the paths are set correctly. If you're using CUDA, the desired CUDA version should be in :bash:`$PATH`, :bash:`$LD_LIBARY_PATH` and :bash:`$CPATH`.
     * Re-open the shell for changes to take effect.
@@ -72,8 +72,9 @@ Steps without :bash:`sudo` access (e.g. on a cluster):
 #. `Install Poetry <https://python-poetry.org/docs/#installing-with-the-official-installer>`__. 
     * Use :bash:`curl -sSL https://install.python-poetry.org | python3 -` to install Poetry.
     * Add the poetry export plugin with :bash:`poetry self add poetry-plugin-export`. 
-#. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip`, leaving out :bash:`-E cuda`, :bash:`-E opencl` or :bash:`-E hip` if this does not apply on your system. To go all-out, use :bash:`--all-extras`.
+#. Install the project, dependencies and extras: :bash:`poetry install --with test,docs -E cuda -E opencl -E hip -E julia`, leaving out :bash:`-E cuda`, :bash:`-E opencl` etc. if this does not apply on your system. To go all-out, use :bash:`--all-extras`.
     * If you run into "keyring" or other seemingly weird issues, this is a known issue with Poetry on some systems. Do: :bash:`pip install keyring`, :bash:`python3 -m keyring --disable`.
+    * Kernel Tuner has a dependency on Python-Constraint, which provides binaries for most systems. On some older systems, these binaries may not be compatible (on Linux usually due to an outdated LDD version, check with :bash:`ldd --version`, must be >=2.35). Without binaries, your system will try to build it yourself, so make sure build tools are available (e.g. with :bash:`module load gcc/13.2.0`). 
     * Depending on the environment, it may be necessary or convenient to install extra packages such as :bash:`cupy-cuda11x` / :bash:`cupy-cuda12x`, and :bash:`cuda-python`. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.
     * Verify that your development environment has no missing installs or updates with :bash:`poetry install --sync --dry-run --with test`. 
 #. Check if the environment is setup correctly by running :bash:`pytest`. All tests should pass, except if you're not on a GPU node, or one or more extras has been left out in the previous step, then these tests will skip gracefully.
