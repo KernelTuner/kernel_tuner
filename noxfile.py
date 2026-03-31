@@ -382,7 +382,7 @@ def tests(session: Session) -> None:
 def detect_julia_gpu_backends():
     """Detect the Julia backends available, return the assiociated package."""
     available_backends = []
-    for backend_name in ["CUDA", "AMD", "INTEL", "METAL"]:
+    for backend_name in ["CUDA", "AMD", "METAL", "INTEL"]:
         if backend_name == "CUDA":
             try:
                 subprocess.check_output("nvidia-smi")
@@ -393,14 +393,6 @@ def detect_julia_gpu_backends():
             try:
                 subprocess.check_output("rocm-smi")
                 available_backends.append("AMDGPU")
-            except (FileNotFoundError, subprocess.CalledProcessError):
-                pass
-        elif backend_name == "INTEL":
-            try:
-                subprocess.check_output(
-                    "ls /dev/dri/by-path/".split()
-                )  # not a perfect check but should work in most cases
-                available_backends.append("oneAPI")
             except (FileNotFoundError, subprocess.CalledProcessError):
                 pass
         elif backend_name == "METAL":
@@ -420,5 +412,16 @@ def detect_julia_gpu_backends():
                             else:
                                 available_backends.append(backend_name)
             except (FileNotFoundError, subprocess.CalledProcessError, JSONDecodeError):
+                pass
+        elif backend_name == "INTEL":
+            # this can give false positives for other backends too, so skip if we've already detected another backend
+            if len(available_backends) > 0:
+                continue
+            try:
+                subprocess.check_output(
+                    "ls /dev/dri/by-path/".split()
+                )  # not a perfect check but should work in most cases
+                available_backends.append("oneAPI")
+            except (FileNotFoundError, subprocess.CalledProcessError):
                 pass
     return available_backends
