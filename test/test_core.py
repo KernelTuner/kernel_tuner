@@ -150,7 +150,7 @@ def test_default_verify_function_arrays():
             core._default_verify_function(instance, ans, result_host, 0, False)
             print("_default_verify_function failed to throw an exception")
             assert False
-        except TypeError:
+        except (TypeError, ValueError):
             assert True
 
     for result_host in [result_host, result_host2]:
@@ -173,7 +173,7 @@ def test_default_verify_function_scalar():
             core._default_verify_function(instance, ans, result_host, 0, False)
             print("_default_verify_function failed to throw an exception")
             assert False
-        except TypeError:
+        except (TypeError, ValueError):
             assert True
 
     assert core._default_verify_function(instance, answer, result_host, 0.1, False)

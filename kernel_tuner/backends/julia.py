@@ -459,7 +459,9 @@ def detect_julia_gpu_backends():
                 pass
         elif backend_name == "INTEL":
             try:
-                subprocess.check_output("intel_gpu_top -J".split())
+                subprocess.check_output(
+                    "ls /dev/dri/by-path/".split()
+                )  # not a perfect check but should work in most cases
                 available_backends.append(backend_name)
             except (FileNotFoundError, subprocess.CalledProcessError):
                 pass

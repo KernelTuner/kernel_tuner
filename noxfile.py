@@ -12,6 +12,7 @@ from json import JSONDecodeError
 from json import loads as json_loads
 from pathlib import Path
 from re import search as regex_search
+from warnings import warn
 
 import nox
 from nox_poetry import Session, session
@@ -377,6 +378,7 @@ def tests(session: Session) -> None:
 ### Helper functions ###
 
 
+# lifted from backends/julia.py
 def detect_julia_gpu_backends():
     """Detect the Julia backends available, return the assiociated package."""
     available_backends = []
@@ -395,7 +397,9 @@ def detect_julia_gpu_backends():
                 pass
         elif backend_name == "INTEL":
             try:
-                subprocess.check_output("intel_gpu_top -J".split())
+                subprocess.check_output(
+                    "ls /dev/dri/by-path/".split()
+                )  # not a perfect check but should work in most cases
                 available_backends.append("oneAPI")
             except (FileNotFoundError, subprocess.CalledProcessError):
                 pass
@@ -408,8 +412,13 @@ def detect_julia_gpu_backends():
                         supported = gpu["spdisplays_mtlgpufamilysupport"].lower()
                         if "metal" in supported:
                             version = regex_search(r".*metal([\d.]+)", supported).group(1)
-                            if float(version) > 3:
-                                available_backends.append("Metal")
+                            if float(version) < 3:
+                                warn(
+                                    f"Metal backend detected, but {supported} < 3. "
+                                    "Metal.jl requires Metal version 3 or higher."
+                                )
+                            else:
+                                available_backends.append(backend_name)
             except (FileNotFoundError, subprocess.CalledProcessError, JSONDecodeError):
                 pass
     return available_backends
