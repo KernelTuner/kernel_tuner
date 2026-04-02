@@ -25,6 +25,7 @@ Kernel Tuner follows the Google Python style guide, with Sphinxdoc docstrings fo
 Before creating a pull request please ensure the following:
 
 * You are working in an up-to-date development environment
+* You are a human developer. We are not interested in purely AI generated code contributions.
 * You have written unit tests to test your additions and all unit tests pass (run :bash:`nox`). If you do not have the required hardware, you can run :bash:`nox -- skip-gpu`, or :bash:`skip-cuda`, :bash:`skip-hip`, :bash:`skip-opencl`.
 * The examples still work and produce the same (or better) results
 * An entry about the change or addition is created in :bash:`CHANGELOG.md`

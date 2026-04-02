@@ -1,21 +1,21 @@
-from datetime import datetime
+
+import ctypes as C
 
 import numpy as np
-import ctypes as C
 import pytest
 from pytest import raises
 
 try:
-    from mock import patch, Mock
+    from mock import Mock, patch
 except ImportError:
-    from unittest.mock import patch, Mock
+    from unittest.mock import Mock, patch
 
 import kernel_tuner
-from kernel_tuner.backends.compiler import CompilerFunctions, Argument, is_cupy_array, get_array_module
-from kernel_tuner.core import KernelSource, KernelInstance
-from kernel_tuner import util
+from kernel_tuner.backends.compiler import Argument, CompilerFunctions, get_array_module, is_cupy_array
+from kernel_tuner.core import KernelInstance, KernelSource
+from kernel_tuner.util import delete_temp_file
 
-from .context import skip_if_no_gfortran, skip_if_no_gcc, skip_if_no_openmp, skip_if_no_cupy
+from .context import skip_if_no_cupy, skip_if_no_gcc, skip_if_no_gfortran, skip_if_no_openmp
 from .test_runners import env as cuda_env  # noqa: F401
 
 
@@ -146,12 +146,6 @@ def test_byte_array_arguments():
 
     assert all(output_arg1 == arg1)
 
-    dest = np.zeros_like(arg1)
-
-    cfunc.memcpy_dtoh(dest, output[0])
-
-    assert all(dest == arg1)
-
 
 @patch("kernel_tuner.backends.compiler.subprocess")
 @patch("kernel_tuner.backends.compiler.numpy.ctypeslib")
@@ -159,9 +153,7 @@ def test_compile(npct, subprocess):
     kernel_string = "this is a fake C program"
     kernel_name = "blabla"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(
-        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
-    )
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
     cfunc = CompilerFunctions()
     f = cfunc.compile(kernel_instance)
@@ -191,9 +183,7 @@ def test_compile_detects_device_code(npct, subprocess):
     kernel_string = "this code clearly contains device code __global__ kernel(float* arg){ return; }"
     kernel_name = "blabla"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(
-        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
-    )
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
     cfunc = CompilerFunctions()
     cfunc.compile(kernel_instance)
@@ -230,111 +220,6 @@ def test_memset():
     assert all(x == np.zeros(4))
 
 
-@skip_if_no_cupy
-def test_memcpy_dtoh():
-    import cupy as cp
-
-    a = [1, 2, 3, 4]
-    x = cp.asarray(a, dtype=np.float32)
-    x_c = C.c_void_p(x.data.ptr)
-    arg = Argument(numpy=x, ctypes=x_c)
-    output = np.zeros(len(x), dtype=x.dtype)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_dtoh(output, arg)
-
-    print(f"{type(x)=} {x=}")
-    print(f"{type(a)=} {a=}")
-    print(f"{type(output)=} {output=}")
-
-    assert all(output == a)
-    assert all(x.get() == a)
-
-
-@skip_if_no_gcc
-def test_memcpy_host_dtoh():
-    a = [1, 2, 3, 4]
-    x = np.array(a).astype(np.float32)
-    x_c = x.ctypes.data_as(C.POINTER(C.c_float))
-    arg = Argument(numpy=x, ctypes=x_c)
-    output = np.zeros_like(x)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_dtoh(output, arg)
-
-    print(a)
-    print(output)
-
-    assert all(output == a)
-    assert all(x == a)
-
-
-@skip_if_no_cupy
-def test_memcpy_device_dtoh():
-    import cupy as cp
-
-    a = [1, 2, 3, 4]
-    x = cp.asarray(a, dtype=np.float32)
-    x_c = C.c_void_p(x.data.ptr)
-    arg = Argument(numpy=x, ctypes=x_c)
-    output = cp.zeros_like(x)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_dtoh(output, arg)
-
-    print(f"{type(x)=} {x=}")
-    print(f"{type(a)=} {a=}")
-    print(f"{type(output)=} {output=}")
-
-    assert all(output.get() == a)
-    assert all(x.get() == a)
-
-
-@skip_if_no_cupy
-def test_memcpy_htod():
-    import cupy as cp
-
-    a = [1, 2, 3, 4]
-    src = np.array(a, dtype=np.float32)
-    x = cp.zeros(len(src), dtype=src.dtype)
-    x_c = C.c_void_p(x.data.ptr)
-    arg = Argument(numpy=x, ctypes=x_c)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_htod(arg, src)
-
-    assert all(arg.numpy.get() == a)
-
-
-def test_memcpy_host_htod():
-    a = [1, 2, 3, 4]
-    src = np.array(a).astype(np.float32)
-    x = np.zeros_like(src)
-    x_c = x.ctypes.data_as(C.POINTER(C.c_float))
-    arg = Argument(numpy=x, ctypes=x_c)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_htod(arg, src)
-
-    assert all(arg.numpy == a)
-
-
-@skip_if_no_cupy
-def test_memcpy_device_htod():
-    import cupy as cp
-
-    a = [1, 2, 3, 4]
-    src = cp.array(a, dtype=np.float32)
-    x = cp.zeros(len(src), dtype=src.dtype)
-    x_c = C.c_void_p(x.data.ptr)
-    arg = Argument(numpy=x, ctypes=x_c)
-
-    cfunc = CompilerFunctions()
-    cfunc.memcpy_htod(arg, src)
-
-    assert all(arg.numpy.get() == a)
-
-
 @skip_if_no_gfortran
 def test_complies_fortran_function_no_module():
     kernel_string = """
@@ -347,9 +232,7 @@ def test_complies_fortran_function_no_module():
     """
     kernel_name = "my_test_function"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(
-        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
-    )
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
     cfunc = CompilerFunctions(compiler="gfortran")
     func = cfunc.compile(kernel_instance)
@@ -378,9 +261,7 @@ def test_complies_fortran_function_with_module():
     """
     kernel_name = "my_test_function"
     kernel_sources = KernelSource(kernel_name, kernel_string, "C")
-    kernel_instance = KernelInstance(
-        kernel_name, kernel_sources, kernel_string, [], None, None, dict(), []
-    )
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
 
     try:
         cfunc = CompilerFunctions(compiler="gfortran")
@@ -391,7 +272,7 @@ def test_complies_fortran_function_with_module():
         assert np.isclose(result, 42.0)
 
     finally:
-        util.delete_temp_file("my_fancy_module.mod")
+        delete_temp_file("my_fancy_module.mod")
 
 
 @pytest.fixture
@@ -427,7 +308,7 @@ def env():
 @skip_if_no_openmp
 @skip_if_no_gcc
 def test_benchmark(env):
-    results, _ = kernel_tuner.tune_kernel(*env, block_size_names=["nthreads"])
+    results, _ = kernel_tuner.tune_kernel(*env, compiler_options=["-fopenmp"], block_size_names=["nthreads"])
     assert len(results) == 3
     assert all(["nthreads" in result for result in results])
     assert all(["time" in result for result in results])
@@ -487,3 +368,26 @@ def test_run_kernel():
         lang="C",
     )
     assert cp.all((a + b) == c)
+
+
+def test_refresh_memory():
+    arg1 = np.array([1, 2, 3]).astype(np.int32)
+    arguments = [arg1]
+    cfunc = CompilerFunctions()
+    _ = cfunc.ready_argument_list(arguments)
+    assert np.all(arguments[0] == [1, 2, 3])
+    arguments[0] = np.array([0, 0, 0]).astype(np.int8)
+    assert np.all(arguments[0] == [0, 0, 0])
+    cfunc.refresh_memory(None, arguments, [True])
+    assert np.all(arguments[0] == [1, 2, 3])
+
+
+def test_memcpy_dtoh():
+    arg1 = np.array([0, 5, 0, 7]).astype(np.int32)
+    arguments = [arg1]
+    cfunc = CompilerFunctions()
+    ready_arguments = cfunc.ready_argument_list(arguments)
+    output = np.array([5, 0, 7, 0]).astype(np.int32)
+    assert np.all(ready_arguments[0].numpy != output)
+    cfunc.memcpy_dtoh(output, ready_arguments[0])
+    assert np.all(ready_arguments[0].numpy == output)

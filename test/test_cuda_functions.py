@@ -9,7 +9,7 @@ from .context import skip_if_no_cuda
 from .test_runners import env  # noqa: F401
 
 try:
-    from cuda import cuda
+    from cuda.bindings import driver
 except Exception:
     pass
 
@@ -27,9 +27,9 @@ def test_ready_argument_list():
     dev = nvcuda.CudaFunctions(0)
     gpu_args = dev.ready_argument_list(arguments)
 
-    assert isinstance(gpu_args[0], cuda.CUdeviceptr)
+    assert isinstance(gpu_args[0], driver.CUdeviceptr)
     assert isinstance(gpu_args[1], np.int32)
-    assert isinstance(gpu_args[2], cuda.CUdeviceptr)
+    assert isinstance(gpu_args[2], driver.CUdeviceptr)
 
 
 @skip_if_no_cuda

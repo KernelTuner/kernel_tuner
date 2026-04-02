@@ -8,6 +8,7 @@ import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.hip import HipRuntimeObserver
+from kernel_tuner.backends.hip.util import hip_check
 
 try:
     from hip import hip, hiprtc
@@ -19,7 +20,6 @@ dtype_map = {
     "bool": ctypes.c_bool,
     "int8": ctypes.c_int8,
     "int16": ctypes.c_int16,
-    "float16": ctypes.c_int16,
     "int32": ctypes.c_int32,
     "int64": ctypes.c_int64,
     "uint8": ctypes.c_uint8,
@@ -31,18 +31,6 @@ dtype_map = {
 }
 
 hipSuccess = 0
-
-
-def hip_check(call_result):
-    """helper function to check return values of hip calls"""
-    err = call_result[0]
-    result = call_result[1:]
-    if len(result) == 1:
-        result = result[0]
-    if isinstance(err, hip.hipError_t) and err != hip.hipError_t.hipSuccess:
-        raise RuntimeError(str(err))
-    return result
-
 
 class HipFunctions(GPUBackend):
     """Class that groups the HIP functions on maintains state about the device."""
@@ -104,6 +92,7 @@ class HipFunctions(GPUBackend):
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the HIP function.
+
         :param arguments: List of arguments to be passed to the HIP function.
             The order should match the argument list on the HIP function.
             Allowed values are np.ndarray, and/or np.int32, np.float32, and so on.
@@ -119,25 +108,29 @@ class HipFunctions(GPUBackend):
 
             # Handle numpy arrays
             if isinstance(arg, np.ndarray):
-                if dtype_str in dtype_map.keys():
-                    # Allocate device memory
-                    device_ptr = hip_check(hip.hipMalloc(arg.nbytes))
+                # Allocate device memory
+                device_ptr = hip_check(hip.hipMalloc(arg.nbytes))
 
-                    # Copy data to device using hipMemcpy
-                    hip_check(hip.hipMemcpy(device_ptr, arg, arg.nbytes, hip.hipMemcpyKind.hipMemcpyHostToDevice))
+                # Copy data to device using hipMemcpy
+                hip_check(hip.hipMemcpy(device_ptr, arg, arg.nbytes, hip.hipMemcpyKind.hipMemcpyHostToDevice))
 
-                    prepared_args.append(device_ptr)
-                else:
-                    raise TypeError(f"Unknown dtype {dtype_str} for ndarray")
+                prepared_args.append(device_ptr)
 
             # Handle numpy scalar types
             elif isinstance(arg, np.generic):
                 # Convert numpy scalar to corresponding ctypes
-                ctype_arg = dtype_map[dtype_str](arg)
-                prepared_args.append(ctype_arg)
+                if dtype_str in dtype_map:
+                    ctype_arg = dtype_map[dtype_str](arg)
+                    prepared_args.append(ctype_arg)
+                # 16-bit float is not supported, view it as uint16
+                elif dtype_str in ("float16", "bfloat16"):
+                    ctype_arg = ctypes.c_uint16(arg.view(np.uint16))
+                    prepared_args.append(ctype_arg)
+                else:
+                    raise ValueError(f"Invalid argument type {dtype_str}: {arg}")
 
             else:
-                raise ValueError(f"Invalid argument type {type(arg)}, {arg}")
+                raise ValueError(f"Invalid argument type {type(arg)}: {arg}")
 
         return prepared_args
 

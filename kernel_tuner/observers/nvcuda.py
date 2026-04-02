@@ -1,12 +1,16 @@
 import numpy as np
 
 try:
-    from cuda import cudart
+    from cuda.bindings import runtime
 except ImportError:
-    cuda = None
+    try:
+        # backward compatibility hack for older cuda-python versions
+        from cuda import cudart as runtime
+    except ImportError:
+        cuda = None
 
 from kernel_tuner.observers.observer import BenchmarkObserver
-from kernel_tuner.util import cuda_error_check
+from kernel_tuner.utils.nvcuda import cuda_error_check
 
 
 class CudaRuntimeObserver(BenchmarkObserver):
@@ -21,7 +25,7 @@ class CudaRuntimeObserver(BenchmarkObserver):
 
     def after_finish(self):
         # Time is measured in milliseconds
-        err, time = cudart.cudaEventElapsedTime(self.start, self.end)
+        err, time = runtime.cudaEventElapsedTime(self.start, self.end)
         cuda_error_check(err)
         self.times.append(time)
 

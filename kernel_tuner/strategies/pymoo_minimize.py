@@ -14,6 +14,7 @@ from pymoo.core.mutation import Mutation
 from pymoo.core.repair import Repair
 from pymoo.operators.crossover.ux import UniformCrossover
 from pymoo.operators.crossover.pntx import SinglePointCrossover, TwoPointCrossover
+from pymoo.util.ref_dirs import get_reference_directions
 
 from kernel_tuner import util
 from kernel_tuner.runners.runner import Runner
@@ -70,7 +71,10 @@ def tune(
     ref_dirs_list = strategy_options.get("ref_dirs_list", _option_defaults["ref_dirs_list"])
 
     if algo_name == "nsga3" and len(ref_dirs_list) == 0:
-        raise ValueError("NSGA-III requires reference directions to be specified, but they are missing.")
+        ref_dirs_list = get_reference_directions("energy", len(tuning_options.objective), pop_size)
+
+    if "x0" in strategy_options:
+        raise ValueError(f"\"x0\" is not a supported option.")
 
     if crossover_oper in crossover_oper_dict:
         crossover_oper = crossover_oper_dict[crossover_oper]

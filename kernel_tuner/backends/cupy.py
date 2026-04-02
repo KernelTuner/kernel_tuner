@@ -1,6 +1,5 @@
 """This module contains all Cupy specific kernel_tuner functions."""
 from __future__ import print_function
-from warnings import warn
 
 import numpy as np
 

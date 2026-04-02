@@ -37,7 +37,7 @@ normalized_parameter_space = bayes_opt.normalize_parameter_space(parameter_space
 pruned_parameter_space, removed_tune_params = bayes_opt.prune_parameter_space(normalized_parameter_space, tuning_options, tune_params, original_to_normalized)
 
 # initialize BO
-BO = BayesianOptimization(pruned_parameter_space, removed_tune_params, tuning_options, original_to_normalized, normalized_to_original, cost_func)
+BO = BayesianOptimization(pruned_parameter_space, searchspace, removed_tune_params, tuning_options, original_to_normalized, normalized_to_original, cost_func)
 predictions, _, std = BO.predict_list(BO.unvisited_cache)
 
 
@@ -74,7 +74,7 @@ def test_bo_initialization():
     assert BO.searchspace == pruned_parameter_space
     assert BO.unvisited_cache == pruned_parameter_space
     assert len(BO.observations) == len(pruned_parameter_space)
-    assert BO.current_optimum == np.PINF
+    assert BO.current_optimum == np.inf
 
 def test_bo_initial_sample_lhs():
     sample = BO.draw_latin_hypercube_samples(num_samples=1)

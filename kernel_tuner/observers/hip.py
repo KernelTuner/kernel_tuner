@@ -1,6 +1,7 @@
 import numpy as np
 
 from kernel_tuner.observers.observer import BenchmarkObserver
+from kernel_tuner.backends.hip.util import hip_check
 
 try:
     from hip import hip, hiprtc
@@ -24,7 +25,7 @@ class HipRuntimeObserver(BenchmarkObserver):
 
     def after_finish(self):
         # Time is measured in milliseconds
-        EventElapsedTime = hip.hipEventElapsedTime(self.start, self.end)
+        EventElapsedTime = hip_check(hip.hipEventElapsedTime(self.start, self.end))
         self.times.append(EventElapsedTime)
 
     def get_results(self):

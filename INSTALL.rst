@@ -20,7 +20,7 @@ Linux users could type the following to download and install Python 3 using Mini
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
 
-You are of course also free to use your own Python installation, and the Kernel Tuner is developed to be fully compatible with Python 3.9 and newer.
+You are of course also free to use your own Python installation, and the Kernel Tuner is developed to be fully compatible with Python 3.10 and newer.
 
 Installing Python Packages
 --------------------------
@@ -125,7 +125,7 @@ Or you could install Kernel Tuner and PyOpenCL together if you haven't done so a
 If this fails, please see the PyOpenCL installation guide (https://wiki.tiker.net/PyOpenCL/Installation)
 
 HIP and HIP Python
--------------
+------------------
 
 Before we can install HIP Python, you'll need to have the HIP runtime and compiler installed on your system.
 The HIP compiler is included as part of the ROCm software stack. Here is AMD's installation guide:

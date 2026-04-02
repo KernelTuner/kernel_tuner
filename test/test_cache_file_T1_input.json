@@ -1,0 +1,82 @@
+{
+    "General": {
+        "BenchmarkName": "vector_add",
+        "OutputFormat": "JSON"
+    },
+    "ConfigurationSpace": {
+        "TuningParameters": [
+            {
+                "Name": "block_size_x",
+                "Type": "int",
+                "Values": "[128+64*i for i in range(15)]",
+                "Default": 512
+            }
+        ],
+        "Conditions": []
+    },
+    "KernelSpecification": {
+        "Language": "CUDA",
+        "CompilerOptions": [
+            "-std=c++11"
+        ],
+        "BenchmarkName": "vector_add",
+        "KernelName": "vector_add",
+        "KernelFile": "vector_add.cu",
+        "GlobalSizeType": "CUDA",
+        "LocalSize": {
+            "X": "block_size_x",
+            "Y": "1",
+            "Z": "1"
+        },
+        "GlobalSize": {
+            "X": "10000000 // block_size_x",
+            "Y": "1",
+            "Z": "1"
+        },
+        "GridDivX": [
+            "block_size_x"
+        ],
+        "GridDivY": [
+            "block_size_y"
+        ],
+        "ProblemSize": [],
+        "SharedMemory": 0,
+        "Stream": null,
+        "Arguments": [
+            {
+                "Name": "a",
+                "Type": "float",
+                "MemoryType": "Vector",
+                "AccessType": "ReadOnly",
+                "FillType": "Random",
+                "Size": 10000000,
+                "FillValue": 1.0
+            },
+            {
+                "Name": "b",
+                "Type": "float",
+                "MemoryType": "Vector",
+                "AccessType": "ReadOnly",
+                "FillType": "Random",
+                "Size": 10000000,
+                "FillValue": 1.0
+            },
+            {
+                "Name": "c",
+                "Type": "float",
+                "MemoryType": "Vector",
+                "AccessType": "WriteOnly",
+                "FillType": "Constant",
+                "Size": 10000000,
+                "FillValue": 0.0
+            },
+            {
+                "Name": "n",
+                "Type": "int32",
+                "MemoryType": "Scalar",
+                "AccessType": "ReadOnly",
+                "FillValue": 10000000
+            }
+        ]
+    }
+}

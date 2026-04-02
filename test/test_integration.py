@@ -5,7 +5,7 @@ import json
 import pytest
 
 from kernel_tuner import integration
-from kernel_tuner import util
+from kernel_tuner.util import delete_temp_file
 from datetime import datetime, timezone
 
 
@@ -71,7 +71,7 @@ def test_store_results(fake_results):
         assert my_gpu_100_data[0]["time"] < 100
 
     finally:
-        util.delete_temp_file(filename)
+        delete_temp_file(filename)
 
 
 def test_setup_device_targets(fake_results):
@@ -136,8 +136,8 @@ def test_setup_device_targets(fake_results):
         assert expected in output_str
 
     finally:
-        util.delete_temp_file(results_filename)
-        util.delete_temp_file(header_filename)
+        delete_temp_file(results_filename)
+        delete_temp_file(header_filename)
 
 
 def test_setup_device_targets_max(fake_results):
@@ -174,5 +174,5 @@ def test_setup_device_targets_max(fake_results):
         assert expected in output_str
 
     finally:
-        util.delete_temp_file(results_filename)
-        util.delete_temp_file(header_filename)
+        delete_temp_file(results_filename)
+        delete_temp_file(header_filename)
