@@ -699,7 +699,9 @@ def tune_kernel(
 
     # create search space
     tuning_options.restrictions_unmodified = deepcopy(restrictions)
-    searchspace = Searchspace(tune_params, restrictions, max_threads=runner.dev.max_threads, **searchspace_construction_options)
+    searchspace = Searchspace(
+        tune_params, restrictions, max_threads=runner.dev.max_threads, **searchspace_construction_options
+    )
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
     if verbose:
@@ -809,6 +811,9 @@ def run_kernel(
             )
         params = [tuple([k, util.possible_julia_vector_to_list(tp)]) for k, tp in params]
         params = dict(params)
+    block_size_names = util.possible_julia_vector_to_list(block_size_names)
+    # ensure there is always at least three names
+    util.append_default_block_size_names(block_size_names)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
