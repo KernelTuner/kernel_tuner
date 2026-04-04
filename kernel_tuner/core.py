@@ -523,7 +523,13 @@ class DeviceInterface(object):
         """Runs the kernel once and checks the result against answer."""
         logging.debug("check_kernel_output")
 
-        # convert juliacall array to numpy array
+        # get the answer for this parameter configuration
+        if isinstance(answer, Tunable):
+            answer = answer.select_for_configuration(instance.params)
+
+        # convert juliacall arrays to numpy arrays where necessary
+        if answer is not None:
+            answer = [None if a is None else np.array(a) for a in util.possible_julia_vector_to_list(answer)]
         for i, arg in enumerate(instance.arguments):
             if isinstance(answer[i], np.ndarray) and "ArrayValue" in str(type(arg)):
                 instance.arguments[i] = np.array(arg, dtype=answer[i].dtype)

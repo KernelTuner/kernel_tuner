@@ -604,8 +604,6 @@ def tune_kernel(
             )
         tune_params = [tuple([k, util.possible_julia_vector_to_list(tp)]) for k, tp in tune_params]
         tune_params = dict(tune_params)
-        if answer is not None:
-            answer = [None if a is None else numpy.array(a) for a in util.possible_julia_vector_to_list(answer)]
     restrictions = util.possible_julia_vector_to_list(restrictions)
     block_size_names = util.possible_julia_vector_to_list(block_size_names)
 

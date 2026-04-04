@@ -323,7 +323,6 @@ end
             jl.Main.KernelAbstractions.synchronize(self.backend)
         except JuliaError as e:
             raise RuntimeError(f"Julia synchronize failed: {e}")
-        jl.seval("GC.gc()")  # trigger GC to free GPU memory after synchronization
 
     # -------------------------
     # Memory utilities
