@@ -4,6 +4,7 @@ import logging
 import re
 import time
 from collections import namedtuple
+from warnings import warn
 
 import numpy as np
 
@@ -504,8 +505,6 @@ class DeviceInterface(object):
                 logging.debug("benchmark fails due to runtime failure / too many resources required")
                 if verbose:
                     if "Julia" in str(e):
-                        from warnings import warn
-
                         warn(
                             f"skipping config {util.get_instance_string(instance.params)} reason: Julia kernel launch failed because of:\n{e}"
                         )
@@ -526,7 +525,7 @@ class DeviceInterface(object):
 
         # convert juliacall array to numpy array
         for i, arg in enumerate(instance.arguments):
-            if isinstance(answer[i], np.ndarray) and "juliacall" in str(type(arg)):
+            if isinstance(answer[i], np.ndarray) and "ArrayValue" in str(type(arg)):
                 instance.arguments[i] = np.array(arg, dtype=answer[i].dtype)
 
         # if not using custom verify function, check if the length is the same
@@ -534,10 +533,14 @@ class DeviceInterface(object):
             if len(instance.arguments) != len(answer):
                 raise TypeError("The length of argument list and provided results do not match.")
 
-            should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
+            # for Julia arrays, we always want to sync
+            should_sync = [
+                answer[i] is not None or "ArrayValue" in str(type(arg)) for i, arg in enumerate(instance.arguments)
+            ]
         else:
             should_sync = [
-                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) for arg in instance.arguments
+                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) or "ArrayValue" in str(type(arg))
+                for arg in instance.arguments
             ]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
@@ -901,21 +904,58 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
             result = _ravel(result_host[i])
             expected = _flatten(expected)
             if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
-                output_test = cp.allclose(expected, result, atol=atol)
+                expected_nan = cp.isnan(expected)
+                output_test = cp.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
             elif isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
-                output_test = torch.allclose(expected, result, atol=atol)
+                expected_nan = torch.isnan(expected)
+                output_test = torch.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
             else:
-                output_test = np.allclose(expected, result, atol=atol)
+                expected_nan = np.isnan(expected)
+                output_test = np.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
+            if expected_nan.any():
+                warn(
+                    f"Answer contains {expected_nan.sum()} NaNs. NaN values will now be considered equal in comparison."
+                )
 
             if not output_test and verbose:
                 print("Error: " + util.get_config_string(instance.params) + " detected during correctness check")
                 print("this error occurred when checking value of the %oth kernel argument" % (i,))
                 print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
                 np.set_printoptions(edgeitems=30)
-                print("Kernel output:")
+                print(f"Kernel output ({np.shape(result)}):")
                 print(result)
-                print("Expected:")
+                print(f"Expected ({np.shape(expected)}):")
                 print(expected)
+                # check if there are NaNs in the output or expected, if so, print where they are
+                if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
+                    if cp.isnan(result).any():
+                        print("NaNs in kernel output at indices:", cp.where(cp.isnan(result)))
+                    if cp.isnan(expected).any():
+                        print("NaNs in expected result at indices:", cp.where(cp.isnan(expected)))
+                elif isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
+                    if torch.isnan(result).any():
+                        print("NaNs in kernel output at indices:", torch.where(torch.isnan(result)))
+                    if torch.isnan(expected).any():
+                        print("NaNs in expected result at indices:", torch.where(torch.isnan(expected)))
+                else:
+                    if np.isnan(result).any():
+                        print("NaNs in kernel output at indices:", np.where(np.isnan(result)))
+                    if np.isnan(expected).any():
+                        print("NaNs in expected result at indices:", np.where(np.isnan(expected)))
+                # print only the elements that are different
+                print("Difference at specific elements:")
+                if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
+                    diff = cp.abs(expected - result)
+                    indices = cp.where(diff > atol)
+                    print(diff[indices])
+                elif isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
+                    diff = torch.abs(expected - result)
+                    indices = torch.where(diff > atol)
+                    print(diff[indices])
+                else:
+                    diff = np.abs(expected - result)
+                    indices = np.where(diff > atol)
+                    print(diff[indices])
             correct = correct and output_test
 
     if not correct:
