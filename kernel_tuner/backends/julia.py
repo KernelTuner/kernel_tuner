@@ -88,6 +88,7 @@ class JuliaFunctions(GPUBackend):
 
         jl.seval(
             f"""
+            global dest_tmp, src_tmp  # for memcpy_htod
             module KernelTunerHelper
                 using {self.backend_mod_name}
                 const kt_julia_backend = {self.backend_mod_name}Backend()
