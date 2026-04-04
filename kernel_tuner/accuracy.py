@@ -55,7 +55,12 @@ class Tunable(UserDict):
             list = ", ".join(map(str, self.data.keys()))
             raise KeyError(f"'{option}' is not a valid parameter value, should be one of: {list}")
 
-        return self.data[option]
+        # continue recursively until we find a non-Tunable
+        el = self.data[option]
+        if isinstance(el, Tunable):
+            return el.select_for_configuration(params)
+        else:
+            return el
 
     def __call__(self, params):  # noqa: D102
         return self.select_for_configuration(params)
