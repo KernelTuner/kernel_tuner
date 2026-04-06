@@ -61,8 +61,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         # 'best_score' is used only for printing
         if tuning_options.verbose and cost_func.results:
             best_score = get_best_config(
-                cost_func.results, tuning_options.objective, tuning_options.objective_higher_is_better
-            )[tuning_options.objective]
+                cost_func.results, tuning_options.objective[0], tuning_options.objective_higher_is_better
+            )[tuning_options.objective[0]]
 
         if tuning_options.verbose:
             print("Generation %d, best_score %f" % (generation, best_score))
@@ -249,4 +249,3 @@ supported_methods = {
     "uniform": uniform_crossover,
     "disruptive_uniform": disruptive_uniform_crossover,
 }
-
