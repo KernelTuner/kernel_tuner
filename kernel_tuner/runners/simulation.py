@@ -91,7 +91,7 @@ class SimulationRunner(Runner):
 
         results = []
 
-        # iterate over parameter space 
+        # iterate over parameter space
         for element in parameter_space:
 
             # check if element is in the cache
@@ -100,7 +100,7 @@ class SimulationRunner(Runner):
                 result = tuning_options.cache[x_int].copy()
 
                 # only compute metrics on configs that have not errored
-                if tuning_options.metrics and not isinstance(result.get(tuning_options.objective), util.ErrorConfig):
+                if tuning_options.metrics and "__error__" not in result:
                     result = util.process_metrics(result, tuning_options.metrics)
 
 
@@ -155,7 +155,7 @@ class SimulationRunner(Runner):
                 self.start_time = perf_counter()
                 result['framework_time'] = total_time - self.last_strategy_time
 
-                result[tuning_options.objective] = util.InvalidConfig()
+                result["__error__"] = util.InvalidConfig()
                 results.append(result)
                 warn(f"Configuration {element} not in cache, does not pass restrictions. Will be treated as an InvalidConfig, but make sure you are evaluating the correct cache file.")
                 continue
