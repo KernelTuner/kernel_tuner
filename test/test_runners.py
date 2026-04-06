@@ -257,7 +257,7 @@ def test_interface_handles_compile_failures(env):
     failed_config = [
         record for record in results if record["block_size_x"] == 256
     ][0]
-    assert isinstance(failed_config["time"], util.CompilationFailedConfig)
+    assert isinstance(failed_config["__error__"], util.CompilationFailedConfig)
 
 
 @skip_if_no_pycuda
