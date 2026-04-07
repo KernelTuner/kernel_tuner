@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import numpy as np
+import uuid
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.cupy import CupyRuntimeObserver
@@ -80,6 +81,10 @@ class CupyFunctions(GPUBackend):
         env["iterations"] = self.iterations
         env["compiler_options"] = compiler_options
         env["device_properties"] = self.devprops
+
+        props = cp.cuda.runtime.getDeviceProperties(device)
+        env["uuid"] = str(uuid.UUID(bytes=props["uuid"]))
+
         self.env = env
         self.name = env["device_name"]
 
