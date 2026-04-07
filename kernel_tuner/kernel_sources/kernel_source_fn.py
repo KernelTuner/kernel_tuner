@@ -70,7 +70,13 @@ class KernelSourceFn(KernelSource):
         generate a kernel instance with these tuning parameters inserted. kernel_options, 
         grid and threads are not needed for Python kernels.
         '''
-        new_kernel_fn, temp_file_path = self.apply_params_to_source_fn(params)
+        # Test: see if removing signature params helps in Triton overhead
+        filtered_params = {}
+        for k, v in params.items():
+            if k not in self.signature:
+                filtered_params[k] = v
+
+        new_kernel_fn, temp_file_path = self.apply_params_to_source_fn(filtered_params)
         self.kernel_fn = new_kernel_fn
 
         return PreparedKernelSourceData(
@@ -121,7 +127,7 @@ class KernelSourceFn(KernelSource):
         # Fix locations and generate source
         ast.fix_missing_locations(new_module)
         new_source = astor.to_source(new_module)
-        
+
         #print(new_source)
         
         # Create a unique module name and write new source to it.

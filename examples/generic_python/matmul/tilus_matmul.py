@@ -68,8 +68,9 @@ class MatmulBasic(tilus.Script):
 
 
 
+
 # This kernel is copied from the Tilus project:
-# https://github.com/NVIDIA/tilus/blob/main/examples/matmul/matmul_v5.py
+# https://github.com/NVIDIA/tilus/blob/main/examples/matmul/matmul_+v5.py
 #
 # Original example: matmul_v5.py
 # Copyright (c) the Tilus authors

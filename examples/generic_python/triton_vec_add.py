@@ -65,6 +65,8 @@ def tune():
         call_function=call_triton,
     )
 
+    print(results)
+
     
     
 if __name__ == "__main__":

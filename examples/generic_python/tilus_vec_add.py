@@ -8,7 +8,7 @@ from pathlib import Path
 FULL_PATH = Path(__file__).resolve()
 
 class VecAddV(tilus.Script):
-    def __init__(self, block_size_x=None):
+    def __init__(self, block_size_x=None, num_warps=None):
         super().__init__()
         self.block_size_x = block_size_x  # number of threads per block
 
@@ -22,7 +22,7 @@ class VecAddV(tilus.Script):
 
         # compute the number of blocks needed
         self.attrs.blocks = [cdiv(n_size, self.block_size_x)]
-        self.attrs.warps = 1  # number of warps per block
+        self.attrs.warps = 4  # number of warps per block
 
         # calculate the offset for this block
         offset: int32 = self.block_size_x * self.blockIdx.x
@@ -52,6 +52,7 @@ def tune(size):
     args = [size, a, b, c]
     tune_params = dict()
     tune_params["block_size_x"] = [32, 64, 128, 256, 512, 1024]
+    tune_params["num_warps"] = [4, 8]
 
 
     results, env = tune_kernel(
@@ -100,7 +101,7 @@ def tune_with_builtin(size):
     c = torch.empty(size, dtype=torch.float32).cuda()
     c_expect = a + b
 
-    vecadd(size, a, b, c)
+    vecadd(size, a, b, c) # This is where the actual tuning takes place
     torch.cuda.synchronize()
 
     torch.testing.assert_close(c_expect, c)

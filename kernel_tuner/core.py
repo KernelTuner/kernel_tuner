@@ -269,6 +269,8 @@ class DeviceInterface(object):
             for obs in self.benchmark_observers:
                 obs.after_finish()
 
+            #time.sleep(0.1) # prevent termal throttling
+
         for obs in self.benchmark_observers:
             result.update(obs.get_results())
 
@@ -508,6 +510,10 @@ class DeviceInterface(object):
 
             # clean up any temporary files, if no error occurred
             instance.delete_temp_files()
+
+        # For Python DSLs, the compilation time also includes one kernel run, so we subtract the runtime
+        if self.lang == Language.GENERIC_PYTHON:
+            last_compilation_time -= result["time"] or 0
 
         result["compile_time"] = last_compilation_time or 0
         result["verification_time"] = last_verification_time or 0

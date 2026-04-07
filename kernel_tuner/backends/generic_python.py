@@ -195,9 +195,7 @@ class GenericPythonFunctions(GPUBackend):
             configuration
         :type params: dict
         """
-        with torch.cuda.stream(self.stream):
-            logging.debug("Running Generic Python kernel")
-            self.call_function(func, gpu_args, self.gpu_kwargs, grid, threads, params) 
+        self.call_function(func, gpu_args, self.gpu_kwargs, grid, threads, params) 
     
     
     def synchronize(self):
@@ -238,7 +236,6 @@ class GenericPythonFunctions(GPUBackend):
     def refresh_memory(self, gpu_memory, host_arguments, should_sync):
         """Refresh the GPU memory with the untouched host arguments. We overwrite the standard function
         because Python DSLs do usually do not manage memory explicitely"""
-
 
         for i, host_arg in enumerate(host_arguments):
             if should_sync[i]:
