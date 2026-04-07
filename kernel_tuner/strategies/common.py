@@ -103,7 +103,6 @@ class CostFunc:
         self.budget_spent_fraction = 0.0
         self.invalid_return_value = invalid_value
 
-
     def __call__(self, x, check_restrictions=True):
         """Cost function used by almost all strategies."""
         self.runner.last_strategy_time = 1000 * (perf_counter() - self.runner.last_strategy_start_time)
@@ -114,6 +113,8 @@ class CostFunc:
 
         # check if max_fevals is reached or time limit is exceeded
         self.budget_spent_fraction = util.check_stop_criterion(self.tuning_options)
+
+        self.runner.config_eval_count += 1
 
         # snap values in x to nearest actual value for each parameter, unscale x if needed
         if self.snap:
@@ -133,7 +134,6 @@ class CostFunc:
         if check_restrictions and self.searchspace.restrictions:
             legal = self.searchspace.is_param_config_valid(tuple(params))
 
-
             if not legal:
                 if "constraint_aware" in self.tuning_options.strategy_options and self.tuning_options.strategy_options["constraint_aware"]:
                     # attempt to repair
@@ -146,9 +146,12 @@ class CostFunc:
                 if not legal:
                     params_dict = dict(zip(self.searchspace.tune_params.keys(), params))
                     result = params_dict
-                    result[self.tuning_options.objective] = util.InvalidConfig()
+                    result['__error__'] = util.InvalidConfig()
+                    self.runner.infeasable_config_eval_count += 1
 
         if legal:
+            assert ('__error__' not in result), "A legal config MUST NOT have an error result."
+
             # compile and benchmark this instance
             res = self.runner.run([params], self.tuning_options)
             result = res[0]
@@ -162,24 +165,25 @@ class CostFunc:
             # upon returning from this function control will be given back to the strategy, so reset the start time
             self.runner.last_strategy_start_time = perf_counter()
 
-        # get numerical return value, taking optimization direction into account
-        return_value = result[self.tuning_options.objective]
-        if not isinstance(return_value, util.ErrorConfig):
-            # this is a valid configuration, so invert value in case of maximization
-            return_value = -return_value if self.tuning_options.objective_higher_is_better else return_value
+        # get the cost of the result
+        cost_vec = util.get_result_cost(
+            result,
+            self.tuning_options.objective,
+            self.tuning_options.objective_higher_is_better
+        )
+
+        if len(cost_vec) == 1:
+            cost_0 = cost_vec[0]
+            # include raw data in return if requested
+            if self.return_raw is not None:
+                try:
+                    return cost_0, result[self.return_raw]
+                except KeyError:
+                    return cost_0, [np.nan]
+            else:
+                return cost_0
         else:
-            # this is not a valid configuration, replace with float max if needed
-            if not self.return_invalid:
-                return_value = self.invalid_return_value
-
-        # include raw data in return if requested
-        if self.return_raw is not None:
-            try:
-                return return_value, result[self.return_raw]
-            except KeyError:
-                return return_value, [np.nan]
-
-        return return_value
+            return cost_vec
 
     def get_start_pos(self):
         """Get starting position for optimization."""
@@ -315,7 +319,6 @@ def scale_from_params(params, tune_params, eps):
     for i, v in enumerate(tune_params.values()):
         x[i] = 0.5 * eps + v.index(params[i]) * eps
     return x
-
 
 
 def unscale_and_snap_to_nearest_valid(x, params, searchspace, eps):

@@ -49,7 +49,8 @@ class SimulationRunner(Runner):
         :type iterations: int
         """
         self.quiet = device_options.quiet
-        self.dev = SimulationDevice(1024, dict(device_name="Simulation"), self.quiet)
+        # NOTE(maric): had to increase max_threas so the default restraints would pass
+        self.dev = SimulationDevice(1_000_000_000, dict(device_name="Simulation"), self.quiet)
 
         self.kernel_source = kernel_source
         self.simulation_mode = True
@@ -60,10 +61,16 @@ class SimulationRunner(Runner):
         self.last_strategy_time = 0
         self.units = {}
 
+        # It is the task of the cost function to increment there counters
+        self.config_eval_count = 0
+        self.infeasable_config_eval_count = 0
+
     def get_environment(self, tuning_options):
         env = self.dev.get_environment()
         env["simulation"] = True
         env["simulated_time"] = tuning_options.simulated_time
+        env["config_eval_count"] = self.config_eval_count
+        env["infeasable_config_eval_count"] = self.infeasable_config_eval_count
         return env
 
     def run(self, parameter_space, tuning_options):
@@ -84,7 +91,7 @@ class SimulationRunner(Runner):
 
         results = []
 
-        # iterate over parameter space 
+        # iterate over parameter space
         for element in parameter_space:
 
             # check if element is in the cache
@@ -93,7 +100,7 @@ class SimulationRunner(Runner):
                 result = tuning_options.cache[x_int].copy()
 
                 # only compute metrics on configs that have not errored
-                if tuning_options.metrics and not isinstance(result.get(tuning_options.objective), util.ErrorConfig):
+                if tuning_options.metrics and "__error__" not in result:
                     result = util.process_metrics(result, tuning_options.metrics)
 
 
@@ -148,7 +155,7 @@ class SimulationRunner(Runner):
                 self.start_time = perf_counter()
                 result['framework_time'] = total_time - self.last_strategy_time
 
-                result[tuning_options.objective] = util.InvalidConfig()
+                result["__error__"] = util.InvalidConfig()
                 results.append(result)
                 warn(f"Configuration {element} not in cache, does not pass restrictions. Will be treated as an InvalidConfig, but make sure you are evaluating the correct cache file.")
                 continue
