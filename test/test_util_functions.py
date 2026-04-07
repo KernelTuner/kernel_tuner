@@ -672,6 +672,15 @@ def test_normalize_verify_function():
     assert v(1, 2, atol=3)
 
 
+class MockRunner:
+    simulation_mode = False
+
+    def __init__(self, dev):
+        self.dev = dev
+
+    def get_device_info(self):
+        return self.dev
+
 def test_process_cache():
     def assert_open_cachefile_is_correctly_parsed(cache):
         with open(cache, "r") as cachefile:
@@ -694,7 +703,7 @@ def test_process_cache():
         simulation_mode=False,
         objective="time",
     )
-    runner = Options(dev=Options(name="test_device"), simulation_mode=False)
+    runner = MockRunner(Options(name="test_device"))
 
     try:
         # call process_cache without pre-existing cache

@@ -1289,7 +1289,8 @@ def process_cache(cachefile, kernel_options, tuning_options, runner):
 
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
-            runner.dev.name = cached_data["device_name"]
+            device_name = cached_data["device_name"]
+            runner.dev.name = device_name  # Is this always safe?
 
         # check if it is safe to continue tuning from this cache
         if cached_data["device_name"] != device_name:
