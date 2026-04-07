@@ -26,15 +26,14 @@ class nvml:
         """Create object to control device using NVML."""
         pynvml.nvmlInit()
 
-        if sum(x is not None for x in [device_id, device_uuid, device_pci]) != 1:
+        if sum(x is not None for x in [device_id, device_uuid, device_pci_bus]) != 1:
             raise ValueError("invalid device: specify either the index, the UUID, or the PCI-bus")
-        elif device_id:
+        elif device_id is not None:
             self.dev = pynvml.nvmlDeviceGetHandleByIndex(device_id)
-        elif device_uuid:
+        elif device_uuid is not None:
             self.dev = pynvml.nvmlDeviceGetHandleByUUID(device_uuid)
-        elif device_pci_bus:
+        elif device_pci_bus is not None:
             self.dev = pynvml.nvmlDeviceGetHandleByPciBusId_v2(device_pci_bus)
-
 
         self.id = pynvml.nvmlDeviceGetIndex(self.dev)
         self.nvidia_smi = nvidia_smi_fallback or "nvidia-smi"
