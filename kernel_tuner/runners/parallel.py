@@ -217,8 +217,8 @@ class ParallelRunner(Runner):
                 print(f" - worker {worker}")
 
     def get_device_info(self):
-        # TODO: Get this from the device?
-        return Options({"max_threads": 1024})
+        # TODO: Get max_threads from the device?
+        return Options({"name": self.device_name, "max_threads": 1024})
 
     def get_environment(self, tuning_options):
         return {"device_name": self.device_name, "workers": [w.env for w in self.workers]}

@@ -1259,13 +1259,15 @@ def process_cache(cachefile, kernel_options, tuning_options, runner):
     if not isinstance(tuning_options.tune_params, dict):
         raise ValueError("Caching only works correctly when tunable parameters are stored in a dictionary")
 
+    device_name = runner.get_device_info().name
+
     # if file does not exist, create new cache
     if not os.path.isfile(cachefile):
         if tuning_options.simulation_mode:
             raise ValueError(f"Simulation mode requires an existing cachefile: file {cachefile} does not exist")
 
         c = dict()
-        c["device_name"] = runner.dev.name
+        c["device_name"] = device_name
         c["kernel_name"] = kernel_options.kernel_name
         c["problem_size"] = kernel_options.problem_size if not callable(kernel_options.problem_size) else "callable"
         c["tune_params_keys"] = list(tuning_options.tune_params.keys())
@@ -1290,9 +1292,9 @@ def process_cache(cachefile, kernel_options, tuning_options, runner):
             runner.dev.name = cached_data["device_name"]
 
         # check if it is safe to continue tuning from this cache
-        if cached_data["device_name"] != runner.dev.name:
+        if cached_data["device_name"] != device_name:
             raise ValueError(
-                f"Cannot load cache which contains results for different device (cache: {cached_data['device_name']}, actual: {runner.dev.name})"
+                f"Cannot load cache which contains results for different device (cache: {cached_data['device_name']}, actual: {device_name})"
             )
         if cached_data["kernel_name"] != kernel_options.kernel_name:
             raise ValueError(
