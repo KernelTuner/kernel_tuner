@@ -209,6 +209,7 @@ class ParallelRunner(Runner):
         # TODO: Get units from the device?
         self.units = {"time": "ms"}
         self.quiet = device_options.quiet
+        self.simulation_mode = False
 
         # Print some debugging information
         if tuning_options.verbose:
