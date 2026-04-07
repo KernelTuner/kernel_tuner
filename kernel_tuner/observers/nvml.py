@@ -15,12 +15,29 @@ except ImportError:
 class nvml:
     """Class that gathers the NVML functionality for one device."""
 
-    def __init__(self, device_id=0, nvidia_smi_fallback="nvidia-smi", use_locked_clocks=False):
+    def __init__(
+            self,
+            device_id=None,
+            device_uuid=None,
+            device_pci_bus=None,
+            nvidia_smi_fallback=None,
+            use_locked_clocks=False
+    ):
         """Create object to control device using NVML."""
         pynvml.nvmlInit()
-        self.dev = pynvml.nvmlDeviceGetHandleByIndex(device_id)
-        self.id = device_id
-        self.nvidia_smi = nvidia_smi_fallback
+
+        if sum(x is not None for x in [device_id, device_uuid, device_pci]) != 1:
+            raise ValueError("invalid device: specify either the index, the UUID, or the PCI-bus")
+        elif device_id:
+            self.dev = pynvml.nvmlDeviceGetHandleByIndex(device_id)
+        elif device_uuid:
+            self.dev = pynvml.nvmlDeviceGetHandleByUUID(device_uuid)
+        elif device_pci_bus:
+            self.dev = pynvml.nvmlDeviceGetHandleByPciBusId_v2(device_pci_bus)
+
+
+        self.id = pynvml.nvmlDeviceGetIndex(self.dev)
+        self.nvidia_smi = nvidia_smi_fallback or "nvidia-smi"
 
         try:
             self.pwr_limit_default = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
@@ -326,15 +343,11 @@ class NVMLObserver(BenchmarkObserver):
         continuous_duration=1,
     ):
         """Create an NVMLObserver."""
-        if nvidia_smi_fallback:
-            self.nvml = nvml(
-                device,
-                nvidia_smi_fallback=nvidia_smi_fallback,
-                use_locked_clocks=use_locked_clocks,
-            )
-        else:
-            self.nvml = nvml(device, use_locked_clocks=use_locked_clocks)
         self.save_all = save_all
+        self.device = device
+        self.nvml_kwargs = dict()
+        self.nvml_kwargs["use_locked_clocks"] = use_locked_clocks
+        self.nvml_kwargs["nvidia_smi_fallback"] = nvidia_smi_fallback
 
         supported = [
             "power_readings",
@@ -372,6 +385,23 @@ class NVMLObserver(BenchmarkObserver):
 
         self.during_obs = [obs for obs in observables if obs in ["core_freq", "mem_freq", "temperature"]]
         self.iteration = {obs: [] for obs in self.during_obs}
+
+    def register_device(self, dev):
+        if self.device is not None:
+            self.nvml = nvml(device_id=self.device, **self.nvml_kwargs)
+        else:
+            env = getattr(dev, "env", dict())
+            uuid = env.get("uuid")
+            pci_bus = env.get("pci_bus_id")
+
+            if uuid:
+                self.nvml = nvml(device_uuid=uuid, **self.nvml_kwargs)
+            elif pci_bus:
+                self.nvml = nvml(device_pci_bus=pci_bus, **self.nvml_kwargs)
+            else:
+                raise ValueError("failed to detect NVIDIA device: no UUID or PCI-bus-id in environment")
+
+
 
     def read_power(self):
         """ Return power in Watt """
