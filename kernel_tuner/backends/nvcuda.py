@@ -2,11 +2,12 @@
 from warnings import warn
 
 import numpy as np
+import os
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.nvcuda import CudaRuntimeObserver
 from kernel_tuner.util import SkippableFailure
-from kernel_tuner.utils.nvcuda import cuda_error_check, to_valid_nvrtc_gpu_arch_cc
+from kernel_tuner.utils.nvcuda import cuda_error_check, to_valid_nvrtc_gpu_arch_cc, find_cuda_home
 
 # embedded in try block to be able to generate documentation
 # and run tests without cuda-python installed
@@ -74,9 +75,6 @@ class CudaFunctions(GPUBackend):
         self.current_module = None
         self.func = None
         self.compiler_options = compiler_options or []
-        self.compiler_options_bytes = []
-        for option in self.compiler_options:
-            self.compiler_options_bytes.append(str(option).encode("UTF-8"))
 
         # create a stream and events
         err, self.stream = driver.cuStreamCreate(0)
@@ -155,16 +153,25 @@ class CudaFunctions(GPUBackend):
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
         expression_name = str.encode(kernel_name)
+        compiler_options = list(self.compiler_options)
 
-        compiler_options = self.compiler_options_bytes
-        if not any([b"--std=" in opt for opt in compiler_options]):
-            compiler_options.append(b"--std=c++11")
-        if not any(["--std=" in opt for opt in self.compiler_options]):
-            self.compiler_options.append("--std=c++11")
-        if not any([b"--gpu-architecture=" in opt or b"-arch" in opt for opt in compiler_options]):
-            compiler_options.append(f"--gpu-architecture=compute_{to_valid_nvrtc_gpu_arch_cc(self.cc)}".encode("UTF-8"))
-        if not any(["--gpu-architecture=" in opt or "-arch" in opt for opt in self.compiler_options]):
-            self.compiler_options.append(f"--gpu-architecture=compute_{to_valid_nvrtc_gpu_arch_cc(self.cc)}")
+        # Add -std=c++11
+        if not any(opt.startswith(("-std=", "--std=")) for opt in self.compiler_options):
+            compiler_options.append("--std=c++11")
+
+        # Add -arch
+        if not any(opt.startswith(("-arch", "--arch", "--gpu-architecture=")) for opt in self.compiler_options):
+            arch_val = to_valid_nvrtc_gpu_arch_cc(self.cc)
+            compiler_options.append(f"--gpu-architecture=compute_{arch_val}")
+
+        # Add CUDA home to include path
+        cuda_home = find_cuda_home()
+        if cuda_home:
+            cuda_include = os.path.join(cuda_home, "include")
+            compiler_options.append(f"-I{cuda_include}")
+
+        # nvrtcCompileProgram requires bytes instead of str
+        compiler_options = [str(opt).encode("UTF-8") for opt in compiler_options]
 
         err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
         try:
@@ -172,11 +179,11 @@ class CudaFunctions(GPUBackend):
             # compiler actually instantiates the kernel that we want to compile.
             cuda_error_check(err)
             err = nvrtc.nvrtcAddNameExpression(program, expression_name)
-            
+
             # Compile the program
             cuda_error_check(err)
             err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
-            
+
             # Get the PTX
             cuda_error_check(err)
             err, size = nvrtc.nvrtcGetPTXSize(program)
@@ -184,16 +191,16 @@ class CudaFunctions(GPUBackend):
             buff = b" " * size
             err = nvrtc.nvrtcGetPTX(program, buff)
             cuda_error_check(err)
-            
+
             # Load the module
             err, self.current_module = driver.cuModuleLoadData(np.char.array(buff))
             if err == driver.CUresult.CUDA_ERROR_INVALID_PTX:
                 raise SkippableFailure("uses too much shared data")
             else:
                 cuda_error_check(err)
-                
+
             # First, get the "lowered" name of the kernel (i.e., the name inside the PTX).
-            # After, we can use the lowered name to lookup the kernel in the module. 
+            # After, we can use the lowered name to lookup the kernel in the module.
             err, lowered_name = nvrtc.nvrtcGetLoweredName(program, expression_name)
             cuda_error_check(err)
             err, self.func = driver.cuModuleGetFunction(
