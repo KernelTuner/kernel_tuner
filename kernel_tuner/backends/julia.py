@@ -91,7 +91,7 @@ class JuliaFunctions(GPUBackend):
             global dest_tmp, src_tmp  # for memcpy_htod
             module KernelTunerHelper
                 using {self.backend_mod_name}
-                const kt_julia_backend = {self.backend_mod_name}Backend()
+                const kt_julia_backend = {self.backend_mod_instname}()
                 const GPUArrayType = {self.GPUArrayType}
                 include("{str(Path(__file__).parent / "julia_helper.jl")}")
             end
@@ -125,6 +125,7 @@ class JuliaFunctions(GPUBackend):
 
         # Bring module into Python
         self.backend_mod_name = info["module"]
+        self.backend_mod_instname = info["module_backend"]
         jl.seval(f"using KernelAbstractions, {info['pkg']}")
         backend_mod = getattr(jl.Main, self.backend_mod_name)
         self.backend_mod = backend_mod

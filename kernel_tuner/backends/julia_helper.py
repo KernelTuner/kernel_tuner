@@ -14,6 +14,7 @@ backend_map = {
     "CUDA": {
         "pkg": "CUDA",
         "module": "CUDA",
+        "module_backend": "CUDABackend",
         "device_select": lambda d: f"CUDA.device!({d})",
         "name": "CUDA.name(CUDA.device())",
         "max_threads": "CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)",
@@ -23,6 +24,7 @@ backend_map = {
     "AMD": {
         "pkg": "AMDGPU",
         "module": "AMDGPU",
+        "module_backend": "ROCBackend",
         "device_select": lambda d: f"AMDGPU.device!(AMDGPU.devices()[{d}])",
         "name": "HIP.name(HIP.device())",
         "max_threads": "HIP.attribute(dev, HIP.hipDeviceAttributeMaxThreadsPerBlock)",
@@ -32,6 +34,7 @@ backend_map = {
     "INTEL": {
         "pkg": "oneAPI",
         "module": "oneAPI",
+        "module_backend": "oneAPIBackend",
         "device_select": lambda d: f"devices(first(drivers()))[{d}]",
         "name": "oneAPI.name(oneAPI.device())",
         "max_threads": "oneAPI.compute_properties(oneAPI.device()).maxTotalGroupSize",
@@ -41,6 +44,7 @@ backend_map = {
     "METAL": {
         "pkg": "Metal",
         "module": "Metal",
+        "module_backend": "MetalBackend",
         "device_select": lambda d: "Metal.device!(Metal.device())",  # only single device support in Metal.jl
         "name": "Metal.name(Metal.device())",
         "max_threads": "Int(Metal.device().maxThreadsPerThreadgroup.width)",
