@@ -21,7 +21,7 @@ backend_map = {
         "GPUArrayType": "CuArray",
     },
     "AMD": {
-        "pkg": "ROCBackend",
+        "pkg": "AMDGPU",
         "module": "ROCBackend",
         "device_select": lambda d: f"ROCBackend.device!(ROCBackend.devices()[{d}])",
         "name": "ROCBackend.name(ROCBackend.device())",
