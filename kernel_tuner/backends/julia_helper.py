@@ -23,9 +23,9 @@ backend_map = {
     "AMD": {
         "pkg": "AMDGPU",
         "module": "ROCBackend",
-        "device_select": lambda d: f"ROCBackend.device!(ROCBackend.devices()[{d}])",
-        "name": "ROCBackend.name(ROCBackend.device())",
-        "max_threads": "ROCBackend.device_attribute(ROCBackend.device(), :maxthreadsperblock)",
+        "device_select": lambda d: f"AMDGPU.device!(AMDGPU.devices()[{d}])",
+        "name": "HIP.name(HIP.device())",
+        "max_threads": "HIP.attribute(dev, HIP.hipDeviceAttributeMaxThreadsPerBlock)",
         "capability": None,
         "GPUArrayType": "ROCArray",
     },
