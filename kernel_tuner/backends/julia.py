@@ -190,8 +190,8 @@ class JuliaFunctions(GPUBackend):
             self.end_evt = backend_mod.CuEvent
             self.stream = backend_mod.stream()
         elif backend_name == "AMD":
-            self.start_evt = backend_mod.HIPEvent
-            self.end_evt = backend_mod.HIPEvent
+            self.start_evt = backend_mod.HIP.HIPEvent
+            self.end_evt = backend_mod.HIP.HIPEvent
             self.stream = backend_mod.default_stream()
         elif backend_name == "INTEL":
             # OneAPI: no events available
