@@ -296,7 +296,7 @@ end
         """Records the event that marks the start of a measurement."""
         if self.backend_mod_name == "CUDA":
             self.backend_mod.record(self.start_evt(), self.stream)
-        elif self.backend_mod_name == "ROCBackend":
+        elif self.backend_mod_name == "AMDGPU":
             self.backend_mod.record(self.start_evt())
         elif self.backend_mod_name == "Metal":
             # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
@@ -310,7 +310,7 @@ end
         """Records the event that marks the end of a measurement."""
         if self.backend_mod_name == "CUDA":
             self.backend_mod.record(self.end_evt(), self.stream)
-        elif self.backend_mod_name == "ROCBackend":
+        elif self.backend_mod_name == "AMDGPU":
             self.backend_mod.record(self.end_evt())
         elif self.backend_mod_name == "Metal":
             jl.end_buf = self.create_metal_buffer()

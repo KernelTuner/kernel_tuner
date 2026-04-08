@@ -22,7 +22,7 @@ backend_map = {
     },
     "AMD": {
         "pkg": "AMDGPU",
-        "module": "ROCBackend",
+        "module": "AMDGPU",
         "device_select": lambda d: f"AMDGPU.device!(AMDGPU.devices()[{d}])",
         "name": "HIP.name(HIP.device())",
         "max_threads": "HIP.attribute(dev, HIP.hipDeviceAttributeMaxThreadsPerBlock)",

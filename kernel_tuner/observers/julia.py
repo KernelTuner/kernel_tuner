@@ -41,7 +41,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             self.start = self.start()
             self.end = self.end()
             self.stream = backend_mod.stream()
-        elif self.name == "rocbackend":
+        elif self.name == "amdgpu":
             self.stream = backend_mod.default_stream()
             self.start = self.start(self.stream, timing=True)
             self.end = self.end(self.stream, timing=True)
@@ -50,7 +50,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         if self.start is not None:
             if self.name == "metal":
                 self.t0 = self.start()
-            elif self.name == "rocbackend":
+            elif self.name == "amdgpu":
                 self.backend_mod.record(self.start)
             else:
                 self.backend_mod.record(self.start, self.stream)
@@ -62,7 +62,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         if self.end is not None:
             if self.name == "metal":
                 ms = float((self.end() - self.t0) * 1000.0)
-            elif self.name == "rocbackend":
+            elif self.name == "amdgpu":
                 self.backend_mod.record(self.start)
                 ms = float(self.backend_mod.elapsed(self.start, self.end) * 1000.0)
             else:
