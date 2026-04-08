@@ -298,7 +298,7 @@ end
         if self.backend_mod_name == "CUDA":
             self.backend_mod.record(self.start_evt(), self.stream)
         elif self.backend_mod_name == "AMDGPU":
-            self.backend_mod.record(self.start_evt())
+            self.backend_mod.HIP.record(self.start_evt())
         elif self.backend_mod_name == "Metal":
             # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
             # Normally you would just use one command buffer for the actual kernel.
@@ -312,7 +312,7 @@ end
         if self.backend_mod_name == "CUDA":
             self.backend_mod.record(self.end_evt(), self.stream)
         elif self.backend_mod_name == "AMDGPU":
-            self.backend_mod.record(self.end_evt())
+            self.backend_mod.HIP.record(self.end_evt())
         elif self.backend_mod_name == "Metal":
             jl.end_buf = self.create_metal_buffer()
             jl.seval("Metal.commit!(end_buf)")
