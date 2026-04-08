@@ -169,8 +169,8 @@ class JuliaFunctions(GPUBackend):
         self.backend_device = self.backend_mod.device()
         if backend_name == "CUDA":
             self.contextqueue = self.backend_mod.context
-        elif backend_name == "AMD":
-            self.contextqueue = self.backend_mod.queue
+        # elif backend_name == "AMD":
+        #     self.contextqueue = self.backend_mod.queue
         # elif backend_name == "INTEL":
         #     self.contextqueue = jl.seval(
         #         f"ZeCommandQueue(ZeContext(first(drivers())), devices(first(drivers()))[{int(device) + 1}]))"
@@ -190,8 +190,8 @@ class JuliaFunctions(GPUBackend):
             self.end_evt = backend_mod.CuEvent
             self.stream = backend_mod.stream()
         elif backend_name == "AMD":
-            self.start_evt = backend_mod.ROCEvent
-            self.end_evt = backend_mod.ROCEvent
+            self.start_evt = backend_mod.HIPEvent
+            self.end_evt = backend_mod.HIPEvent
             self.stream = backend_mod.default_stream()
         elif backend_name == "INTEL":
             # OneAPI: no events available
@@ -294,8 +294,10 @@ end
 
     def start_event(self):
         """Records the event that marks the start of a measurement."""
-        if self.backend_mod_name in ("CUDA", "AMDGPU"):
+        if self.backend_mod_name == "CUDA":
             self.backend_mod.record(self.start_evt(), self.stream)
+        elif self.backend_mod_name == "AMDGPU":
+            self.backend_mod.record(self.start_evt())
         elif self.backend_mod_name == "Metal":
             # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
             # Normally you would just use one command buffer for the actual kernel.
@@ -306,8 +308,10 @@ end
 
     def stop_event(self):
         """Records the event that marks the end of a measurement."""
-        if self.backend_mod_name in ("CUDA", "AMDGPU"):
+        if self.backend_mod_name == "CUDA":
             self.backend_mod.record(self.end_evt(), self.stream)
+        elif self.backend_mod_name == "AMDGPU":
+            self.backend_mod.record(self.end_evt())
         elif self.backend_mod_name == "Metal":
             jl.end_buf = self.create_metal_buffer()
             jl.seval("Metal.commit!(end_buf)")
