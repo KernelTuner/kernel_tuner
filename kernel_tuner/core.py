@@ -707,7 +707,7 @@ class DeviceInterface(object):
         )
 
         # check for templated kernel
-        if kernel_source.lang in ["CUDA", "NVCUDA", "HIP"] and "<" in name and ">" in name:
+        if kernel_source.lang in ["CUDA", "NVCUDA"] and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         # Preprocess GPU arguments. Require for handling `Tunable` arguments
