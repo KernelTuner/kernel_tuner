@@ -4,7 +4,7 @@ This backend allows Julia kernels to be compiled, launched, and observed from Py
 
 Requirements:
   pip install juliacall
-  and in Julia: ] add CUDA / AMDGPU / oneAPI / Metal (will be automatically installed if not present)
+  and in Julia: ] add CUDA / ROCBackend / oneAPI / Metal (will be automatically installed if not present)
 
 Notes:
 - The kernel string should contain a valid Julia GPU kernel function definition.
@@ -296,7 +296,7 @@ end
         """Records the event that marks the start of a measurement."""
         if self.backend_mod_name == "CUDA":
             self.backend_mod.record(self.start_evt(), self.stream)
-        elif self.backend_mod_name == "AMDGPU":
+        elif self.backend_mod_name == "ROCBackend":
             self.backend_mod.record(self.start_evt())
         elif self.backend_mod_name == "Metal":
             # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
@@ -310,7 +310,7 @@ end
         """Records the event that marks the end of a measurement."""
         if self.backend_mod_name == "CUDA":
             self.backend_mod.record(self.end_evt(), self.stream)
-        elif self.backend_mod_name == "AMDGPU":
+        elif self.backend_mod_name == "ROCBackend":
             self.backend_mod.record(self.end_evt())
         elif self.backend_mod_name == "Metal":
             jl.end_buf = self.create_metal_buffer()

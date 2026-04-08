@@ -231,7 +231,7 @@ class KernelSource(object):
         kernel_string = self.get_kernel_string(0)
         if kernel_string.find("using CUDA") != -1:
             return "cuda"
-        elif kernel_string.find("using AMDGPU") != -1:
+        elif kernel_string.find("using ROCBackend") != -1:
             return "amd"
         elif kernel_string.find("using oneAPI") != -1:
             return "intel"
