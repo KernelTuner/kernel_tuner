@@ -43,28 +43,28 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             self.stream = backend_mod.stream()
         elif self.name == "amdgpu":
             self.stream = backend_mod.default_stream()
-            self.start = self.start(self.stream, timing=True)
-            self.end = self.end(self.stream, timing=True)
+            # self.start = self.start(self.stream, timing=True)
+            # self.end = self.end(self.stream, timing=True)
 
     def before_start(self):
         if self.start is not None:
             if self.name == "metal":
                 self.t0 = self.start()
             elif self.name == "amdgpu":
-                self.backend_mod.HIP.record(self.start)
+                self.t0 = self.backend_mod.HIP.record(self.create_hip_event())
             else:
                 self.backend_mod.record(self.start, self.stream)
         else:
             # fallback: host-side timestamp
             self.t0 = perf_counter()
-
+    
     def after_finish(self):
         if self.end is not None:
             if self.name == "metal":
                 ms = float((self.end() - self.t0) * 1000.0)
             elif self.name == "amdgpu":
-                self.backend_mod.HIP.record(self.end)
-                ms = float(self.backend_mod.HIP.elapsed(self.start, self.end) * 1000.0)
+                t1 = self.backend_mod.HIP.record(self.create_hip_event())
+                ms = float(self.backend_mod.HIP.elapsed(self.t0, t1) * 1000.0)
             else:
                 self.backend_mod.synchronize(self.end)
                 self.backend_mod.record(self.end, self.stream)
@@ -85,6 +85,9 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         }
         self.times = []
         return results
+
+    def create_hip_event(self):
+        return self.backend_mod.HIP.HIPEvent(self.stream; timing=true)
 
 
 class JuliaJITWarmup(PrologueObserver):
