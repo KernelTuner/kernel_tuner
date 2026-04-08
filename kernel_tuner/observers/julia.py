@@ -63,7 +63,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             if self.name == "metal":
                 ms = float((self.end() - self.t0) * 1000.0)
             elif self.name == "amdgpu":
-                self.backend_mod.record(self.start)
+                self.backend_mod.record(self.end)
                 ms = float(self.backend_mod.elapsed(self.start, self.end) * 1000.0)
             else:
                 self.backend_mod.synchronize(self.end)
