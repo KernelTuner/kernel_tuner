@@ -125,9 +125,9 @@ class JuliaFunctions(GPUBackend):
 
         # Bring module into Python
         self.backend_mod_name = info["module"]
+        jl.seval(f"using KernelAbstractions, {info['pkg']}")
         backend_mod = getattr(jl.Main, self.backend_mod_name)
         self.backend_mod = backend_mod
-        jl.seval(f"using KernelAbstractions, {self.backend_mod_name}")
         jl.seval(f"tmp_arr = {info['GPUArrayType']}(Float32.(zeros(2)))")
         self.backend = jl.seval("KernelAbstractions.get_backend(tmp_arr)")
         self.GPUArrayType = info["GPUArrayType"]
