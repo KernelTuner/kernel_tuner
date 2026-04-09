@@ -10,7 +10,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
     """Cross-backend GPU timing for KernelAbstractions.
 
     - CUDA: CuEvent timing
-    - ROCBackend: ROCEvent timing
+    - ROCBackend: HIPEvent timing
     - OneAPI: host timing + synchronize (less accurate, no events available)
     - Metal: host timing + synchronize
     """
@@ -18,18 +18,20 @@ class JuliaRuntimeObserver(BenchmarkObserver):
     def __init__(
         self,
         kernelabstractions,
-        backend,
-        backend_mod,
-        backend_name,
+        kt_backend,
+        jl_backend,
+        jl_backend_mod,
+        jl_backend_name,
         stream=None,
         start_event=None,
         end_event=None,
     ):
         """Observer that measures GPU time depending on the Julia backend used."""
         self.kernelabstractions = kernelabstractions
-        self.backend = backend
-        self.backend_mod = backend_mod
-        self.name = backend_name.lower()
+        self.kt_backend = kt_backend
+        self.backend = jl_backend
+        self.backend_mod = jl_backend_mod
+        self.name = jl_backend_name.lower()
         self.stream = stream
         self.start = start_event
         self.end = end_event
@@ -40,9 +42,9 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             # initialize events for this instance of the observer
             self.start = self.start()
             self.end = self.end()
-            self.stream = backend_mod.stream()
+            self.stream = self.backend_mod.stream()
         elif self.name == "amdgpu":
-            self.stream = backend_mod.default_stream()
+            self.stream = self.backend_mod.default_stream()
             # self.start = self.start(self.stream, timing=True)
             # self.end = self.end(self.stream, timing=True)
 
@@ -57,7 +59,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         else:
             # fallback: host-side timestamp
             self.t0 = perf_counter()
-    
+
     def after_finish(self):
         if self.end is not None:
             if self.name == "metal":
@@ -76,6 +78,14 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             ms = dt * 1000.0
             warn(f"Using host-side timing for Julia {self.name} backend; results may be less accurate.")
 
+        if ms > self.kt_backend.host_time:
+            if ms > 1.25 * self.kt_backend.host_time:
+                warn(
+                    f"Measured GPU time {ms:.3f} ms is substantially greater than host time {self.kt_backend.host_time:.3f} ms; "
+                    "this may indicate an issue with the timing measurement. Using host time instead."
+                )
+            ms = self.kt_backend.host_time
+
         self.times.append(ms)
 
     def get_results(self):
@@ -87,7 +97,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         return results
 
     def create_hip_event(self):
-        return self.backend_mod.HIP.HIPEvent(self.stream; timing=true)
+        return self.backend_mod.HIP.HIPEvent(self.stream, timing=True)
 
 
 class JuliaJITWarmup(PrologueObserver):

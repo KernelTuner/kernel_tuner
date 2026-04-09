@@ -9,6 +9,7 @@ function to_gpuarray(a)
 end
 
 function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workgroupsize::Tuple, shmem::Int)
+    t = Inf
     # Check if this is a KernelAbstractions kernel
     if isdefined(Main, :KernelAbstractions) && kt_julia_backend !== nothing && applicable(kernel, kt_julia_backend, workgroupsize)
         configured_kernel = kernel(kt_julia_backend, workgroupsize)
@@ -18,9 +19,11 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
                 # kernel errors are printed to stdout, capture them
                 redirect_stdout(tmpio) do
                     try
-                        configured_kernel(args..., Val.(params)..., ndrange=ndrange)
-                        # Synchronize to ensure kernel completion
-                        Main.KernelAbstractions.synchronize(kt_julia_backend)
+                        val_params = Val.(params)  # convert parameters to Val types for kernel invocation
+                        start = time_ns()   # simple host-side timing as fallback in case of issues with GPU timing
+                        configured_kernel(args..., val_params...; ndrange=ndrange)  # launch the kernel
+                        Main.KernelAbstractions.synchronize(kt_julia_backend) # synchronize to ensure kernel completion
+                        t = float((time_ns() - start) / 1e6) # convert to milliseconds
                     catch e
                         redirect_stdout(stdout) # restore stdout
                         close(tmpio)
@@ -37,4 +40,5 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
     else
         error("Only KernelAbstractions kernels are supported.")
     end
+    return t
 end

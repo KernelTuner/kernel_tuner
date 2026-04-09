@@ -46,7 +46,7 @@ backend_map = {
         "module": "Metal",
         "module_backend": "MetalBackend",
         "device_select": lambda d: "Metal.device!(Metal.device())",  # only single device support in Metal.jl
-        "name": "Metal.name(Metal.device())",
+        "name": "Metal.device().name",
         "max_threads": "Int(Metal.device().maxThreadsPerThreadgroup.width)",
         "capability": None,
         "GPUArrayType": "MtlArray",

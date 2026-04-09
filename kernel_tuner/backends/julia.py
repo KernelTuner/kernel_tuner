@@ -68,6 +68,7 @@ class JuliaFunctions(GPUBackend):
         self.backend = None
         self.start_evt = None
         self.end_evt = None
+        self.host_time = None
         self.initialize_backend(device, backend_name=backend_name)
 
         # setup observers
@@ -75,6 +76,7 @@ class JuliaFunctions(GPUBackend):
         self.observers.append(
             JuliaRuntimeObserver(
                 jl.Main.KernelAbstractions,
+                self,
                 self.backend,
                 self.backend_mod,
                 self.backend_mod_name,
@@ -145,7 +147,7 @@ class JuliaFunctions(GPUBackend):
 
         # Query device name
         try:
-            self.name = jl.seval(info["name"])
+            self.name = str(jl.seval(info["name"]))
         except JuliaError:
             self.name = f"{backend_name}-device-{device}"
 
@@ -238,6 +240,7 @@ class JuliaFunctions(GPUBackend):
         kernel_code = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
         self.kernel_source = kernel_instance.kernel_source
+        self.host_time = None  # reset host time for this kernel instance
 
         # Extract all 'using' statements and check for required packages
         uses = []
@@ -289,7 +292,7 @@ end
 
         # run the kernel
         try:
-            self.launch_kernel(func, args_tuple, params, ndrange, workgroupsize, int(self.smem_size))
+            self.host_time = self.launch_kernel(func, args_tuple, params, ndrange, workgroupsize, int(self.smem_size))
         except JuliaError as e:
             raise SkippableFailure(f"Julia kernel launch failed for {params=}: {e}")
 
@@ -305,7 +308,7 @@ end
             jl.start_buf = self.create_metal_buffer()
             jl.seval("Metal.commit!(start_buf)")
             self.backend_mod.wait_completed(jl.start_buf)
-            return float(jl.start_buf.GPUEndTime)  # or kernelEndTime?
+            return float(jl.start_buf.GPUEndTime)
 
     def stop_event(self):
         """Records the event that marks the end of a measurement."""
@@ -317,7 +320,7 @@ end
             jl.end_buf = self.create_metal_buffer()
             jl.seval("Metal.commit!(end_buf)")
             self.backend_mod.wait_completed(jl.end_buf)
-            return float(jl.end_buf.GPUEndTime)  # or kernelStartTime?
+            return float(jl.end_buf.GPUStartTime)
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise."""
@@ -396,7 +399,7 @@ end
                 ) from e
 
     def create_hip_event(self):
-        return self.backend_mod.HIP.HIPEvent(self.stream(); timing=true)
+        return self.backend_mod.HIP.HIPEvent(self.stream, timing=True)
 
     def create_metal_buffer(self):
         """Create a Metal buffer in the command queue."""
