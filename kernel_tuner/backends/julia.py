@@ -194,8 +194,8 @@ class JuliaFunctions(GPUBackend):
             self.end_evt = backend_mod.CuEvent
         elif backend_name == "AMD":
             self.stream = backend_mod.default_stream()
-            self.start_evt = self.create_hip_event
-            self.end_evt = self.create_hip_event
+            self.start_evt = backend_mod.HIP.HIPEvent
+            self.end_evt = backend_mod.HIP.HIPEvent
         elif backend_name == "INTEL":
             # OneAPI: no events available
             self.start_evt = None
@@ -397,9 +397,6 @@ end
                 raise ImportError(
                     f'{package}.jl not found in your Julia environment. Run `using Pkg; Pkg.add("{package}")` in Julia.'
                 ) from e
-
-    def create_hip_event(self):
-        return self.backend_mod.HIP.HIPEvent(self.stream, timing=True)
 
     def create_metal_buffer(self):
         """Create a Metal buffer in the command queue."""
