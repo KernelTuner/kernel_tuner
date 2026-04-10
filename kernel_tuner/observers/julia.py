@@ -47,6 +47,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             self.stream = self.backend_mod.stream()
             self.start = self.start(self.stream, do_record=False, timing=True)
             self.end = self.end(self.stream, do_record=False, timing=True)
+            raise ValueError(type(self.start), type(self.end), type(self.stream), self.start, self.end)
 
     def before_start(self):
         if self.start is not None:
