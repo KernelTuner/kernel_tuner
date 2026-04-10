@@ -47,7 +47,6 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             self.stream = self.backend_mod.stream()
             self.start = self.start(self.stream, do_record=False, timing=True)
             self.end = self.end(self.stream, do_record=False, timing=True)
-            raise ValueError(type(self.start), type(self.end), type(self.stream), self.start, self.end)
 
     def before_start(self):
         if self.start is not None:
@@ -58,6 +57,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             else:
                 self.backend_mod.record(self.start, self.stream)
         else:
+            raise ValueError("Should not be None")
             # fallback: host-side timestamp
             self.t0 = perf_counter()
 
@@ -72,6 +72,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
                 self.backend_mod.record(self.end, self.stream)
                 ms = float(self.backend_mod.elapsed(self.start, self.end) * 1000.0)
         else:
+            raise ValueError("Should not be None")
             self.kernelabstractions.synchronize(self.backend)
             dt = perf_counter() - self.t0
             ms = dt * 1000.0
