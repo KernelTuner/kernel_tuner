@@ -35,7 +35,7 @@ backend_map = {
         "pkg": "oneAPI",
         "module": "oneAPI",
         "module_backend": "oneAPIBackend",
-        "device_select": lambda d: f"devices(first(drivers()))[{d}]",
+        "device_select": lambda d: f"device!(devices(first(drivers()))[{d}])",
         "name": "oneAPI.name(oneAPI.device())",
         "max_threads": "oneAPI.compute_properties(oneAPI.device()).maxTotalGroupSize",
         "capability": None,

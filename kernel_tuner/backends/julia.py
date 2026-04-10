@@ -193,7 +193,7 @@ class JuliaFunctions(GPUBackend):
             self.start_evt = backend_mod.CuEvent
             self.end_evt = backend_mod.CuEvent
         elif backend_name == "AMD":
-            self.stream = backend_mod.default_stream()
+            self.stream = backend_mod.stream()
             self.start_evt = backend_mod.HIP.HIPEvent
             self.end_evt = backend_mod.HIP.HIPEvent
         elif backend_name == "INTEL":
@@ -301,7 +301,7 @@ end
         if self.backend_mod_name == "CUDA":
             self.backend_mod.record(self.start_evt(), self.stream)
         elif self.backend_mod_name == "AMDGPU":
-            self.backend_mod.HIP.record(self.start_evt(self.stream, timing=True))
+            self.backend_mod.HIP.record(self.start_evt(self.stream, do_record=False, timing=True))
         elif self.backend_mod_name == "Metal":
             # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
             # Normally you would just use one command buffer for the actual kernel.
@@ -315,7 +315,7 @@ end
         if self.backend_mod_name == "CUDA":
             self.backend_mod.record(self.end_evt(), self.stream)
         elif self.backend_mod_name == "AMDGPU":
-            self.backend_mod.HIP.record(self.end_evt(self.stream, timing=True))
+            self.backend_mod.HIP.record(self.end_evt(self.stream, do_record=False, timing=True))
         elif self.backend_mod_name == "Metal":
             jl.end_buf = self.create_metal_buffer()
             jl.seval("Metal.commit!(end_buf)")

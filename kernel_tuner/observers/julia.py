@@ -44,9 +44,9 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             self.start = self.start()
             self.end = self.end()
         elif self.name == "amdgpu":
-            self.stream = self.backend_mod.default_stream()
-            self.start = self.start(self.stream, timing=True)
-            self.end = self.end(self.stream, timing=True)
+            self.stream = self.backend_mod.stream()
+            self.start = self.start(self.stream, do_record=False, timing=True)
+            self.end = self.end(self.stream, do_record=False, timing=True)
 
     def before_start(self):
         if self.start is not None:
