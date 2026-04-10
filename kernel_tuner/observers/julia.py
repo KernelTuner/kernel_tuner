@@ -53,7 +53,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             if self.name == "metal":
                 self.t0 = self.start()
             elif self.name == "amdgpu":
-                self.t0 = self.backend_mod.HIP.record(self.start)
+                self.backend_mod.HIP.record(self.start)
             else:
                 self.backend_mod.record(self.start, self.stream)
         else:
@@ -61,13 +61,13 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             self.t0 = perf_counter()
 
     def after_finish(self):
+        ms = None
         if self.end is not None:
             if self.name == "metal":
                 ms = float((self.end() - self.t0) * 1000.0)
             elif self.name == "amdgpu":
-                t1 = self.backend_mod.HIP.record(self.end)
-                ms = float(self.backend_mod.HIP.elapsed(self.t0, t1) * 1000.0)
-                warn(f"T0: {self.t0}, T1: {t1}, elapsed: {ms} ms")
+                self.backend_mod.HIP.record(self.end)
+                ms = float(self.backend_mod.HIP.elapsed(self.start, self.end) * 1000.0)
             else:
                 self.backend_mod.record(self.end, self.stream)
                 ms = float(self.backend_mod.elapsed(self.start, self.end) * 1000.0)

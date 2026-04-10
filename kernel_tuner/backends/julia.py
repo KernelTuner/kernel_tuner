@@ -299,9 +299,13 @@ end
     def start_event(self):
         """Records the event that marks the start of a measurement."""
         if self.backend_mod_name == "CUDA":
-            self.backend_mod.record(self.start_evt(), self.stream)
+            evt = self.start_evt()
+            self.backend_mod.record(evt, self.stream)
+            return evt
         elif self.backend_mod_name == "AMDGPU":
-            self.backend_mod.HIP.record(self.start_evt(self.stream, do_record=False, timing=True))
+            evt = self.start_evt(self.stream, do_record=False, timing=True)
+            self.backend_mod.HIP.record(evt)
+            return evt
         elif self.backend_mod_name == "Metal":
             # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
             # Normally you would just use one command buffer for the actual kernel.
@@ -313,9 +317,13 @@ end
     def stop_event(self):
         """Records the event that marks the end of a measurement."""
         if self.backend_mod_name == "CUDA":
-            self.backend_mod.record(self.end_evt(), self.stream)
+            evt = self.end_evt()
+            self.backend_mod.record(evt, self.stream)
+            return evt
         elif self.backend_mod_name == "AMDGPU":
-            self.backend_mod.HIP.record(self.end_evt(self.stream, do_record=False, timing=True))
+            evt = self.end_evt(self.stream, do_record=False, timing=True)
+            self.backend_mod.HIP.record(evt)
+            return evt
         elif self.backend_mod_name == "Metal":
             jl.end_buf = self.create_metal_buffer()
             jl.seval("Metal.commit!(end_buf)")
