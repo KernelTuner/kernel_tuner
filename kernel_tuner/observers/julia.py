@@ -57,7 +57,6 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             else:
                 self.backend_mod.record(self.start, self.stream)
         else:
-            raise ValueError("Should not be None")
             # fallback: host-side timestamp
             self.t0 = perf_counter()
 
@@ -68,11 +67,11 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             elif self.name == "amdgpu":
                 t1 = self.backend_mod.HIP.record(self.end)
                 ms = float(self.backend_mod.HIP.elapsed(self.t0, t1) * 1000.0)
+                warn(self.t0, t1, ms)
             else:
                 self.backend_mod.record(self.end, self.stream)
                 ms = float(self.backend_mod.elapsed(self.start, self.end) * 1000.0)
         else:
-            raise ValueError("Should not be None")
             self.kernelabstractions.synchronize(self.backend)
             dt = perf_counter() - self.t0
             ms = dt * 1000.0
