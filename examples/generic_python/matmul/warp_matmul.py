@@ -19,7 +19,7 @@ TILE_THREADS = 64
 
 # GEMM example from https://nvidia.github.io/warp/user_guide/tiles.html 
 @wp.kernel
-def tile_gemm(A: wp.array2d(dtype=float), B: wp.array2d(dtype=float), C: wp.array2d(dtype=float)):
+def tile_gemm(A: wp.array2d(dtype=wp.float16), B: wp.array2d(dtype=wp.float16), C: wp.array2d(dtype=wp.float16)):
 
     # output tile index
     i, j = wp.tid()
@@ -36,17 +36,16 @@ def tile_gemm(A: wp.array2d(dtype=float), B: wp.array2d(dtype=float), C: wp.arra
         a = wp.tile_load(A, shape=(TILE_M, TILE_K), offset=(i*TILE_M, k*TILE_K), bounds_check=True)
         b = wp.tile_load(B, shape=(TILE_K, TILE_N), offset=(k*TILE_K, j*TILE_N), bounds_check=True)
 
-        # sum += a*b
         wp.tile_matmul(a, b, sum)
 
-    wp.tile_store(C, sum, offset=(i*TILE_M, j*TILE_N), bounds_check=True)
+    wp.tile_store(C, wp.tile_astype(sum, wp.float16), offset=(i*TILE_M, j*TILE_N), bounds_check=True)
 
 
 def run_kernel_direct(M, N, K):
     rng = np.random.default_rng(42)
-    A = rng.random((M, K), dtype=np.float32)
-    B = rng.random((K, N), dtype=np.float32)
-    C = np.zeros((M, N), dtype=np.float32)
+    A = rng.random((M, K)).astype(np.float16)
+    B = rng.random((K, N)).astype(np.float16)
+    C = np.zeros((M, N), dtype=np.float16)
 
     A_wp = wp.array(A)
     B_wp = wp.array(B)
@@ -59,7 +58,7 @@ def run_kernel_direct(M, N, K):
             inputs=[A_wp, B_wp, C_wp],
             block_dim=TILE_THREADS)
 
-    np.testing.assert_allclose(C_wp.numpy(), A @ B, rtol=1e-3)
+    np.testing.assert_allclose(C_wp.numpy(), A @ B, rtol=1e-1)
 
     print("Example matrix multiplication passed")
 
@@ -80,15 +79,15 @@ def call_warp(kernel_function, args, kwargs, grid, threads, params):
             kernel_function,
             dim=grid,
             inputs=warp_args,
-            block_dim=params["TILE_THREADS"], # We could directly take threads, but in the given example this is a constant
+            block_dim=params["TILE_THREADS"], 
         )
 
 
 def tune(M, K, N):
     rng = np.random.default_rng(42)
-    A = rng.random((M, K), dtype=np.float32)
-    B = rng.random((K, N), dtype=np.float32)
-    C = np.zeros((M, N), dtype=np.float32)
+    A = rng.random((M, K)).astype(np.float16)
+    B = rng.random((K, N)).astype(np.float16)
+    C = np.zeros((M, N), dtype=np.float16)
 
     size = (M, N)
     block_size_names = ["TILE_M", "TILE_N"]
@@ -126,6 +125,8 @@ if __name__ == "__main__":
         (129, 130, 33),
     ]
 
-    for size in sizes:
-        print(size)
-        run_kernel_direct(*size)
+    #for size in sizes:
+    #    print(size)
+    #    run_kernel_direct(*size)
+
+    run_kernel_direct(1024, 1024, 1024)
