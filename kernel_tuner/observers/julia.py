@@ -68,6 +68,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             elif self.name == "amdgpu":
                 self.backend_mod.HIP.record(self.end)
                 ms = float(self.backend_mod.HIP.elapsed(self.start, self.end) * 1000.0)
+                warn(f"s: {self.start}, e: {self.end}, ms: {ms}, ms(r): {self.backend_mod.HIP.elapsed(self.end, self.start)}")
             else:
                 self.backend_mod.record(self.end, self.stream)
                 ms = float(self.backend_mod.elapsed(self.start, self.end) * 1000.0)
