@@ -69,7 +69,6 @@ class JuliaRuntimeObserver(BenchmarkObserver):
                 self.backend_mod.HIP.record(self.end)
                 self.backend_mod.HIP.synchronize(self.end)
                 ms = float(self.backend_mod.HIP.elapsed(self.start, self.end) * 1000.0)
-                warn(f"s: {self.start}, e: {self.end}, ms: {ms}, ms(r): {self.backend_mod.HIP.elapsed(self.end, self.start)}")
             else:
                 self.backend_mod.record(self.end, self.stream)
                 self.backend_mod.synchronize(self.end)
@@ -81,12 +80,16 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             warn(f"Using host-side timing for Julia {self.name} backend; results may be less accurate.")
 
         if ms > self.kt_backend.host_time:
-            if ms > 1.25 * self.kt_backend.host_time and self.end is not None:
+            if ms < 1 and (ms > 1.5 * self.kt_backend.host_time and self.end is not None):
+                warn(
+                    f"Measured GPU time {ms:.3f} ms is greater than host time {self.kt_backend.host_time:.3f} ms; "
+                    "this may happen with very short execution times."
+                )
+            elif ms > 1.5 * self.kt_backend.host_time and self.end is not None:
                 warn(
                     f"Measured GPU time {ms:.3f} ms is substantially greater than host time {self.kt_backend.host_time:.3f} ms; "
-                    "this may indicate an issue with the timing measurement. Using host time instead."
+                    "this may indicate an issue with the timing measurement."
                 )
-            ms = self.kt_backend.host_time
 
         self.times.append(ms)
 
