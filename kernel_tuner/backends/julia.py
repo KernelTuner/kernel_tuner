@@ -87,6 +87,9 @@ class JuliaFunctions(GPUBackend):
         )
         for observer in self.observers:
             observer.register_device(self)
+        self.start_evt_instance = self.observers[-1].start
+        self.end_evt_instance = self.observers[-1].end
+        self.stream_instance = self.observers[-1].stream
 
         jl.seval(
             f"""
@@ -94,6 +97,7 @@ class JuliaFunctions(GPUBackend):
             module KernelTunerHelper
                 using {self.backend_mod_name}
                 const kt_julia_backend = {self.backend_mod_instname}()
+                const event_type = {self.backend_mod.CuEvent}
                 const GPUArrayType = {self.GPUArrayType}
                 include("{str(Path(__file__).parent / "julia_helper.jl")}")
             end
@@ -292,7 +296,8 @@ end
 
         # run the kernel
         try:
-            self.host_time = self.launch_kernel(func, args_tuple, params, ndrange, workgroupsize, int(self.smem_size))
+            self.host_time = self.launch_kernel(func, args_tuple, params, ndrange, workgroupsize, int(self.smem_size), 
+                                                self.start_evt_instance, self.end_evt_instance, self.stream_instance)
         except JuliaError as e:
             raise SkippableFailure(f"Julia kernel launch failed for {params=}: {e}")
 
@@ -301,10 +306,12 @@ end
         if self.backend_mod_name == "CUDA":
             evt = self.start_evt()
             self.backend_mod.record(evt, self.stream)
+            self.backend_mod.synchronize(evt)
             return evt
         elif self.backend_mod_name == "AMDGPU":
             evt = self.start_evt(self.stream, do_record=False, timing=True)
             self.backend_mod.HIP.record(evt)
+            self.backend_mod.HIP.synchronize(evt)
             return evt
         elif self.backend_mod_name == "Metal":
             # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
@@ -319,10 +326,12 @@ end
         if self.backend_mod_name == "CUDA":
             evt = self.end_evt()
             self.backend_mod.record(evt, self.stream)
+            self.backend_mod.synchronize(evt)
             return evt
         elif self.backend_mod_name == "AMDGPU":
             evt = self.end_evt(self.stream, do_record=False, timing=True)
             self.backend_mod.HIP.record(evt)
+            self.backend_mod.HIP.synchronize(evt)
             return evt
         elif self.backend_mod_name == "Metal":
             jl.end_buf = self.create_metal_buffer()

@@ -52,10 +52,14 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         if self.start is not None:
             if self.name == "metal":
                 self.t0 = self.start()
+            elif self.name == "cuda":
+                # the events are recorded in the julia_helper kernel launch code
+                pass
             elif self.name == "amdgpu":
-                self.backend_mod.HIP.record(self.start)
+                # the events are recorded in the julia_helper kernel launch code
+                pass
             else:
-                self.backend_mod.record(self.start, self.stream)
+                raise ValueError(f"Unsupported backend for timing: {self.name}")
         else:
             # fallback: host-side timestamp
             self.t0 = perf_counter()
@@ -65,14 +69,14 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         if self.end is not None:
             if self.name == "metal":
                 ms = float((self.end() - self.t0) * 1000.0)
+            elif self.name == "cuda":
+                # the events are recorded in the julia_helper kernel launch code
+                ms = float(self.backend_mod.elapsed(self.start, self.end) * 1000.0)
             elif self.name == "amdgpu":
-                self.backend_mod.HIP.record(self.end)
-                self.backend_mod.HIP.synchronize(self.end)
+                # the events are recorded in the julia_helper kernel launch code
                 ms = float(self.backend_mod.HIP.elapsed(self.start, self.end) * 1000.0)
             else:
-                self.backend_mod.record(self.end, self.stream)
-                self.backend_mod.synchronize(self.end)
-                ms = float(self.backend_mod.elapsed(self.start, self.end) * 1000.0)
+                raise ValueError(f"Unsupported backend for timing: {self.name}")
         else:
             self.kernelabstractions.synchronize(self.backend)
             dt = perf_counter() - self.t0
