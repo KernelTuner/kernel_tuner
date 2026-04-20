@@ -9,7 +9,7 @@ from kernel_tuner.observers import BenchmarkObserver
 logger = logging.getLogger(__name__)
 
 
-def find_device_by_uuid(devices, hip_uuid):
+def _find_device_by_uuid(devices, hip_uuid):
     result = None
 
     # Missing input
@@ -20,7 +20,7 @@ def find_device_by_uuid(devices, hip_uuid):
     try:
         hip_hex = UUID(hex=hip_uuid).bytes.decode("ascii")
     except (UnicodeDecodeError, ValueError):
-        return None
+        hip_hex = str(hip_uuid)
 
     for index, device in enumerate(devices):
         smi_uuid = str(amdsmi.amdsmi_get_gpu_device_uuid(device))
@@ -39,7 +39,7 @@ def find_device_by_uuid(devices, hip_uuid):
     return result
 
 
-def find_device_by_bdf(devices, pci_domain, pci_bus, pci_device):
+def _find_device_by_bdf(devices, pci_domain, pci_bus, pci_device):
     result = None
 
     # Missing input
@@ -65,7 +65,13 @@ def find_device_by_bdf(devices, pci_domain, pci_bus, pci_device):
     return result
 
 
-SUPPORTED_OBSERVABLES = ["energy", "core_freq", "mem_freq", "temperature", "core_voltage"]
+SUPPORTED_OBSERVABLES = [
+    "energy",
+    "core_freq",
+    "mem_freq",
+    "temperature",
+    "core_voltage",
+]
 
 
 class AMDSMIObserver(BenchmarkObserver):
@@ -103,13 +109,13 @@ class AMDSMIObserver(BenchmarkObserver):
 
         # Try to find by UUID
         uuid = env.get("uuid")
-        uuid_idx = find_device_by_uuid(devices, uuid)
+        uuid_idx = _find_device_by_uuid(devices, uuid)
 
         # Try to find by PCI information
         pci_domain = env.get("pci_domain_id")
         pci_bus = env.get("pci_bus_id")
         pci_device = env.get("pci_device_id")
-        pci_idx = find_device_by_bdf(devices, pci_domain, pci_bus, pci_device)
+        pci_idx = _find_device_by_bdf(devices, pci_domain, pci_bus, pci_device)
 
         bdf = f"domain {pci_domain}, bus {pci_bus}, device {pci_device}"
 
@@ -132,13 +138,13 @@ class AMDSMIObserver(BenchmarkObserver):
             logger.info(f"selected AMDSMI device {self.device_id}")
 
         # Warn if UUID wants a different device
-        if self.device_id != uuid_idx:
+        if uuid_idx is not None and self.device_id != uuid_idx:
             logger.warning(
                 f"specified device has mismatching UUID ({uuid}): {uuid_idx} != {self.device_id}"
             )
 
         # Warn if PCI wants a different device
-        if self.device_id != pci_idx:
+        if pci_idx is not None and self.device_id != pci_idx:
             logger.warning(
                 f"specified device has mismatching PCI ({bdf}): {pci_idx} != {self.device_id}"
             )
@@ -162,9 +168,13 @@ class AMDSMIObserver(BenchmarkObserver):
 
         if "core_voltage" in self.observables:
             milli_volt = amdsmi.amdsmi_get_gpu_volt_metric(
-                self.device, amdsmi.AmdSmiVoltageType.VDDGFX, amdsmi.AmdSmiVoltageMetric.CURRENT
+                self.device,
+                amdsmi.AmdSmiVoltageType.VDDGFX,
+                amdsmi.AmdSmiVoltageMetric.CURRENT,
             )
-            self.during_results["core_voltage"].append(milli_volt * 1e-3)  # milli -> volt
+
+            # milli * 1-e3 -> volt
+            self.during_results["core_voltage"].append(milli_volt * 1e-3)
 
         if "core_freq" in self.observables:
             obj = amdsmi.amdsmi_get_clk_freq(self.device, amdsmi.AmdSmiClkType.GFX)
@@ -188,7 +198,7 @@ class AMDSMIObserver(BenchmarkObserver):
     def after_finish(self):
         self.during()
 
-        # Energy is special as it does not need integration over time
+        # Energy is an exception as it does not need integration over time
         if "energy" in self.observables:
             before = self.energy_after_start
             after = amdsmi.amdsmi_get_energy_count(self.device)
@@ -204,20 +214,26 @@ class AMDSMIObserver(BenchmarkObserver):
             diff = np.uint64(after[energy_field]) - np.uint64(before[energy_field])
             resolution = before["counter_resolution"]
             energy_mj = float(diff) * float(resolution)
-            self.iteration_results["energy"].append(energy_mj * 1e-6)  # microJ -> J
+
+            # microJ * 1e-6 -> J
+            self.iteration_results["energy"].append(energy_mj * 1e-6)
 
         # For the others, we integrate over time and take the average
+        x = self.during_timestamps
         for key, values in self.during_results.items():
-            x = self.during_timestamps
-            avg = np.trapezoid(values, x) / np.ptp(x)  # np.trapz in older versions of np
+            # np.trapezoid was np.trapz in older versions of np
+            avg = np.trapezoid(values, x) / np.ptp(x)
             self.iteration_results[key].append(avg)
 
     def get_results(self):
         results = dict()
 
         for key in list(self.iteration_results):
-            avg = np.average(self.iteration_results[key])  # Average of results at each iteration
-            self.iteration_results[key] = []  # Reset to empty
+            # Average of results at each iteration
+            avg = np.average(self.iteration_results[key])
+
+            # Reset to empty
+            self.iteration_results[key] = []
 
             if self.prefix:
                 results[f"{self.prefix}_{key}"] = avg
