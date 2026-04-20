@@ -22,9 +22,9 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
                         val_params = Val.(params)  # convert parameters to Val types for kernel invocation
                         start = time_ns()   # simple host-side timing as fallback in case of issues with GPU timing
                         if start_evt !== nothing
-                            if isa(start_evt, CuEvent)
+                            if isdefined(Main, :CUDA) && isa(start_evt, CuEvent)
                                 Main.CUDA.record(start_evt, stream)
-                            elseif isa(start_evt, HIPEvent)
+                            elseif isdefined(Main, :AMDGPU) && isa(start_evt, HIPEvent)
                                 Main.AMDGPU.HIP.record(start_evt)
                             else
                                 error("Unsupported event type for timing: $(typeof(start_evt))")
@@ -33,10 +33,10 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
                         configured_kernel(args..., val_params...; ndrange=ndrange)  # launch the kernel
                         Main.KernelAbstractions.synchronize(kt_julia_backend) # synchronize to ensure kernel completion
                         if end_evt !== nothing
-                            if isa(end_evt, CuEvent)
+                            if isdefined(Main, :CUDA) && isa(end_evt, CuEvent)
                                 Main.CUDA.record(end_evt, stream)
                                 Main.CUDA.synchronize(end_evt) # ensure the event is recorded before we read it
-                            elseif isa(end_evt, HIPEvent)
+                            elseif isdefined(Main, :AMDGPU) && isa(end_evt, HIPEvent)
                                 Main.AMDGPU.HIP.record(end_evt)
                                 Main.AMDGPU.HIP.synchronize(end_evt) # ensure the event is recorded before we read it
                             else
