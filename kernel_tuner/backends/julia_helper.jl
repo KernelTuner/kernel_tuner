@@ -76,7 +76,7 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
     return t
 end
 
-function create_metal_buffer(device::Metal.MTLDevice)
+function create_metal_buffer(device)
     # Create a Metal buffer in the command queue for timing
     if isdefined(Main, :Metal)
         contextqueue = Main.Metal.MTLCommandQueue(device)
