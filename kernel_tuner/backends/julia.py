@@ -97,7 +97,6 @@ class JuliaFunctions(GPUBackend):
             module KernelTunerHelper
                 using {self.backend_mod_name}
                 const kt_julia_backend = {self.backend_mod_instname}()
-                const event_type = {self.backend_mod.CuEvent}
                 const GPUArrayType = {self.GPUArrayType}
                 include("{str(Path(__file__).parent / "julia_helper.jl")}")
             end
