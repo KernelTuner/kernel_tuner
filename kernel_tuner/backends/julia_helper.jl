@@ -20,13 +20,19 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
                 redirect_stdout(tmpio) do
                     try
                         val_params = Val.(params)  # convert parameters to Val types for kernel invocation
+                        start_buff = nothing
+                        end_buff = nothing
                         start = time_ns()   # simple host-side timing as fallback in case of issues with GPU timing
                         if start_evt !== nothing
                             if isdefined(Main, :CUDA) && isa(start_evt, CuEvent)
                                 Main.CUDA.record(start_evt, stream)
                             elseif isdefined(Main, :AMDGPU) && isa(start_evt, HIPEvent)
                                 Main.AMDGPU.HIP.record(start_evt)
-                            elseif isdefined(Main, :Metal)  # Metal timing is processed in the observer
+                            elseif isdefined(Main, :Metal)
+                                # prepare the next command buffers for timing as they can only be used once
+                                start_buff = create_metal_buffer(Metal.device())
+                                end_buff = create_metal_buffer(Metal.device())
+                                Metal.commit!(start_buff)
                             else
                                 error("Unsupported event type for timing: $(typeof(start_evt))")
                             end
@@ -40,12 +46,17 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
                             elseif isdefined(Main, :AMDGPU) && isa(end_evt, HIPEvent)
                                 Main.AMDGPU.HIP.record(end_evt)
                                 Main.AMDGPU.HIP.synchronize(end_evt) # ensure the event is recorded before we read it
-                            elseif isdefined(Main, :Metal)  # Metal timing is processed in the observer
+                            elseif isdefined(Main, :Metal)
+                                Metal.commit!(end_buff)
+                                Metal.wait_completed(end_buff) # ensure the command buffer is completed before we read the time
+                                t = (float(end_buff.GPUStartTime) - float(start_buff.GPUEndTime)) * 1000
                             else
                                 error("Unsupported event type for timing: $(typeof(end_evt))")
                             end
+                        else
+                            # host-side timing fallback if events are not available
+                            t = float((time_ns() - start) / 1e6) # convert to milliseconds
                         end
-                        t = float((time_ns() - start) / 1e6) # convert to milliseconds
                     catch e
                         redirect_stdout(stdout) # restore stdout
                         close(tmpio)
@@ -63,4 +74,15 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
         error("Only KernelAbstractions kernels are supported.")
     end
     return t
+end
+
+function create_metal_buffer(device::Metal.MTLDevice)
+    # Create a Metal buffer in the command queue for timing
+    if isdefined(Main, :Metal)
+        contextqueue = Main.Metal.MTLCommandQueue(device)
+        return Metal.MTLCommandBuffer(contextqueue)
+        # return contextqueue.commandBuffer()
+    else
+        error("Metal backend is not available.")
+    end
 end

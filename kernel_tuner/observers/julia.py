@@ -11,8 +11,8 @@ class JuliaRuntimeObserver(BenchmarkObserver):
 
     - CUDA: CuEvent timing
     - ROCBackend: HIPEvent timing
-    - OneAPI: host timing + synchronize (less accurate, no events available)
-    - Metal: host timing + synchronize
+    - OneAPI: host-side timing (less accurate, no events available)
+    - Metal: timing by wrapping the kernel launch between two command buffers and measuring the time between them
     """
 
     def __init__(
@@ -68,7 +68,11 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         ms = None
         if self.end is not None:
             if self.name == "metal":
-                ms = float((self.end() - self.t0) * 1000.0)
+                ms_observer = float((self.end() - self.t0) * 1000.0)
+                ms_helper = self.kt_backend.host_time
+                ms = min(
+                    ms_observer, ms_helper
+                )  # take the minimum of the two measurements to mitigate overhead of command buffer timing
             elif self.name == "cuda":
                 # the events are recorded in the julia_helper kernel launch code
                 ms = float(self.backend_mod.elapsed(self.start, self.end) * 1000.0)

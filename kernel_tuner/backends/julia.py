@@ -87,9 +87,6 @@ class JuliaFunctions(GPUBackend):
         )
         for observer in self.observers:
             observer.register_device(self)
-        self.start_evt_instance = self.observers[-1].start
-        self.end_evt_instance = self.observers[-1].end
-        self.stream_instance = self.observers[-1].stream
 
         jl.seval(
             f"""
@@ -295,8 +292,17 @@ end
 
         # run the kernel
         try:
-            self.host_time = self.launch_kernel(func, args_tuple, params, ndrange, workgroupsize, int(self.smem_size), 
-                                                self.start_evt_instance, self.end_evt_instance, self.stream_instance)
+            self.host_time = self.launch_kernel(
+                func,
+                args_tuple,
+                params,
+                ndrange,
+                workgroupsize,
+                int(self.smem_size),
+                self.observers[-1].start,
+                self.observers[-1].end,
+                self.observers[-1].stream,
+            )
         except JuliaError as e:
             raise SkippableFailure(f"Julia kernel launch failed for {params=}: {e}")
 
@@ -314,7 +320,7 @@ end
             return evt
         elif self.backend_mod_name == "Metal":
             # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
-            # Normally you would just use one command buffer for the actual kernel.
+            # Normally you would just use one command buffer for the actual kernel and take GPUEndTime - GPUStartTime.
             jl.start_buf = self.create_metal_buffer()
             jl.seval("Metal.commit!(start_buf)")
             self.backend_mod.wait_completed(jl.start_buf)
