@@ -26,6 +26,7 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
                                 Main.CUDA.record(start_evt, stream)
                             elseif isdefined(Main, :AMDGPU) && isa(start_evt, HIPEvent)
                                 Main.AMDGPU.HIP.record(start_evt)
+                            elseif isdefined(Main, :Metal)  # Metal timing is processed in the observer
                             else
                                 error("Unsupported event type for timing: $(typeof(start_evt))")
                             end
@@ -39,6 +40,7 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
                             elseif isdefined(Main, :AMDGPU) && isa(end_evt, HIPEvent)
                                 Main.AMDGPU.HIP.record(end_evt)
                                 Main.AMDGPU.HIP.synchronize(end_evt) # ensure the event is recorded before we read it
+                            elseif isdefined(Main, :Metal)  # Metal timing is processed in the observer
                             else
                                 error("Unsupported event type for timing: $(typeof(end_evt))")
                             end
