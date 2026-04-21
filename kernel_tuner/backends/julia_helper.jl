@@ -43,7 +43,7 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
                             if isdefined(Main, :CUDA) && isa(end_evt, CuEvent)
                                 Main.CUDA.record(end_evt, stream)
                                 Main.CUDA.synchronize(end_evt) # ensure the event is recorded before we read it
-                            elseif isdefined(Main, :AMDGPU) && isa(end_evt, HIP.HIPEvent)
+                            elseif isdefined(Main, :AMDGPU) && isa(end_evt, AMDGPU.HIP.HIPEvent)
                                 Main.AMDGPU.HIP.record(end_evt)
                                 Main.AMDGPU.HIP.synchronize(end_evt) # ensure the event is recorded before we read it
                             elseif isdefined(Main, :Metal)
