@@ -26,7 +26,7 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
                         if start_evt !== nothing
                             if isdefined(Main, :CUDA) && isa(start_evt, CuEvent)
                                 Main.CUDA.record(start_evt, stream)
-                            elseif isdefined(Main, :AMDGPU) && isa(start_evt, HIP.HIPEvent)
+                            elseif isdefined(Main, :AMDGPU) && isa(start_evt, AMDGPU.HIP.HIPEvent)
                                 Main.AMDGPU.HIP.record(start_evt)
                             elseif isdefined(Main, :Metal)
                                 # prepare the next command buffers for timing as they can only be used once
