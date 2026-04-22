@@ -109,7 +109,7 @@ def _find_bfloat16_if_available():
             + "please install either the package `ml_dtypes`, `jax`, or `tensorflow`"
         )
 
-    return None
+    return dtype
 
 
 def _to_float_dtype(x: str) -> np.dtype:

@@ -311,9 +311,9 @@ ptyprocess==0.7.0 ; python_version >= "3.10" and python_version < "4" and (os_na
 pure-eval==0.2.3 ; python_version >= "3.10" and python_version < "4" \
     --hash=sha256:1db8e35b67b3d218d818ae653e27f06c3aa420901fa7b081ca98cbedc874e0d0 \
     --hash=sha256:5f4e983f40564c576c7c8635ae88db5956bb2229d7e9237d03b3c0b0190eaf42
-pygments==2.19.1 ; python_version >= "3.10" and python_version < "4" \
-    --hash=sha256:61c16d2a8576dc0649d9f39e089b5f02bcd27fba10d8fb4dcc28173f7a45151f \
-    --hash=sha256:9ea1544ad55cecf4b8242fab6dd35a93bbce657034b0611ee383099054ab6d8c
+pygments==2.20.0 ; python_version >= "3.10" and python_version < "4" \
+    --hash=sha256:6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f \
+    --hash=sha256:81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176
 pyproject-hooks==1.2.0 ; python_version >= "3.10" and python_version < "4" \
     --hash=sha256:1e859bd5c40fae9448642dd871adf459e5e2084186e8d2c2a79a824c970da1f8 \
     --hash=sha256:9e5c6bfa8dcc30091c74b0cf803c81fdd29d94f01992a7707bc97babb1141913
@@ -323,9 +323,9 @@ pytest-cov==5.0.0 ; python_version >= "3.10" and python_version < "4" \
 pytest-timeout==2.3.1 ; python_version >= "3.10" and python_version < "4" \
     --hash=sha256:12397729125c6ecbdaca01035b9e5239d4db97352320af155b3f5de1ba5165d9 \
     --hash=sha256:68188cb703edfc6a18fad98dc25a3c61e9f24d644b0b70f33af545219fc7813e
-pytest==8.3.5 ; python_version >= "3.10" and python_version < "4" \
-    --hash=sha256:c69214aa47deac29fad6c2a4f590b9c4a9fdb16a403176fe154b79c0b4d4d820 \
-    --hash=sha256:f4efe70cc14e511565ac476b57c279e12a855b11f48f212af1080ef2263d3845
+pytest==9.0.3 ; python_version >= "3.10" and python_version < "4" \
+    --hash=sha256:2c5efc453d45394fdd706ade797c0a81091eccd1d6e4bccfcd476e2b8e0ab5d9 \
+    --hash=sha256:b86ada508af81d19edeb213c681b1d48246c1a91d304c6c81a427674c17eb91c
 python-constraint2==2.2.2 ; python_version >= "3.10" and python_version < "4" \
     --hash=sha256:02dcdf6d6f2d403b6304dddb242ef1b3db791600c7b8f8cd895dc3f87509bc6e \
     --hash=sha256:0951ff7ee0d549037ed078ecf828f33003730531a7231f9773c3674553362efa \
