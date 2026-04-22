@@ -10,6 +10,7 @@ from kernel_tuner.observers.cupy import CupyRuntimeObserver
 # and run tests without cupy installed
 try:
     import cupy as cp
+    from cupyx import get_runtime_info
 except ImportError:
     cp = None
 
@@ -68,7 +69,7 @@ class CupyFunctions(GPUBackend):
 
         # collect environment information
         env = dict()
-        cupy_info = str(cp._cupyx.get_runtime_info()).split("\n")[:-1]
+        cupy_info = str(get_runtime_info()).split("\n")[:-1]
         info_dict = {
             s.split(":")[0].strip(): s.split(":")[1].strip() for s in cupy_info
         }
