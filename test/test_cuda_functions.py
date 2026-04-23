@@ -32,6 +32,12 @@ def test_ready_argument_list():
     assert isinstance(gpu_args[2], driver.CUdeviceptr)
 
 
+def create_kernel_instance(kernel_name, kernel_string):
+    kernel_sources = KernelSource(kernel_name, kernel_string, "cuda")
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
+    return kernel_instance
+
+
 @skip_if_no_cuda
 def test_compile():
 
@@ -44,15 +50,47 @@ def test_compile():
     }
     """
 
-    kernel_name = "vector_add"
-    kernel_sources = KernelSource(kernel_name, kernel_string, "cuda")
-    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
+    kernel_instance = create_kernel_instance("vector_add", kernel_string)
     dev = nvcuda.CudaFunctions(0)
-    try:
-        dev.compile(kernel_instance)
-    except Exception as e:
-        pytest.fail("Did not expect any exception:" + str(e))
+    dev.compile(kernel_instance)
 
+@skip_if_no_cuda
+def test_compile_template():
+
+    kernel_string = """
+    namespace nested::namespaces {
+    template <typename T, int N>
+    __global__ void vector_add(T *c, T *a, T *b) {
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i<N) {
+            c[i] = a[i] + b[i];
+        }
+    }
+    }
+    """
+
+    kernel_name = "nested::namespaces::vector_add<float,10>"
+    kernel_instance = create_kernel_instance(kernel_name, kernel_string)
+    dev = nvcuda.CudaFunctions(0, compiler_options=["-std=c++17"])
+    dev.compile(kernel_instance)
+
+@skip_if_no_cuda
+def test_compile_include():
+
+    kernel_string = """
+    #include <cuda_fp16.h>
+
+    __global__ void vector_add(__nv_half *c, __nv_half *a, __nv_half *b, int n) {
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i<n) {
+            c[i] = __hadd(a[i], b[i]);
+        }
+    }
+    """
+
+    kernel_instance = create_kernel_instance("vector_add", kernel_string)
+    dev = nvcuda.CudaFunctions(0, compiler_options=["-std=c++17"])
+    dev.compile(kernel_instance)
 
 @skip_if_no_cuda
 def test_tune_kernel(env):
