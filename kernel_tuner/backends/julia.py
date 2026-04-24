@@ -40,6 +40,19 @@ class JuliaFunctions(GPUBackend):
         """Initialize Julia backend using JuliaCall."""
         if jl is None:
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
+
+        # process compiler options
+        self.raise_errors = False
+        for c in compiler_options or []:
+            if c.lower().startswith("raise_errors="):
+                raise_errors_str = c.split("=", 1)[1].strip().lower()
+                if raise_errors_str in ("true", "1", "yes"):
+                    self.raise_errors = True
+                elif raise_errors_str in ("false", "0", "no"):
+                    self.raise_errors = False
+                else:
+                    raise ValueError(f"Invalid value for raise_errors: {raise_errors_str}. Use true/false.")
+                compiler_options.remove(c)
         self.available_backends = detect_julia_gpu_backends()
         if compiler_options is not None and len(compiler_options) == 1:
             if compiler_options[0].upper() not in self.available_backends:
@@ -304,7 +317,10 @@ end
                 self.observers[-1].stream,
             )
         except JuliaError as e:
-            raise SkippableFailure(f"Julia kernel launch failed for {params=}: {e}")
+            if self.raise_errors:
+                raise e
+            else:
+                raise SkippableFailure(f"Julia kernel launch failed for {params=}: {e}")
 
     def start_event(self):
         """Records the event that marks the start of a measurement."""
