@@ -28,6 +28,7 @@ import logging
 from argparse import ArgumentParser
 from ast import literal_eval
 from datetime import datetime
+import os
 from pathlib import Path
 from time import perf_counter
 from copy import deepcopy
@@ -39,8 +40,6 @@ import kernel_tuner.core as core
 import kernel_tuner.util as util
 from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
 from kernel_tuner.integration import get_objective_defaults
-from kernel_tuner.runners.sequential import SequentialRunner
-from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.searchspace import Searchspace
 
 try:
@@ -68,6 +67,8 @@ from kernel_tuner.strategies import (
     skopt
 )
 from kernel_tuner.strategies.wrapper import OptAlgWrapper
+
+environment_key_parallel = "KERNEL_TUNER_PARALLEL"
 
 strategy_map = {
     "brute_force": brute_force,
@@ -476,7 +477,15 @@ _tuning_options = Options(
         ),
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
-        ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
+        ("parallel", ("Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.", "int|bool")),
+        (
+            "observers", 
+            (
+                """A list of Observers to use during tuning, please see :ref:`observers`.
+                Each entry must be either: an instance of :class:`BenchmarkObserver` or a callable (e.g., lambda) returning a :class:`BenchmarkObserver`. """, 
+                "list"
+            )
+        ),
     ]
 )
 
@@ -586,7 +595,8 @@ def tune_kernel(
     strategy_options=None,
     cache=None,
     metrics=None,
-    simulation_mode=False,
+    simulation_mode=None,
+    parallel=None,
     observers=None,
     objective=None,
     objective_higher_is_better=None,
@@ -616,17 +626,22 @@ def tune_kernel(
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
-    tuning_options["unique_results"] = {}
 
     # copy some values from strategy_options
     searchspace_construction_options = {}
+    max_fevals = None
+    time_limit = None
+
     if strategy_options:
         if "max_fevals" in strategy_options:
-            tuning_options["max_fevals"] = strategy_options["max_fevals"]
+            max_fevals = strategy_options["max_fevals"]
+            tuning_options["max_fevals"] = max_fevals  # TODO: Is this used?
         if "time_limit" in strategy_options:
-            tuning_options["time_limit"] = strategy_options["time_limit"] 
+            time_limit = strategy_options["time_limit"] 
+            tuning_options["time_limit"] = time_limit  # TODO: Is this used?
         if "searchspace_construction_options" in strategy_options:
             searchspace_construction_options = strategy_options["searchspace_construction_options"]         
+
 
     # log the user inputs
     logging.debug("tune_kernel called")
@@ -654,9 +669,28 @@ def tune_kernel(
         strategy = brute_force
 
     # select the runner for this job based on input
-    selected_runner = SimulationRunner if simulation_mode else SequentialRunner
+    # TODO: we could use the "match case" syntax when removing support for 3.9
     tuning_options.simulated_time = 0
-    runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
+
+    # Get runner from environment if possible
+    if parallel is None:
+        parallel = bool(os.environ.get(environment_key_parallel))
+
+
+    # Create runner
+    if parallel and simulation_mode:
+        raise ValueError("Enabling `parallel` and `simulation_mode` together is not supported")
+    elif simulation_mode:
+        from kernel_tuner.runners.simulation import SimulationRunner
+        runner = SimulationRunner(kernelsource, kernel_options, device_options, iterations, observers)
+    elif parallel:
+        from kernel_tuner.runners.parallel import ParallelRunner
+        num_workers = None if parallel is True else parallel
+        runner = ParallelRunner(kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers)
+    else:
+        from kernel_tuner.runners.sequential import SequentialRunner
+        runner = SequentialRunner(kernelsource, kernel_options, device_options, iterations, observers)
+
 
     # the user-specified function may or may not have an optional atol argument;
     # we normalize it so that it always accepts atol.
@@ -672,32 +706,49 @@ def tune_kernel(
     # process cache
     if cache:
         cache = preprocess_cache(cache)
-        util.process_cache(cache, kernel_options, tuning_options, runner)
+        tuning_options.cachefile = cache
+        tuning_options.cache = util.process_cache(cache, kernel_options, tuning_options, runner)
     else:
-        tuning_options.cache = {}
         tuning_options.cachefile = None
+        tuning_options.cache = {}
 
     # create search space
     tuning_options.restrictions_unmodified = deepcopy(restrictions)
-    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads, **searchspace_construction_options)
+    device_info = runner.get_device_info()
+    searchspace = Searchspace(tune_params, restrictions, device_info.max_threads, **searchspace_construction_options)
+    
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
+
     if verbose:
         print(f"Searchspace has {searchspace.size} configurations after restrictions.")
 
     # register the times and raise an exception if the budget is exceeded
-    if "time_limit" in tuning_options:
-        tuning_options["startup_time"] = perf_counter() - start_overhead_time
-        if tuning_options["startup_time"] > tuning_options["time_limit"]:
+    startup_time = perf_counter() - start_overhead_time
+
+    if time_limit is not None:
+        if startup_time > time_limit:
             raise RuntimeError(
-                f"The startup time of the tuning process ({tuning_options['startup_time']} seconds) has exceeded the time limit ({tuning_options['time_limit']} seconds). "
+                f"The startup time of the tuning process ({startup_time} seconds) has exceeded the time limit ({time_limit} seconds). "
                 "Please increase the time limit or decrease the size of the search space."
             )
-    tuning_options["start_time"] = perf_counter()
+
+        time_limit -= startup_time
+
+    if max_fevals is None or max_fevals > searchspace.size:
+        logging.info(f"evaluation limit has been adjusted from {max_fevals} to {searchspace.size} (search space size)")
+        max_fevals = searchspace.size
+
+    # Create the budget
+    tuning_options["budget"] = util.TuningBudget(time_limit, max_fevals)
+
 
     # call the strategy to execute the tuning process
     results = strategy.tune(searchspace, runner, tuning_options)
     env = runner.get_environment(tuning_options)
+
+    # Shut down the runner
+    runner.shutdown()
 
     # finished iterating over search space
     if results:  # checks if results is not empty

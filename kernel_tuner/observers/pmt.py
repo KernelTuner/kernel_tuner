@@ -59,19 +59,23 @@ class PMTObserver(BenchmarkObserver):
         else:
             # User specifices a string (single platform) as observable
             observable = {observable: None}
+
         supported = ["powersensor2", "powersensor3", "nvidia", "likwid", "rapl", "rocm", "xilinx"]
         for obs in observable.keys():
             if not obs in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
+        
+        self.observable = observable
+        self.use_continuous_observer = use_continuous_observer
+        self.continuous_duration = continuous_duration
 
-        self.pms = [pmt.create(obs[0], obs[1]) for obs in observable.items()]
-        self.pm_names = list(observable.keys())
-
-        self.begin_states = [None] * len(self.pms)
+    def register_device(self, dev):
+        self.pm_names = list(self.observable.keys())
+        self.pms = [pmt.create(obs[0], obs[1]) for obs in self.observable.items()]
         self.initialize_results(self.pm_names)
 
-        if use_continuous_observer:
-            self.continuous_observer = PMTContinuousObserver("pmt", [], self, continuous_duration=continuous_duration)
+        if self.use_continuous_observer:
+            self.continuous_observer = PMTContinuousObserver("pmt", [], self, continuous_duration=self.continuous_duration)
 
     def initialize_results(self, pm_names):
         self.results = dict()
@@ -86,6 +90,7 @@ class PMTObserver(BenchmarkObserver):
 
     def after_finish(self):
         end_states = [pm.read() for pm in self.pms]
+    
         for i in range(len(self.pms)):
             begin_state = self.begin_states[i]
             end_state = end_states[i]

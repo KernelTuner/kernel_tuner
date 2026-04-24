@@ -2,6 +2,7 @@
 from warnings import warn
 
 import numpy as np
+import uuid
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.nvcuda import CudaRuntimeObserver
@@ -99,7 +100,9 @@ class CudaFunctions(GPUBackend):
         err, device_properties = runtime.cudaGetDeviceProperties(device)
         cuda_error_check(err)
         env = dict()
+        env["uuid"] = str(uuid.UUID(bytes=device_properties.uuid.bytes))
         env["device_name"] = device_properties.name.decode()
+        env["pci_bus_id"] = device_properties.pciBusID
         env["cuda_version"] = driver.CUDA_VERSION
         env["compute_capability"] = self.cc
         env["iterations"] = self.iterations

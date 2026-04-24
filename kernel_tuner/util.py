@@ -1,5 +1,6 @@
 """Module for kernel tuner utility functions."""
 import ast
+from datetime import timedelta
 import errno
 import json
 import logging
@@ -187,30 +188,109 @@ def check_argument_list(kernel_name, kernel_string, args):
         warnings.warn(errors[0], UserWarning)
 
 
-def check_stop_criterion(to: dict) -> float:
-    """Check if the stop criterion is reached.
+class Timer:
+    def __init__(self):
+        self.reset()
 
-    Args:
-        to (dict): tuning options.
+    def reset(self):
+        self._start_ns = time.perf_counter_ns()
 
-    Raises:
-        StopCriterionReached: if the max_fevals is reached or time limit is exceeded.
+    def get(self) -> float:
+        """Elapsed time in seconds."""
+        now = time.perf_counter_ns()
+        return (now - self._start_ns) * 1e-9
 
-    Returns:
-        float: fraction of budget spent. If both max_fevals and time_limit are set, it returns the fraction of time.
-    """
-    if "max_fevals" in to:
-        if len(to.unique_results) >= to.max_fevals:
-            raise StopCriterionReached(f"max_fevals ({to.max_fevals}) reached")
-        if not "time_limit" in to:
-            return len(to.unique_results) / to.max_fevals
-    if "time_limit" in to:
-        time_spent = (time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3) + to.startup_time
-        if time_spent > to.time_limit:
-            raise StopCriterionReached("time limit exceeded")
-        return time_spent / to.time_limit
+    def get_and_reset(self) -> float:
+        """Elapsed time in seconds, then reset."""
+        now = time.perf_counter_ns()
+        elapsed_ns = now - self._start_ns
+        self._start_ns = now
+        return elapsed_ns * 1e-9
+
+    def __str__(self) -> str:
+        """Human-readable elapsed time."""
+        elapsed = self.get()
+
+        if elapsed < 1:
+            return f"{elapsed * 1e3:.2f} ms"
+        elif elapsed < 60:
+            return f"{elapsed:.3f} s"
+        elif elapsed < 3600:
+            return f"{elapsed / 60:.2f} min"
+        else:
+            return f"{elapsed / 3600:.2f} h"
+
+
+class TuningBudget:
+    def __init__(self, time_limit=None, max_fevals=None):
+        if time_limit is not None and not isinstance(time_limit, timedelta):
+            time_limit = timedelta(seconds=time_limit)
+
+        if max_fevals is not None and max_fevals <= 0:
+            raise ValueError("max_fevals must be greater than zero")
+        
+        if time_limit is not None and time_limit <= timedelta(seconds=0):
+            raise ValueError("time_limit must be greater than zero")
+
+        self.start_timer = Timer()
+        self.time_spent_extra = timedelta()
+        self.time_limit = time_limit
+        self.num_fevals = 0
+        self.max_fevals = max_fevals
     
+    def add_evaluations(self, n=1):
+        self.num_fevals += n
+    
+    def add_time(self, seconds=0, milliseconds=0):
+        self.time_spent_extra += timedelta(seconds=seconds, milliseconds=milliseconds)
+    
+    def get_time_spent(self) -> timedelta:
+        seconds_passed = self.start_timer.get()
+        return timedelta(seconds=seconds_passed) + self.time_spent_extra
+    
+    def get_time_remaining(self) -> timedelta:
+        if self.time_limit is not None:
+            return max(self.time_limit - self.get_time_spent(), timedelta(seconds=0))
+        else:
+            return timedelta.max
+    
+    def get_evaluations_spent(self) -> int:
+        return self.num_fevals
+    
+    def get_evaluations_remaining(self) -> int:
+        if self.max_fevals is not None:
+            return max(self.max_fevals - self.num_fevals, 0)
+        else:
+            return float("inf")
+    
+    def is_done(self) -> bool:
+        if self.max_fevals is not None and self.num_fevals >= self.max_fevals:
+            return True
 
+        if self.time_limit is not None and self.get_time_spent() > self.time_limit:
+            return True
+
+        return False   
+    
+    def raise_exception_if_done(self):
+        if self.max_fevals is not None and self.num_fevals >= self.max_fevals:
+            raise StopCriterionReached(f"max_fevals ({self.max_fevals}) reached")
+        
+        if self.time_limit is not None and self.get_time_spent() > self.time_limit:
+            raise StopCriterionReached("time limit exceeded")
+    
+    def get_fraction_consumed(self) -> float:
+        if self.max_fevals is not None and self.time_limit is not None:
+            time_spent = self.get_time_spent()
+            return min(1.0, time_spent / self.time_limit, self.num_fevals / self.max_fevals)
+        elif self.max_fevals is not None:
+            return min(1.0, self.num_fevals / self.max_fevals)
+        elif self.time_limit is not None:
+            return min(1.0, self.get_time_spent() / self.time_limit)
+        else:
+            return 0.0
+
+    
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
     """Raise an exception if a tune parameter has a forbidden name."""
@@ -601,6 +681,16 @@ def get_thread_block_dimensions(params, block_size_names=None):
     return (int(block_size_x), int(block_size_y), int(block_size_z))
 
 
+def disable_benchmark_timings(result: dict) -> dict:
+    """Returns a new dict where all the timing information related 
+    to benchmarking a single configurations have been disable. """
+    result = dict(result)  # Copy
+    result["compile_time"] = 0
+    result["verification_time"] = 0
+    result["benchmark_time"] = 0
+    return result
+
+
 def get_total_timings(results, env, overhead_time):
     """Sum all timings and put their totals in the env."""
     total_framework_time = 0
@@ -684,17 +774,18 @@ def process_metrics(params, metrics):
     :rtype: dict
 
     """
-    if not isinstance(metrics, dict):
-        raise ValueError("metrics should be a dictionary to preserve order and support composability")
-    for k, v in metrics.items():
-        if isinstance(v, str):
-            value = eval(replace_param_occurrences(v, params))
-        elif callable(v):
-            value = v(params)
-        else:
-            raise ValueError("metric dicts values should be strings or callable")
-        # We overwrite any existing values for the given key
-        params[k] = value
+    if metrics is not None:
+        if not isinstance(metrics, dict):
+            raise ValueError("metrics should be a dictionary to preserve order and support composability")
+        for k, v in metrics.items():
+            if isinstance(v, str):
+                value = eval(replace_param_occurrences(v, params))
+            elif callable(v):
+                value = v(params)
+            else:
+                raise ValueError("metric dicts values should be strings or callable")
+            # We overwrite any existing values for the given key
+            params[k] = value
     return params
 
 
@@ -1140,7 +1231,7 @@ def check_matching_problem_size(cached_problem_size, problem_size):
     if cached_problem_size_arr.size != problem_size_arr.size or not (cached_problem_size_arr == problem_size_arr).all():
         raise ValueError(f"Cannot load cache which contains results for different problem_size, cache: {cached_problem_size}, requested: {problem_size}")
 
-def process_cache(cache, kernel_options, tuning_options, runner):
+def process_cache(cachefile, kernel_options, tuning_options, runner):
     """Cache file for storing tuned configurations.
 
     the cache file is stored using JSON and uses the following format:
@@ -1168,13 +1259,15 @@ def process_cache(cache, kernel_options, tuning_options, runner):
     if not isinstance(tuning_options.tune_params, dict):
         raise ValueError("Caching only works correctly when tunable parameters are stored in a dictionary")
 
+    device_name = runner.get_device_info().name
+
     # if file does not exist, create new cache
-    if not os.path.isfile(cache):
+    if not os.path.isfile(cachefile):
         if tuning_options.simulation_mode:
-            raise ValueError(f"Simulation mode requires an existing cachefile: file {cache} does not exist")
+            raise ValueError(f"Simulation mode requires an existing cachefile: file {cachefile} does not exist")
 
         c = dict()
-        c["device_name"] = runner.dev.name
+        c["device_name"] = device_name
         c["kernel_name"] = kernel_options.kernel_name
         c["problem_size"] = kernel_options.problem_size if not callable(kernel_options.problem_size) else "callable"
         c["tune_params_keys"] = list(tuning_options.tune_params.keys())
@@ -1185,24 +1278,24 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         contents = json.dumps(c, cls=NpEncoder, indent="")[:-3]  # except the last "}\n}"
 
         # write the header to the cachefile
-        with open(cache, "w") as cachefile:
-            cachefile.write(contents)
+        with open(cachefile, "w") as f:
+            f.write(contents)
 
-        tuning_options.cachefile = cache
-        tuning_options.cache = {}
+        return {}
 
     # if file exists
     else:
-        cached_data = read_cache(cache, open_cache=not tuning_options.simulation_mode)
+        cached_data = read_cache(cachefile, open_cache=not tuning_options.simulation_mode)
 
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
-            runner.dev.name = cached_data["device_name"]
+            device_name = cached_data["device_name"]
+            runner.dev.name = device_name  # Is this always safe?
 
         # check if it is safe to continue tuning from this cache
-        if cached_data["device_name"] != runner.dev.name:
+        if cached_data["device_name"] != device_name:
             raise ValueError(
-                f"Cannot load cache which contains results for different device (cache: {cached_data['device_name']}, actual: {runner.dev.name})"
+                f"Cannot load cache which contains results for different device (cache: {cached_data['device_name']}, actual: {device_name})"
             )
         if cached_data["kernel_name"] != kernel_options.kernel_name:
             raise ValueError(
@@ -1219,17 +1312,16 @@ def process_cache(cache, kernel_options, tuning_options, runner):
                 )
             raise ValueError(
                 f"Cannot load cache which contains results obtained with different tunable parameters. \
-                Cache at '{cache}' has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
+                Cache at '{cachefile}' has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
             )
 
-        tuning_options.cachefile = cache
-        tuning_options.cache = cached_data["cache"]
+        return cached_data["cache"]
 
 
-def correct_open_cache(cache, open_cache=True):
+def correct_open_cache(cachefile, open_cache=True):
     """If cache file was not properly closed, pretend it was properly closed."""
-    with open(cache, "r") as cachefile:
-        filestr = cachefile.read().strip()
+    with open(cachefile, "r") as f:
+        filestr = f.read().strip()
 
     # if file was not properly closed, pretend it was properly closed
     if len(filestr) > 0 and filestr[-3:] not in ["}\n}", "}}}"]:
@@ -1241,15 +1333,15 @@ def correct_open_cache(cache, open_cache=True):
     else:
         if open_cache:
             # if it was properly closed, open it for appending new entries
-            with open(cache, "w") as cachefile:
-                cachefile.write(filestr[:-3] + ",")
+            with open(cachefile, "w") as f:
+                f.write(filestr[:-3] + ",")
 
     return filestr
 
 
-def read_cache(cache, open_cache=True):
+def read_cache(cachefile, open_cache=True):
     """Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending."""
-    filestr = correct_open_cache(cache, open_cache)
+    filestr = correct_open_cache(cachefile, open_cache)
 
     error_configs = {
         "InvalidConfig": InvalidConfig(),
@@ -1267,25 +1359,25 @@ def read_cache(cache, open_cache=True):
     return cache_data
 
 
-def close_cache(cache):
-    if not os.path.isfile(cache):
+def close_cache(cachefile):
+    if not os.path.isfile(cachefile):
         raise ValueError("close_cache expects cache file to exist")
 
-    with open(cache, "r") as fh:
+    with open(cachefile, "r") as fh:
         contents = fh.read()
 
     # close to file to make sure it can be read by JSON parsers
     if contents[-1] == ",":
-        with open(cache, "w") as fh:
+        with open(cachefile, "w") as fh:
             fh.write(contents[:-1] + "}\n}")
 
 
-def store_cache(key, params, tuning_options):
+def store_cache(key, params, cachefile, cache):
     """Stores a new entry (key, params) to the cachefile."""
     # logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
-    if isinstance(tuning_options.cache, dict):
-        if key not in tuning_options.cache:
-            tuning_options.cache[key] = params
+    if isinstance(cache, dict):
+        if key not in cache:
+            cache[key] = params
 
             # Convert ErrorConfig objects to string, wanted to do this inside the JSONconverter but couldn't get it to work
             output_params = params.copy()
@@ -1293,9 +1385,9 @@ def store_cache(key, params, tuning_options):
                 if isinstance(v, ErrorConfig):
                     output_params[k] = str(v)
 
-            if tuning_options.cachefile:
-                with open(tuning_options.cachefile, "a") as cachefile:
-                    cachefile.write("\n" + json.dumps({key: output_params}, cls=NpEncoder)[1:-1] + ",")
+            if cachefile:
+                with open(cachefile, "a") as f:
+                    f.write("\n" + json.dumps({key: output_params}, cls=NpEncoder)[1:-1] + ",")
 
 
 def dump_cache(obj: str, tuning_options):

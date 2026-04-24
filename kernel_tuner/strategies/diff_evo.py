@@ -115,7 +115,7 @@ def generate_population(tune_params, max_idx, popsize, searchspace, constraint_a
     return population
 
 
-def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, CR, method, constraint_aware, verbose):
+def differential_evolution(searchspace, cost_func: CostFunc, bounds, popsize, maxiter, F, CR, method, constraint_aware, verbose):
     """
     A basic implementation of the Differential Evolution algorithm.
 
@@ -139,7 +139,7 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
     population[0] = cost_func.get_start_pos()
 
     # Calculate the initial cost for each individual in the population
-    population_cost = np.array([cost_func(ind) for ind in population])
+    population_cost = np.array(cost_func.eval_all(population))
 
     # Keep track of the best solution found so far
     best_idx = np.argmin(population_cost)
@@ -208,7 +208,7 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
         # --- c. Selection ---
 
         # Calculate the cost of the new trial vectors
-        trial_population_cost = np.array([cost_func(ind) for ind in trial_population])
+        trial_population_cost = np.array(cost_func.eval_all(trial_population))
 
         # Keep track of whether population changes over time
         no_change = True
@@ -244,7 +244,7 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
             print(f"Generation {generation + 1}, Best Cost: {best_cost:.6f}")
 
     if verbose:
-        print(f"Differential Evolution completed fevals={len(cost_func.tuning_options.unique_results)}")
+        print(f"Differential Evolution completed fevals={cost_func.get_num_unique_results()}")
 
     return {"solution": best_solution, "cost": best_cost}
 
