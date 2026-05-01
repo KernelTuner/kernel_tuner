@@ -3,33 +3,54 @@ import numpy as np
 import warp as wp
 
 from kernel_tuner import tune_kernel
-from pathlib import Path 
+from examples.generic_python.call_functions import call_warp
 
 wp.init()
+wp.config.enable_backward = False
 
-FULL_PATH = Path(__file__).resolve()
+
+@wp.kernel()
+def gemm(
+    A: wp.array2d(dtype=wp.float16), B: wp.array2d(dtype=wp.float16), C: wp.array2d(dtype=wp.float16)
+):
+    i, j = wp.tid()
+    M = A.shape[0]
+    N = B.shape[1]
+    K = A.shape[1]
+
+    if i >= M or j >= N:
+        return
+
+    # compute dot product
+    sum = wp.float32(0.0)
+    for k in range(K):
+        sum += wp.float32(A[i, k]) * wp.float32(B[k, j])
+
+    # write result
+    C[i, j] = wp.float16(sum)
+
 
 # tile size
-TILE_M = wp.constant(8)
-TILE_N = wp.constant(4)
-TILE_K = wp.constant(8)
+TILE_M = 32
+TILE_N = 32
+TILE_K = 32
 
 # num threads per-tile
-TILE_THREADS = 64
+TILE_THREADS = 1024
 
 # GEMM example from https://nvidia.github.io/warp/user_guide/tiles.html 
-@wp.kernel
-def tile_gemm(A: wp.array2d(dtype=wp.float16), B: wp.array2d(dtype=wp.float16), C: wp.array2d(dtype=wp.float16)):
-
+@wp.kernel()
+def tile_gemm(
+    A: wp.array2d(dtype=wp.float16), 
+    B: wp.array2d(dtype=wp.float16), 
+    C: wp.array2d(dtype=wp.float16)
+):
     # output tile index
     i, j = wp.tid()
 
     sum = wp.tile_zeros(shape=(TILE_M, TILE_N), dtype=wp.float32)
 
-    M = A.shape[0]
-    N = B.shape[1]
     K = A.shape[1]
-
     count = (K + TILE_K - 1) // TILE_K 
 
     for k in range(0, count):
@@ -41,7 +62,7 @@ def tile_gemm(A: wp.array2d(dtype=wp.float16), B: wp.array2d(dtype=wp.float16), 
     wp.tile_store(C, wp.tile_astype(sum, wp.float16), offset=(i*TILE_M, j*TILE_N), bounds_check=True)
 
 
-def run_kernel_direct(M, N, K):
+def run_gemm(M, N, K):
     rng = np.random.default_rng(42)
     A = rng.random((M, K)).astype(np.float16)
     B = rng.random((K, N)).astype(np.float16)
@@ -51,36 +72,33 @@ def run_kernel_direct(M, N, K):
     B_wp = wp.array(B)
     C_wp = wp.array(C)
 
-    with wp.Tape() as tape:
-        wp.launch_tiled(
-            tile_gemm,
-            dim=((M + TILE_M - 1) // TILE_M, (N + TILE_N - 1) // TILE_N),
-            inputs=[A_wp, B_wp, C_wp],
-            block_dim=TILE_THREADS)
+    wp.launch(gemm, dim=(M, N), inputs=[A_wp, B_wp, C_wp])
 
-    np.testing.assert_allclose(C_wp.numpy(), A @ B, rtol=1e-1)
+    np.testing.assert_allclose(C_wp.numpy(), A @ B, rtol=1e-2, atol=M * 2**(-11))
 
-    print("Example matrix multiplication passed")
+    print("Succes")
 
 
+def run_gemm_tiled(M, N, K):
+    rng = np.random.default_rng(42)
+    A = rng.random((M, K)).astype(np.float16)
+    B = rng.random((K, N)).astype(np.float16)
+    C = np.zeros((M, N), dtype=np.float16)
 
-def call_warp(kernel_function, args, kwargs, grid, threads, params):
-    # Convert Torch tensors to Warp args
-    warp_args = []
-    for arg in args:
-        if isinstance(arg, torch.Tensor):
-            warp_args.append(wp.from_torch(arg))
-        else:
-            warp_args.append(arg)
+    A_wp = wp.array(A)
+    B_wp = wp.array(B)
+    C_wp = wp.array(C)
 
-    # launch kernel
-    with wp.Tape() as tape:
-        wp.launch_tiled(
-            kernel_function,
-            dim=grid,
-            inputs=warp_args,
-            block_dim=params["TILE_THREADS"], 
-        )
+
+    wp.launch_tiled(
+        tile_gemm,
+        dim=((M + TILE_M - 1) // TILE_M, (N + TILE_N - 1) // TILE_N),
+        inputs=[A_wp, B_wp, C_wp],
+        block_dim=TILE_THREADS)
+
+    np.testing.assert_allclose(C_wp.numpy(), A @ B, rtol=1e-2, atol=M * 2**(-11))
+
+    print("Succes")
 
 
 def tune(M, K, N):
@@ -90,43 +108,40 @@ def tune(M, K, N):
     C = np.zeros((M, N), dtype=np.float16)
 
     size = (M, N)
-    block_size_names = ["TILE_M", "TILE_N"]
 
     tune_params = dict()
-    tune_params["TILE_M"] = [4, 8, 16]
-    tune_params["TILE_N"] = [2, 4, 8]
-    tune_params["TILE_K"] = [4, 8, 16]
-    tune_params["TILE_THREADS"] = [32, 64, 128]
+    tune_params["block_dim"] = [2**i for i in range(5, 11)]
+    tune_params["dim"] = [size]
 
     args = [A, B, C]
     answer = [None, None, A @ B]
 
     results, env = tune_kernel(
-        kernel_name="tile_gemm",
-        kernel_source=FULL_PATH,
+        kernel_name="gemm",
+        kernel_source=__file__,
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
         lang="generic_python",
         answer=answer,
         call_function=call_warp,
-        block_size_names=block_size_names,
     )
 
 
+
 if __name__ == "__main__":
-    #tune(128, 128, 128)
+    M, N, K = 1024, 1024, 1024
+    
+    #run_gemm(M, N, K)
+    #run_gemm_tiled(M, N, K)
+    
+    tune(M, N, K)
 
-    sizes = [
-        (65, 65, 17),
-        (67, 71, 19),
-        (1, 1, 1),
-        (63, 63, 15),
-        (129, 130, 33),
-    ]
+    
 
-    #for size in sizes:
-    #    print(size)
-    #    run_kernel_direct(*size)
 
-    run_kernel_direct(1024, 1024, 1024)
+    
+
+    
+
+    

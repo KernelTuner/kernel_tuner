@@ -41,11 +41,11 @@ class GenericPythonFunctions(GPUBackend):
         self.device_id = torch.cuda.current_device()
         self.device_properties = torch.cuda.get_device_properties(self.device_id)
         self.name = torch.cuda.get_device_name(self.device_id)
-        self.max_threads = self.device_properties.max_threads_per_multi_processor
+        self.max_threads = 10**18 # 'inf' to support tile based programming models, which can use less threads then the size of a tile.
 
         env = dict()
         env["device_name"] = self.name
-        env["max_threads"] = self.max_threads
+        env["max_threads"] = self.max_threads 
         env["iterations"] = iterations
         env["compiler_options"] = compiler_options
         self.env = env

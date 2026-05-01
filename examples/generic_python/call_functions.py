@@ -91,11 +91,24 @@ def call_warp(kernel_function, args, kwargs, grid, threads, params):
         else:
             warp_args.append(arg)
 
+    # Check if block_dim is in the tuning parameters. Otherwise, use
+    # the computed thread block dimensions.
+    if 'block_dim' in params.keys():
+        threads_per_block = params['block_dim']
+    else:
+        threads_per_block = threads[0] * threads[1] * threads[2]
+
+    # Check if dim is in the tuning parameters. Otherwise, compute from
+    # grid and threads.
+    if 'dim' in params.keys():
+        dimensions = params['dim']
+    else:
+        dimensions = [grid[i] * threads[i] for i in range(len(grid))]
+    
     # launch kernel
-    with wp.Tape() as tape:
-        wp.launch_tiled(
-            kernel_function,
-            dim=grid,
-            inputs=warp_args,
-            block_dim=params["TILE_THREADS"], # We could directly take threads, but in the given example this is a constant
-        )
+    wp.launch(
+        kernel_function,
+        dim=dimensions,
+        inputs=warp_args,
+        block_dim=threads_per_block
+    )

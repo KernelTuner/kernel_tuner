@@ -2,19 +2,17 @@ import torch
 import triton
 import triton.language as tl
 
+from kernel_tuner import tune_kernel
+from examples.generic_python.call_functions import call_triton
 
 @triton.jit
 def matmul_basic(
-        # Pointers
-        a_ptr, b_ptr, c_ptr,
-        # Matrix sizes
-        M, N, K,
-        # Strides
-        stride_am, stride_ak,
+        a_ptr, b_ptr, c_ptr, # Pointers
+        M, N, K, # Matrix sizes
+        stride_am, stride_ak,  # Strides
         stride_bk, stride_bn,
         stride_cm, stride_cn,
-        # Tile sizes
-        BLOCK_SIZE_M: tl.constexpr,
+        BLOCK_SIZE_M: tl.constexpr, # Tile sizes
         BLOCK_SIZE_N: tl.constexpr,
         BLOCK_SIZE_K: tl.constexpr,
 ):
@@ -41,7 +39,7 @@ def matmul_basic(
             mask=(offs_am[:, None] < M) & (offs_k[None, :] < K - k * BLOCK_SIZE_K),
             other=0.0,
         )
-
+        
         b = tl.load(
             b_ptrs,
             mask=(offs_k[:, None] < K - k * BLOCK_SIZE_K) & (offs_bn[None, :] < N),
@@ -160,3 +158,153 @@ def matmul_opt(
     tl.store(c_ptrs, c, mask=c_mask)
 
 
+
+def run_basic(M, N, K):
+    A = torch.randn(M, K, device="cuda", dtype=torch.float16)
+    B = torch.randn(K, N, device="cuda", dtype=torch.float16)
+    C = torch.empty((M, N), device='cuda', dtype=torch.float16)
+    C_ref = A @ B
+
+    BLOCK_SIZE_M = 64
+    BLOCK_SIZE_N = 64
+    BLOCK_SIZE_K = 32
+
+    grid = (
+        triton.cdiv(M, BLOCK_SIZE_M),
+        triton.cdiv(N, BLOCK_SIZE_N),
+    )
+
+    matmul_basic[grid](
+        A, B, C,
+        M, N, K,
+        A.stride(0), A.stride(1),
+        B.stride(0), B.stride(1),
+        C.stride(0), C.stride(1),
+        BLOCK_SIZE_M=BLOCK_SIZE_M,
+        BLOCK_SIZE_N=BLOCK_SIZE_N,
+        BLOCK_SIZE_K=BLOCK_SIZE_K,
+    )
+
+    assert torch.allclose(C, C_ref, rtol=1e-2, atol= M * 2**(-11))
+
+    print("Passed")
+
+
+def run_opt(M, N, K):
+    A = torch.randn(M, K, device="cuda", dtype=torch.float16)
+    B = torch.randn(K, N, device="cuda", dtype=torch.float16)
+    C = torch.empty((M, N), device='cuda', dtype=torch.float16)
+    C_ref = A @ B
+
+    BLOCK_SIZE_M = 64
+    BLOCK_SIZE_N = 64
+    BLOCK_SIZE_K = 32
+    GROUP_SIZE_M = 32
+
+    grid = (triton.cdiv(M, BLOCK_SIZE_M) * triton.cdiv(N, BLOCK_SIZE_N),)
+
+    matmul_opt[grid](
+        A, B, C,
+        M, N, K,
+        A.stride(0), A.stride(1),
+        B.stride(0), B.stride(1),
+        C.stride(0), C.stride(1),
+        BLOCK_SIZE_M=BLOCK_SIZE_M,
+        BLOCK_SIZE_N=BLOCK_SIZE_N,
+        BLOCK_SIZE_K=BLOCK_SIZE_K,
+        GROUP_SIZE_M=GROUP_SIZE_M,
+    )
+
+    assert torch.allclose(C, C_ref, rtol=1e-2, atol= M * 2**(-11))
+
+    print("Passed")
+
+
+def tune_basic(M, N, K):
+    A = torch.randn(M, K, device="cuda", dtype=torch.float16)
+    B = torch.randn(K, N, device="cuda", dtype=torch.float16)
+    C = torch.empty((M, N), device='cuda', dtype=torch.float16)
+    C_ref = A @ B
+
+    size = (M, N)
+
+    args = [A, B, C,
+        M, N, K,
+        A.stride(0), A.stride(1),
+        B.stride(0), B.stride(1),
+        C.stride(0), C.stride(1),
+    ]
+
+    tune_params = dict()
+    tune_params["BLOCK_SIZE_M"] = [2**i for i in range(1, 10)]
+    tune_params["BLOCK_SIZE_N"] = [2**i for i in range(1, 10)]
+    tune_params["BLOCK_SIZE_K"] = [2**i for i in range(4, 10)] # tl.dot requires K >= 16
+    tune_params["num_warps"] = [1, 2, 4, 8, 16, 32]
+    tune_params["num_stages"] = [1, 2, 3, 4, 5]
+
+    results, env = tune_kernel(
+        kernel_name="matmul_basic",
+        kernel_source=__file__,
+        problem_size=size,
+        arguments=args,
+        tune_params=tune_params,
+        lang="generic_python",
+        answer=[None, None, C_ref.cpu(), None, None, None, None, None, None, None, None, None],
+        atol=M * 2**(-11),
+        block_size_names = ["BLOCK_SIZE_M", "BLOCK_SIZE_M"],
+        strategy = "bayes_opt",
+        strategy_options = {"max_fevals": 100},
+        call_function=call_triton,
+    )
+
+
+def tune_opt(M, N, K):
+    A = torch.randn(M, K, device="cuda", dtype=torch.float16)
+    B = torch.randn(K, N, device="cuda", dtype=torch.float16)
+    C = torch.empty((M, N), device='cuda', dtype=torch.float16)
+    C_ref = A @ B
+
+    size = M * N
+
+    args = [A, B, C,
+        M, N, K,
+        A.stride(0), A.stride(1),
+        B.stride(0), B.stride(1),
+        C.stride(0), C.stride(1),
+    ]
+
+    tune_params = dict()
+    tune_params["BLOCK_SIZE_M"] = [2**i for i in range(1, 10)]
+    tune_params["BLOCK_SIZE_N"] = [2**i for i in range(1, 10)]
+    tune_params["BLOCK_SIZE_K"] = [2**i for i in range(4, 10)] # tl.dot requires K >= 16
+    tune_params["GROUP_SIZE_M"] = [1, 2, 4, 8, 16, 32, 64]
+    tune_params["num_warps"] = [1, 2, 4, 8, 16, 32]
+    tune_params["num_stages"] = [1, 2, 3, 4, 5]
+
+    results, env = tune_kernel(
+        kernel_name="matmul_opt",
+        kernel_source=__file__,
+        problem_size=size,
+        arguments=args,
+        tune_params=tune_params,
+        lang="generic_python",
+        answer=[None, None, C_ref.cpu(), None, None, None, None, None, None, None, None, None],
+        atol=M * 2**(-11),
+        block_size_names = ["BLOCK_SIZE_M", "BLOCK_SIZE_M"],
+        grid_div_x = ["BLOCK_SIZE_M", "BLOCK_SIZE_N"],
+        strategy = "bayes_opt",
+        strategy_options = {"max_fevals": 100},
+        call_function=call_triton,
+    )
+    
+
+
+if __name__ == "__main__":
+    M, N, K = 4096, 4096, 4096
+    #M, N, K = 8192, 8192, 8192
+    #run_basic(M, N, K)
+    #run_opt(M, N, K)
+
+
+    #tune_basic(M, N, K)
+    #tune_opt(M, N, K)

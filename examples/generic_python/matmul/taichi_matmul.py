@@ -1,21 +1,17 @@
-import torch
+import numpy as np
 import taichi as ti
 
 from kernel_tuner import tune_kernel
-
-
+from examples.generic_python.call_functions import call_taichi
 
 ti.init(arch=ti.gpu)
 
-
-# TODO make sure this is zero-copy
+BLOCK_DIM = 512
 @ti.kernel
 def matmul(A: ti.types.ndarray(dtype=ti.f16, ndim=2), B: ti.types.ndarray(dtype=ti.f16, ndim=2), C: ti.types.ndarray(dtype=ti.f16, ndim=2)):
-    BLOCK_DIM = 16
-    ti.loop_config(block_dim=BLOCK_DIM)  
-
     K_dim = A.shape[1]
 
+    ti.loop_config(block_dim=BLOCK_DIM)  
     for i, j in C:
         sum = 0.0
         for k in range(K_dim):
@@ -23,19 +19,28 @@ def matmul(A: ti.types.ndarray(dtype=ti.f16, ndim=2), B: ti.types.ndarray(dtype=
         C[i, j] = ti.cast(sum, ti.f16)
 
 
-def call_taichi(kernel_function, args, kwargs):
-    kernel_function(*args, **kwargs)
+def run(M, N, K):
+    A = np.random.rand(M, K).astype(np.float16)
+    B = np.random.rand(K, N).astype(np.float16)
+    C = np.zeros((M, N), dtype=np.float16)
+    C_ref = A @ B
+
+    matmul(A, B, C)
+
+    np.testing.assert_allclose(C, C_ref, rtol=1e-2, atol=M * 2**(-11))
+    print("Succes")
+
 
 def tune(M, N, K):
-    torch_A = torch.rand((N, K), device='cuda', dtype=torch.float16)
-    torch_B = torch.rand((K, M), device='cuda', dtype=torch.float16)
-    torch_C = torch.empty((N, M), device='cuda', dtype=torch.float16)
+    A = np.random.rand(M, K).astype(np.float16)
+    B = np.random.rand(K, N).astype(np.float16)
+    C = np.zeros((M, N), dtype=np.float16)
 
     size = M * N
-    args = [torch_A, torch_B, torch_C]
-    tune_params = {"BLOCK_DIM": {4, 8, 16, 32, 64, 128, 256, 512, 1024}}
+    args = [A, B, C]
+    tune_params = {"BLOCK_DIM": [2**i for i in range(5, 11)]}
 
-    answer = [None, None, (torch_A @ torch_B).cpu()]
+    answer = [None, None, A @ B]
 
     results, env = tune_kernel(
         kernel_name="matmul",
@@ -46,11 +51,13 @@ def tune(M, N, K):
         answer=answer,
         lang="generic_python",
         call_function=call_taichi,
-        atol=1e-1,
+        atol=M * 2**(-11),
+        block_size_names = ["BLOCK_DIM"],
     )
 
 if __name__ == "__main__":
-    tune(128, 128, 128)
+    run(1024, 1024, 1024)
+    tune(1024, 1024, 1024)
 
 
     

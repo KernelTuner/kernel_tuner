@@ -1,105 +1,71 @@
 import cupy as cp
 from cupyx import jit
 import numpy as np
-import torch
 
 from kernel_tuner import tune_kernel
-from pathlib import Path 
-
-
-@jit.rawkernel()
-def gemm_raw_strided(a, b, c, M, N, K): # with outer loop so that we can have more work per thread
-    # global thread indices
-    row = jit.blockIdx.y * jit.blockDim.y + jit.threadIdx.y
-    col = jit.blockIdx.x * jit.blockDim.x + jit.threadIdx.x
-
-    # grid stride increments
-    stride_y = jit.gridDim.y * jit.blockDim.y
-    stride_x = jit.gridDim.x * jit.blockDim.x
-
-    i = row
-    while i < M:
-        j = col
-        while j < N:
-            acc = 0.0
-            for kk in range(K):
-                acc += a[i, kk] * b[kk, j]   
-            c[i, j] = acc                   
-            j += stride_x
-        i += stride_y
+from examples.generic_python.call_functions import call_cupyx
 
 
 @jit.rawkernel()
 def gemm(a, b, c, M, N, K):
     row = jit.blockIdx.y * jit.blockDim.y + jit.threadIdx.y
     col = jit.blockIdx.x * jit.blockDim.x + jit.threadIdx.x
+    
+    if row < M and col < N:
+        acc = 0.0
+        for kk in range(K):
+            acc += a[row, kk] * b[kk, col]   
+        c[row, col] = acc                   
 
-    acc = 0.0
-    for kk in range(K):
-        acc += a[row, kk] * b[kk, col]   
-    c[row, col] = acc                   
 
+def run(M, N, K):
+    # float16 matrices on GPU
+    a = cp.random.random((M, K)).astype(cp.float16)
+    b = cp.random.random((K, N)).astype(cp.float16)
+    c = cp.zeros((M, N), dtype=cp.float16)
 
-def run():
-    M, K, N = 128, 256, 64
-
-    # random test data
-    A = cp.random.random((M, K), dtype=cp.float32)
-    B = cp.random.random((K, N), dtype=cp.float32)
-    C = cp.zeros((M, N), dtype=cp.float32)
-
-    # launch parameters
+    # block / grid configuration
     block = (16, 16)
-    grid = ((N + block[0] - 1) // block[0],
-            (M + block[1] - 1) // block[1])
+    grid = ((N + block[0] - 1) // block[0], (M + block[1] - 1) // block[1])
 
     # launch kernel
-    gemm_raw_strided(grid, block, (A, B, C, M, N, K))
+    gemm[grid, block](a, b, c, M, N, K)
+    cp.cuda.Device().synchronize()
 
-    # validate
-    C_ref = A.dot(B)
-    print("max error:", float(cp.max(cp.abs(C - C_ref))))
+    # Correctness verification
+    c_ref = cp.matmul(a, b)
+    assert cp.allclose(c, c_ref, rtol=1e-2, atol=1e-1)
+
+    print("Succes")
 
 
-def call_cupyx(kernel_function, args, kwargs, grid, threads):
-    cupy_args = []
-    for arg in args:
-        if isinstance(arg, torch.Tensor):
-            cupy_args.append(cp.from_dlpack(arg))
-        else:
-            cupy_args.append(arg)
-    kernel_function(grid, threads, tuple(cupy_args))
-
-def tune():
-    M, K, N = 128, 256, 64
-
-    # random test data. Here we had to change cupy to numpy arrays.
+def tune(M, N, K):
+    # random test data. Here we had to use numpy arrays instead of cupy.
     A = np.random.rand(M, K).astype(np.float16)
     B = np.random.rand(K, N).astype(np.float16)
     C = np.zeros((M, N), dtype=np.float16)
 
-
     args = [A, B, C, M, N, K]
     size = (N, M)
-    tune_params = {"block_size_x": [2**i for i in range(10)], "block_size_y": [2**i for i in range(10)]}
-    restrictions = ["block_size_x == block_size_y"]
-    source = Path(__file__).resolve()
+    tune_params = {"block_size_x": [2**i for i in range(11)], "block_size_y": [2**i for i in range(11)]}
+    restrictions = ["block_size_x * block_size_y <= 1024"]
 
     results, env = tune_kernel(
         kernel_name="gemm",
-        kernel_source=source,
+        kernel_source=__file__,
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
-        answer=[None, None, A.dot(B), None, None],
-        atol=1e-2,
+        answer=[None, None, A.dot(B), None, None, None],
+        atol=1e-1,
         call_function=call_cupyx, 
         lang="generic_python",
-        verbose=True,  
-        restrictions=restrictions,    
+        restrictions=restrictions,
+        verbose=True,   
     )
 
 
 if __name__ == "__main__":
-    #tune()
-    run()
+    M, N, K = 1024, 1024, 1024
+    tune(M, N, K)
+    

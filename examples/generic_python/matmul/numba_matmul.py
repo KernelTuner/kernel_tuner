@@ -1,16 +1,13 @@
-import torch
 import numpy as np
 from numba import cuda, float32
+
 from kernel_tuner import tune_kernel
-from pathlib import Path
+from examples.generic_python.call_functions import call_numba
 
-FULL_PATH = Path(__file__).resolve()
 
-# Example taken from https://nvidia.github.io/numba-cuda/user/examples.html#matrix-multiplication
+# Source: https://nvidia.github.io/numba-cuda/user/examples.html#matrix-multiplication
 @cuda.jit(cache=True)
 def matmul(A, B, C):
-    """Perform square matrix multiplication of C = A * B
-    """
     i, j = cuda.grid(2)
     if i < C.shape[0] and j < C.shape[1]:
         tmp = 0.
@@ -19,48 +16,7 @@ def matmul(A, B, C):
         C[i, j] = tmp
 
 
-# Example taken from https://nvidia.github.io/numba-cuda/user/examples.html#matrix-multiplication
-# Changed data type from float32 to float16
-@cuda.jit(cache=True, fastmath=True)
-def fast_matmul(A, B, C):
-    # Define an array in the shared memory
-    # The size and type of the arrays must be known at compile time
-    TPB = 16 # TEMP voor overhead testing
-    sA = cuda.shared.array(shape=(TPB, TPB), dtype=np.float16)
-    sB = cuda.shared.array(shape=(TPB, TPB), dtype=np.float16)
-
-    x, y = cuda.grid(2)
-
-    tx = cuda.threadIdx.x
-    ty = cuda.threadIdx.y
-    bpg = cuda.gridDim.x    # blocks per grid
-
-    if x >= C.shape[0] and y >= C.shape[1]:
-        # Quit if (x, y) is outside of valid C boundary
-        return
-
-    # Each thread computes one element in the result matrix.
-    # The dot product is chunked into dot products of TPB-long vectors.
-    tmp = 0.
-    for i in range(bpg):
-        # Preload data into shared memory
-        sA[tx, ty] = A[x, ty + i * TPB]
-        sB[tx, ty] = B[tx + i * TPB, y]
-
-        # Wait until all threads finish preloading
-        cuda.syncthreads()
-
-        # Computes partial product on the shared memory
-        for j in range(TPB):
-            tmp += sA[tx, j] * sB[j, ty]
-
-        # Wait until all threads finish computing
-        cuda.syncthreads()
-
-    C[x, y] = tmp
-
-
-# Translated to numba-cuda from https://github.com/cupy/cupy/blob/main/examples/gemm/sgemm.cu
+# Translated to Numba-CUDA from https://github.com/cupy/cupy/blob/main/examples/gemm/sgemm.cu
 @cuda.jit(cache=True)
 def optimized_matmul(M, N, K, A, B, C):
     DIM_X = 16
@@ -68,8 +24,8 @@ def optimized_matmul(M, N, K, A, B, C):
     BLK_M = 64
     BLK_N = 64
     BLK_K = 16
-    THR_M = 4
-    THR_N = 4
+    THR_M = 4 # Should be equal to BLK_M / DIM_X
+    THR_N = 4 # Should be equal to BLK_N / DIM_Y 
 
     # thread indices
     idx = cuda.threadIdx.x
@@ -144,12 +100,12 @@ def optimized_matmul(M, N, K, A, B, C):
                 C[row, col] = np.float16(rC[n][m])
 
 
-def run_matmul(M, N, K):
-
+def run_basic(M, N, K):
     # create numpy arrays
     A = np.random.rand(M, K).astype(np.float16)
     B = np.random.rand(K, N).astype(np.float16)
     C = np.zeros((M, N), dtype=np.float16)
+    C_ref = A @ B
 
     # copy to GPU
     A_d = cuda.to_device(A)
@@ -166,29 +122,52 @@ def run_matmul(M, N, K):
     )
 
     # launch kernel
-    fast_matmul[blocks, threads](A_d, B_d, C_d)
+    matmul[blocks, threads](A_d, B_d, C_d)
+    cuda.synchronize()
 
     # copy result back
     C_result = C_d.copy_to_host()
 
     # check
-    np.testing.assert_allclose(C_result, A @ B, rtol=1e-2)
-
-    print("Correct!")
-
-
-def call_numba(kernel_function, args, kwargs, grid, threads):
-    numba_args = []
-    for arg in args:
-        if isinstance(arg, torch.Tensor):
-            numba_args.append(cuda.as_cuda_array(arg))
-        else:
-            numba_args.append(arg)
-    kernel_function[grid, threads](*args, **kwargs)
+    np.testing.assert_allclose(C_result, C_ref, rtol=1e-2, atol=M * 2**(-11))
+    print("Succes")
 
 
-def tune(M, N, K):
-    # create numpy arrays
+def run_optimized(M, N, K):
+    # inputs 
+    A = np.random.rand(M, K).astype(np.float16)
+    B = np.random.rand(K, N).astype(np.float16)
+    C = np.zeros((M, N), dtype=np.float16)
+    C_ref = A @ B
+
+    # move to GPU
+    dA = cuda.to_device(A)
+    dB = cuda.to_device(B)
+    dC = cuda.to_device(C)
+
+    threads_per_block = (16, 16)
+    blocks_per_grid = (
+        (M + 63) // 64, # BLK_M = 64
+        (N + 63) // 64, # BLK_N = 64
+    )
+
+    # launch
+    for i in range(10000):
+        optimized_matmul[blocks_per_grid, threads_per_block](M, N, K, dA, dB, dC)
+        cuda.synchronize()
+
+    # copy result back
+    C_result = dC.copy_to_host()
+    
+    # check
+    np.testing.assert_allclose(C_result, C_ref, rtol=1e-2, atol=M * 2**(-11))
+    print("Succes")
+
+
+
+
+def tune_basic(M, N, K):
+    # create inputs as normal, but do not copy to device
     A = np.random.rand(M, K).astype(np.float16)
     B = np.random.rand(K, N).astype(np.float16)
     C = np.zeros((M, N), dtype=np.float16)
@@ -196,80 +175,87 @@ def tune(M, N, K):
     size = (M, N)
     args = [A, B, C]
     tune_params = dict()
-    tune_params["block_size_x"] = [4, 8, 16, 32, 64, 128, 256]
-    tune_params["block_size_y"] = [4, 8, 16, 32, 64, 128, 256]
-    tune_params["TPB"] = [4, 8, 16, 32, 64, 128, 256]
-    restrictions = ["block_size_x == block_size_y", "block_size_x == TPB"]
+    tune_params["block_size_x"] = [2**i for i in range(1, 10)]
+    tune_params["block_size_y"] = [2**i for i in range(1, 10)]
+
+    restrictions = ["block_size_x * block_size_y <= 1024"]
     
     answer = [None, None, A @ B]
     atol = M * 2**(-11)
 
     results, env = tune_kernel(
-        kernel_name="fast_matmul",
-        kernel_source=FULL_PATH,
+        kernel_name="matmul",
+        kernel_source=__file__,
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
         lang="generic_python",
         answer=answer,
         atol=atol,
+        restrictions=restrictions,
         call_function=call_numba,
-        restrictions=restrictions
     )
 
 
-if __name__ == "__main__":
-    
-    #run_matmul(128, 96, 64)
-    #tune(1024, 1024, 1024)
-
-
-    M, N, K = 1024, 1024, 1024
-
-    # random FP16 inputs
+def tune_optimized(M, N, K):
+    # create inputs as normal, but do not copy to device
     A = np.random.rand(M, K).astype(np.float16)
     B = np.random.rand(K, N).astype(np.float16)
-
-    # output
     C = np.zeros((M, N), dtype=np.float16)
 
-    # copy to device
-    dA = cuda.to_device(A)
-    dB = cuda.to_device(B)
-    dC = cuda.to_device(C)
+    size = (M, N)
+    args = [M, N, K, A, B, C]
+    tune_params = {
+        "DIM_X": [2**i for i in range(1, 10)],
+        "DIM_Y": [2**i for i in range(1, 10)],
+        "BLK_M": [2**i for i in range(1, 10)],
+        "BLK_N": [2**i for i in range(1, 10)],
+        "BLK_K": [2**i for i in range(1, 10)],
+        "THR_M": [2**i for i in range(1, 9)], # Restricted to BLK_M / DIM_X
+        "THR_N": [2**i for i in range(1, 9)], # Restricted to BLK_N / DIM_Y
+    }
+    
+    answer = [None, None, None, None, None, A @ B]
+    atol = M * 2**(-11)
 
-    # launch config
-    threads_per_block = (16, 16)
+    restrictions = [
+        "BLK_M % DIM_X == 0",
+        "BLK_N % DIM_Y == 0",
+        "THR_M == BLK_M / DIM_X",
+        "THR_N == BLK_N / DIM_Y",
+        "DIM_X * DIM_Y <= 1024",
+        "DIM_x * DIM_Y >= 32",
+    ]
 
-    blocks_per_grid_x = (M + 64 - 1) // 64
-    blocks_per_grid_y = (N + 64 - 1) // 64
-    blocks_per_grid = (blocks_per_grid_x, blocks_per_grid_y)
+    results, env = tune_kernel(
+        kernel_name="optimized_matmul",
+        kernel_source=__file__,
+        problem_size=size,
+        arguments=args,
+        tune_params=tune_params,
+        lang="generic_python",
+        answer=answer,
+        atol=atol,
+        restrictions = restrictions,
+        block_size_names = ["DIM_X", "DIM_Y"],
+        grid_div_x = ["BLK_M"],
+        grid_div_y = ["BLK_N"],
+        strategy = "bayes_opt",
+        strategy_options = {"max_fevals": 100},
+        call_function=call_numba,
+    )
 
-    # run kernel
-    optimized_matmul[blocks_per_grid, threads_per_block](M, N, K, dA, dB, dC)
 
-    # copy result back
-    C_result = dC.copy_to_host()
 
-    # reference (FP32 accumulate like your kernel)
-    C_ref = (A.astype(np.float32) @ B.astype(np.float32)).astype(np.float16)
+if __name__ == "__main__":
+    M, N, K = 1024, 1024, 1024
 
-    # check error
-    max_error = np.max(np.abs(C_result - C_ref))
-    print("Max error:", max_error)
+    run_basic(M, N, K)
+    #tune_basic(M, N, K)
 
-    # tolerance (FP16 is noisy)
-    if max_error < 4:
-        print("✅ Looks correct")
-    else:
-        print("❌ Something is off")
-        print("Expected: ", C_ref, "\nGot: ", C_result)
+    #run_optimized(M, N, K)
+    #tune_optimized(M, N, K)
 
-    '''
-    128: 16, 8
-    256: 8, 16
-    512: 8, 16
-    1024: 16, 8
-    4096: 16, 8
-    8192: 16, 8 
-    '''
+
+
+  

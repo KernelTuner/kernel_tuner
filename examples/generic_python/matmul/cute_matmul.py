@@ -8,12 +8,9 @@ import cutlass.utils as utils
 from cutlass.cute.runtime import from_dlpack
 
 from kernel_tuner import tune_kernel
-from pathlib import Path
 from examples.generic_python.call_functions import call_cute
 
-FULL_PATH = Path(__file__).resolve()
-
-# need export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH to work
+# might need export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH to work
 
 ## Basic Matmul ================================================================
 
@@ -69,6 +66,23 @@ def matmul(
     kernel.launch(grid=grid, block=block)
 
 
+def run_naive_matmul(M, N, K):
+    a = torch.randn(M, K, device="cuda", dtype=torch.float16)
+    b = torch.randn(K, N, device="cuda", dtype=torch.float16)
+    c = torch.zeros(M, N, device="cuda", dtype=torch.float16)
+    c_ref = a @ b
+
+    # Convert to CuTe tensors
+    a_ = from_dlpack(a, assumed_align=16)  
+    b_ = from_dlpack(b, assumed_align=16)  
+    c_ = from_dlpack(c, assumed_align=16)  
+
+    compiled_kernel = cute.compile(matmul, a_, b_, c_)
+    compiled_kernel(a_, b_, c_)
+
+    assert torch.allclose(c, c_ref, atol=M * 2 **(-11), rtol=1e-2)
+    print("Succes")
+
 
 def tune_naive_matmul(M, N, K):
     a = torch.randn(M, K, device="cuda", dtype=torch.float16)
@@ -79,11 +93,12 @@ def tune_naive_matmul(M, N, K):
     size = M * N 
     answer = [None, None, (a @ b).cpu()]
     tune_params = dict()
-    tune_params["block_size_x"] = [8, 16, 32, 64, 128]
-    tune_params["block_size_y"] = [8, 16, 32, 64, 128]
+    tune_params["block_size_x"] = [2**i for i in range(1, 10)]
+    tune_params["block_size_y"] = [2**i for i in range(1, 10)]
+    restrictions = ["block_size_x * block_size_y <= 1024"]
 
-    results, env = tune_kernel("matmul", FULL_PATH, size, args, tune_params, lang="generic_python", 
-        call_function=call_cute, answer=answer, atol=4, verbose=False)
+    results, env = tune_kernel("matmul", __file__, size, args, tune_params, lang="generic_python", 
+        call_function=call_cute, answer=answer,  atol=M * 2 **(-11), restrictions=restrictions, verbose=False)
 
 
 
@@ -182,16 +197,17 @@ class TensorOpGemm:
         self.ab_dtype = cutlass.Float16
         self.c_dtype = cutlass.Float16
         self.acc_dtype = cutlass.Float32
-        tile_m = 128 # Added for KT support
-        tile_n = 128
-        tile_k = 32
-        self.cta_tiler = (tile_m, tile_n, tile_k)
+        self.bM = 128 # extracted from cta_tiler for KT support
+        self.bN = 128 # extracted from cta_tiler for KT support
+        self.bK = 32  # extracted from cta_tiler for KT support
+        self.cta_tiler = (self.bM, self.bN, self.bK)
         self.num_stages = 3
-        self.atom_layout_mnk = (2, 2, 1) # moved from paramter to here for KT support
-        atom_lay_M, atom_lay_N, atom_lay_K = self.atom_layout_mnk
+        atom_lay_M = 2 # extracted from atom_layout_mnk for KT support
+        atom_lay_N = 2 # extracted from atom_layout_mnk for KT support
+        atom_lay_K = 1 # extracted from atom_layout_mnk for KT support
+        self.atom_layout_mnk = (atom_lay_M, atom_lay_N, atom_lay_K)  # moved from init parameter to here for KT support
         self.num_threads = atom_lay_M * atom_lay_N * atom_lay_K * 32
 
-        self.bM, self.bN, self.bK = self.cta_tiler
         self.mma_inst_shape = (16, 8, 16)
         mmaM, mmaN, mmaK = self.mma_inst_shape
 
@@ -969,10 +985,39 @@ def call_cute_custom(kernel_function, args, kwargs, grid, threads, params):
 
 
 
-def tune_optimized(mnkl: Tuple[int, int, int, int]):
-    
-    M, N, K, L = mnkl
-    
+def run_optimized(M, N, K, L=1):
+    a = torch.randn((L, M, K), device="cuda", dtype=torch.float16).permute(1, 2, 0)
+    b = torch.randn((L, N, K), device="cuda", dtype=torch.float16).permute(1, 2, 0) # b is transposed
+    c = torch.empty((L, M, N), device="cuda", dtype=torch.float16).permute(1, 2, 0)
+
+    c_ref = torch.matmul(
+        a.permute(2, 0, 1),   
+        b.permute(2, 1, 0)    
+    ).permute(1, 2, 0)  
+
+    def create_cute_tensor(torch_tensor): 
+        cute_tensor = (
+            from_dlpack(torch_tensor, assumed_align=16)
+            .mark_layout_dynamic(leading_dim=1) 
+            .mark_compact_shape_dynamic(
+                mode=1,
+                stride_order=(2, 0, 1),   
+                divisibility=8,        
+            )
+        )
+        return cute_tensor
+
+    a_, b_, c_ = create_cute_tensor(a), create_cute_tensor(b), create_cute_tensor(c)
+
+    gemm = TensorOpGemm()
+    compiled_kernel = cute.compile(gemm, a_, b_, c_)
+    compiled_kernel(a_, b_, c_)
+
+    assert torch.allclose(c_ref, c, atol= M * 2**(-11), rtol=1e-2)
+    print("Sucess")
+
+
+def tune_optimized(M, N, K, L=1):   
     a = torch.randn((L, M, K), device="cuda", dtype=torch.float16).permute(1, 2, 0)
     b = torch.randn((L, N, K), device="cuda", dtype=torch.float16).permute(1, 2, 0) # b is transposed
     c = torch.empty((L, M, N), device="cuda", dtype=torch.float16).permute(1, 2, 0)
@@ -985,24 +1030,34 @@ def tune_optimized(mnkl: Tuple[int, int, int, int]):
 
     args = [a, b, c]
     tune_params = {
-        "tile_m": [64, 128, 256],
-        "tile_n": [64, 128, 256],
-        "tile_k": [16, 32, 64],
+        "bM":[16, 32, 64, 128, 256], 
+        "bN":[32, 64, 128, 256],
+        "bK": [16, 32, 64, 128], # must be divisable by 16
+        "num_stages": [3, 4, 5], # restricted to >= 3 by the kernel
+        "atom_lay_M": [1, 2, 4],
+        "atom_lay_N": [1, 2], 
     }
 
-    constraints = ["3 * (tile_m * tile_k + tile_n * tile_k) * 2 <= 100 * 1024"] # SMEM constraint
+    restrictions = [
+        "bM % (atom_lay_M * 16) == 0", "bN % (atom_lay_N * 8) == 0", # layout
+        "atom_lay_M * atom_lay_N * 32 <= 1024", # number of threads
+        "num_stages * (bK * (bM + bN)) * 2 <= 49152", # SMEM
+        "bM >= atom_lay_M * 32", # ensure each atom sees at least 2 MMA tiles per dimension
+        "bN >= atom_lay_N * 16", # ensure each atom sees at least 2 MMA tiles per dimension
+    ]
 
 
-    results, env = tune_kernel("TensorOpGemm", FULL_PATH, M * N, args, tune_params, verbose=True, restrictions=constraints,
-                               lang="generic_python", call_function=call_cute_custom, answer=[None, None, c_ref.cpu()], atol=4)
+
+    results, env = tune_kernel("TensorOpGemm", __file__, M * N, args, tune_params, verbose=True, restrictions=restrictions, #strategy="bayes_opt",
+                               lang="generic_python", call_function=call_cute_custom, answer=[None, None, c_ref.cpu()], atol=M * 2**(-10))
 
 
 
 if __name__ == "__main__":
-    #m, n, k = 4096, 4096, 4096
+    m, n, k = 4096, 4096, 4096
+    #run_naive_matmul(m, n, k)
     #tune_naive_matmul(m, n, k)
 
-    mnkl = (4096, 4096, 4096, 1)
-    tune_optimized(mnkl)
-
-
+   # mnkl = (4096, 4096, 4096, 1)
+    tune_optimized(m, n, k)
+    #run_optimized(m, n, k)

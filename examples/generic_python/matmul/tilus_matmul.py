@@ -1,6 +1,11 @@
+import torch
+
 import tilus
 from tilus import float16, float32, int32
 from tilus.utils import cdiv
+
+from kernel_tuner import tune_kernel
+from examples.generic_python.call_functions import call_tilus
 
 
 # This kernel is copied from the Tilus project:
@@ -30,7 +35,8 @@ class MatmulBasic(tilus.Script):
             cdiv(m_size, self.block_m),  # the x dimension size of the grid
             cdiv(n_size, self.block_n),  # the y dimension size of the grid
         ]
-        self.attrs.warps = 1  # the number of warps per thread block, must be a compile-time known integer
+        num_warps = 1 # added for tuning
+        self.attrs.warps = num_warps  # the number of warps per thread block, must be a compile-time known integer
 
         # define two int32 variables to store the offsets of the m and n dimensions for the current thread block.
         offset_m: int32 = self.block_m * self.blockIdx.x
@@ -70,30 +76,22 @@ class MatmulBasic(tilus.Script):
 
 
 # This kernel is copied from the Tilus project:
-# https://github.com/NVIDIA/tilus/blob/main/examples/matmul/matmul_+v5.py
+# https://nvidia.github.io/tilus/stable/tutorials/matmul-ampere/matmul/matmul_v4.html
 #
-# Original example: matmul_v5.py
+# Original example: matmul_v4.py
 # Copyright (c) the Tilus authors
 #
 # Modifications in file:
 # - Removed auto-tuning decorators
+# - Added default values (None) for the __init__ parameters
 class MatmulOpt(tilus.Script):
-    def __init__(
-        self,
-        num_warps=None,
-        block_m=None,
-        block_n=None,
-        block_k=None,
-        num_stages=None,
-        split_k_factor=None,
-    ):
+    def __init__(self, num_warps=None, block_m=None, block_n=None, block_k=None, num_stages=None):
         super().__init__()
         self.block_m = block_m
         self.block_n = block_n
         self.block_k = block_k
         self.num_warps = num_warps
         self.num_stages = num_stages
-        self.split_k_factor = split_k_factor
 
     def __call__(
         self,
@@ -104,19 +102,8 @@ class MatmulOpt(tilus.Script):
         b_ptr: ~float16,
         c_ptr: ~float16,
     ):
-        self.attrs.blocks = [
-            cdiv(m_size, self.block_m),
-            cdiv(n_size, self.block_n),
-            self.split_k_factor,
-        ]
+        self.attrs.blocks = [cdiv(m_size, self.block_m), cdiv(n_size, self.block_n)]
         self.attrs.warps = self.num_warps
-
-        # the k_size for each thread block
-        block_k_size = (
-            cdiv(cdiv(k_size, self.split_k_factor), self.block_k) * self.block_k
-        )
-        start_offset_k = self.blockIdx.z * block_k_size
-        end_offset_k = min(start_offset_k + block_k_size, k_size)
 
         block_m, block_n, block_k = self.block_m, self.block_n, self.block_k
         offset_m: int32 = block_m * self.blockIdx.x
@@ -129,7 +116,7 @@ class MatmulOpt(tilus.Script):
         acc = self.register_tensor(dtype=float32, shape=[block_m, block_n], init=0.0)
 
         for stage in range(self.num_stages - 1):
-            offset_k = start_offset_k + stage * self.block_k
+            offset_k = stage * self.block_k
             self.copy_async(src=ga, dst=sa[stage], offsets=[offset_m, offset_k])
             self.copy_async(src=gb, dst=sb[stage], offsets=[offset_k, offset_n])
             self.copy_async_commit_group()
@@ -139,9 +126,7 @@ class MatmulOpt(tilus.Script):
 
         current_stage: int32 = 0
         preload_stage: int32 = self.num_stages - 1
-        for offset_k in self.range(
-            start_offset_k, end_offset_k, block_k, unroll=self.num_stages
-        ):
+        for offset_k in self.range(0, k_size, block_k, unroll=self.num_stages):
             # computation for current tile
             a = self.load_shared(sa[current_stage])
             b = self.load_shared(sb[current_stage])
@@ -149,17 +134,16 @@ class MatmulOpt(tilus.Script):
 
             # preload the next tile of A and B into shared memory
             preload_offset_k = offset_k + (self.num_stages - 1) * block_k
-            if preload_offset_k < end_offset_k:
-                self.copy_async(
-                    src=ga,
-                    dst=sa[preload_stage],
-                    offsets=[offset_m, preload_offset_k],
-                )
-                self.copy_async(
-                    src=gb,
-                    dst=sb[preload_stage],
-                    offsets=[preload_offset_k, offset_n],
-                )
+            self.copy_async(
+                src=ga,
+                dst=sa[preload_stage],
+                offsets=[offset_m, preload_offset_k],
+            )
+            self.copy_async(
+                src=gb,
+                dst=sb[preload_stage],
+                offsets=[preload_offset_k, offset_n],
+            )
             self.copy_async_commit_group()
 
             # update the stage
@@ -168,41 +152,124 @@ class MatmulOpt(tilus.Script):
             self.copy_async_wait_group(n=self.num_stages - 2)
             self.sync()
 
-        # free the shared memory tensors for A and B
         self.free_shared(sa)
         self.free_shared(sb)
 
-        # cast the accumulator to float16 and change the register tensor's layout
-        sc = self.shared_tensor(dtype=float16, shape=[block_m, block_n])
         casted_acc = self.cast(acc, dtype=float16)
-        self.store_shared(sc, casted_acc)
-        self.sync()
-        rc = self.load_shared(sc)
-        self.free_shared(sc)
-
-        m_blocks, n_blocks = cdiv(m_size, block_m), cdiv(n_size, block_n)
         gc = self.global_view(c_ptr, dtype=float16, shape=[m_size, n_size])
-        if self.split_k_factor == 0:
-            self.store_global(gc, rc, offsets=[offset_m, offset_n])
-        else:
-            semaphores = self.global_tensor(
-                dtype=int32, shape=[m_blocks, n_blocks], requires_clean=True
-            )
-            semaphore: ~int32 = ~semaphores[self.blockIdx.x, self.blockIdx.y]
+        self.store_global(gc, casted_acc, offsets=[offset_m, offset_n])
 
-            # load and accumulate the partial result in global memory
-            if self.blockIdx.z > 0:
-                self.lock_semaphore(semaphore, value=self.blockIdx.z)
-                partial_rc = self.load_global(
-                    gc, offsets=[offset_m, offset_n], shape=[block_m, block_n]
-                )
-                self.add(rc, partial_rc, out=rc)
 
-            # store the result to global memory and release the semaphore
-            self.store_global(gc, rc, offsets=[offset_m, offset_n])
 
-            # release the semaphore
-            self.sync()  # we need to make sure the previous store_global is finished
-            self.release_semaphore(
-                semaphore, value=(self.blockIdx.z + 1) % self.split_k_factor
-            )
+def run_basic(M, N, K):
+    A = torch.randn(M, K, device="cuda", dtype=torch.float16)
+    B = torch.randn(K, N, device="cuda", dtype=torch.float16)
+    C = torch.empty((M, N), device='cuda', dtype=torch.float16)
+    C_ref = A @ B
+
+    matmul = MatmulBasic()
+    torch.cuda.synchronize()
+    matmul(M, N, K, A, B, C)
+    torch.cuda.synchronize()
+
+    torch.testing.assert_close(C_ref, C, atol=M * 2**(-11), rtol=1e-2)
+    print("Succes")
+
+
+def run_optmized(M, N, K):
+    A = torch.randn(M, K, device="cuda", dtype=torch.float16)
+    B = torch.randn(K, N, device="cuda", dtype=torch.float16)
+    C = torch.empty((M, N), device='cuda', dtype=torch.float16)
+    C_ref = A @ B
+
+    matmul = MatmulOpt(num_warps=4, block_m=64, block_n=64, block_k=16, num_stages=3)
+    torch.cuda.synchronize()
+
+    matmul(M, N, K, A, B, C)
+    torch.cuda.synchronize()
+
+    torch.testing.assert_close(C_ref, C, atol=M * 2**(-11), rtol=1e-2)
+    print("Succes")
+
+
+def tune_basic(M, N, K):
+    A = torch.randn(M, K, device="cuda", dtype=torch.float16)
+    B = torch.randn(K, N, device="cuda", dtype=torch.float16)
+    C = torch.empty((M, N), device='cuda', dtype=torch.float16)
+    C_ref = A @ B
+
+    size = (M, N)
+
+    args = [M, N, K, A, B, C]
+
+    tune_params = dict()
+    tune_params["block_m"] = [16, 32, 64, 128]
+    tune_params["block_n"] = [16, 32, 64, 128]
+    tune_params["block_k"] = [16, 32, 64, 128] 
+    tune_params["num_warps"] = [2, 4, 8, 16]
+
+
+    results, env = tune_kernel(
+        kernel_name="MatmulBasic",
+        kernel_source=__file__,
+        problem_size=size,
+        arguments=args,
+        tune_params=tune_params,
+        lang="generic_python",
+        answer=[None, None, None, None, None, C_ref.cpu()],
+        atol=M * 2**(-11),
+        strategy = "bayes_opt",
+        strategy_options = {"max_fevals": 200},
+        call_function=call_tilus,
+    )
+
+
+def tune_opt(M, N, K):
+    A = torch.randn(M, K, device="cuda", dtype=torch.float16)
+    B = torch.randn(K, N, device="cuda", dtype=torch.float16)
+    C = torch.empty((M, N), device='cuda', dtype=torch.float16)
+    C_ref = A @ B
+
+    size = (M, N)
+
+    args = [M, N, K, A, B, C]
+
+    tune_params = dict()
+    tune_params["block_m"] = [16, 32, 64, 128, 256]
+    tune_params["block_n"] = [16, 32, 64, 128, 256]
+    tune_params["block_k"] = [16, 32, 64, 128] 
+    tune_params["num_warps"] = [2, 4, 8, 16]
+    tune_params["num_stages"] = [2, 3, 4, 5, 6]
+
+    # Shared memory restriction
+    restrictions = ["2 * num_stages * block_k * (block_m + block_n) <= 49152"]
+
+    results, env = tune_kernel(
+        kernel_name="MatmulOpt",
+        kernel_source=__file__,
+        problem_size=size,
+        arguments=args,
+        tune_params=tune_params,
+        lang="generic_python",
+        answer=[None, None, None, None, None, C_ref.cpu()],
+        atol=M * 2**(-11),
+        restrictions=restrictions,
+        strategy = "bayes_opt",
+        strategy_options = {"max_fevals": 200},
+        call_function=call_tilus,
+    )
+
+
+
+
+
+if __name__ == "__main__":
+    M, N, K = 4096, 4096, 4096
+    #M, N, K = 8192, 8192, 8192
+    #run_basic(M, N, K)
+
+    run_optmized(M, N, K)
+  
+    #tune_basic(M, N, K)
+
+    #tune_opt(M, N, K)
