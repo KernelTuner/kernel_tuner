@@ -20,7 +20,7 @@ def input_file_schema():
 
     :returns: the current version of the T1 schemas and the JSON string of the schema
     :rtype: string, string
-    """    
+    """
     current_version = "1.0.0"
     input_file = schema_dir.joinpath(f"T1/{current_version}/input-schema.json")
     with input_file.open() as fh:
@@ -30,9 +30,9 @@ def input_file_schema():
 def get_input_file(filepath: Path, validate=True) -> dict[str, any]:
     """Load the T1 input file from the given path, validates it and returns contents if valid.
 
-    :param filepath: Path to the input file to load. 
-    :returns: the contents of the file if valid. 
-    """    
+    :param filepath: Path to the input file to load.
+    :returns: the contents of the file if valid.
+    """
     with filepath.open() as fp:
         input_file = json.load(fp)
     if validate:
@@ -57,20 +57,38 @@ def output_file_schema(target):
     return current_version, json_string
 
 
-def get_configuration_validity(objective) -> str:
+def get_configuration_validity(error) -> str:
     """Convert internal Kernel Tuner error to string."""
     errorstring: str
-    if not isinstance(objective, util.ErrorConfig):
+    if not isinstance(error, util.ErrorConfig):
         errorstring = "correct"
     else:
-        if isinstance(objective, util.CompilationFailedConfig):
+        if isinstance(error, util.CompilationFailedConfig):
             errorstring = "compile"
-        elif isinstance(objective, util.RuntimeFailedConfig):
+        elif isinstance(error, util.RuntimeFailedConfig):
             errorstring = "runtime"
-        elif isinstance(objective, util.InvalidConfig):
+        elif isinstance(error, util.InvalidConfig):
             errorstring = "constraints"
         else:
-            raise ValueError(f"Unkown objective type {type(objective)}, value {objective}")
+            raise ValueError(f"Unkown error type {type(error)}, value {error}")
+    return errorstring
+
+
+def get_configuration_validity2(result) -> str:
+    """Convert internal Kernel Tuner error to string."""
+    errorstring: str
+    if "__error__" not in result:
+        errorstring = "correct"
+    else:
+        error = result["__error__"]
+        if isinstance(error, util.CompilationFailedConfig):
+            errorstring = "compile"
+        elif isinstance(error, util.RuntimeFailedConfig):
+            errorstring = "runtime"
+        elif isinstance(error, util.InvalidConfig):
+            errorstring = "constraints"
+        else:
+            raise ValueError(f"Unkown error type {type(error)}, value {error}")
     return errorstring
 
 
@@ -103,6 +121,11 @@ def get_t4_results(results, tune_params, objective="time"):
     :type objective: string
 
     """
+    assert not isinstance(objective, (list, tuple))
+
+    if isinstance(objective, (list, tuple)) and len(objective) > 1:
+        raise ValueError("The T4 format does not support multiple objectives.")
+
     timing_keys = ["compile_time", "benchmark_time", "framework_time", "strategy_time", "verification_time"]
     not_measurement_keys = list(tune_params.keys()) + timing_keys + ["timestamp"] + ["times"]
 
@@ -129,7 +152,8 @@ def get_t4_results(results, tune_params, objective="time"):
         out["times"] = timings
 
         # encode the validity of the configuration
-        out["invalidity"] = get_configuration_validity(result[objective])
+        # out["invalidity"] = get_configuration_validity(result[objective])
+        out["invalidity"] = get_configuration_validity2(result)
 
         # Kernel Tuner does not support producing results of configs that fail the correctness check
         # therefore correctness is always 1
@@ -143,10 +167,10 @@ def get_t4_results(results, tune_params, objective="time"):
         out["measurements"] = measurements
 
         # objectives
-        # In Kernel Tuner we currently support only one objective at a time, this can be a user-defined
-        # metric that combines scores from multiple different quantities into a single value to support
-        # multi-objective tuning however.
-        out["objectives"] = [objective]
+        # out["objectives"] = objective
+        objectives = [objective] if isinstance(objective, str) else list(objective)
+        assert isinstance(objectives, list)
+        out["objectives"] = objectives
 
         # append to output
         output_data.append(out)
@@ -310,7 +334,7 @@ def import_class_from_file(file_path: Path, class_name):
         spec = spec_from_file_location(module_name, file_path)
         if spec is None:
             raise ImportError(f"Could not load spec from {file_path}")
-        
+
         # create a module from the spec and execute it
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -322,6 +346,6 @@ def import_class_from_file(file_path: Path, class_name):
         module = load_module(file_path.stem)
     except ImportError:
         module = load_module(f"{file_path.parent.stem}.{file_path.stem}")
-    
+
     # return the class from the module
     return getattr(module, class_name)

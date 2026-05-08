@@ -5,6 +5,7 @@ from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
+import kernel_tuner.util as util
 from kernel_tuner.util import ErrorConfig, print_config_output, process_metrics, store_cache
 
 
@@ -44,8 +45,15 @@ class SequentialRunner(Runner):
         #move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
+        # It is the task of the cost function to increment there counters
+        self.config_eval_count = 0
+        self.infeasable_config_eval_count = 0
+
     def get_environment(self, tuning_options):
-        return self.dev.get_environment()
+        env = self.dev.get_environment()
+        env["config_eval_count"] = self.config_eval_count
+        env["infeasable_config_eval_count"] = self.infeasable_config_eval_count
+        return env
 
     def run(self, parameter_space, tuning_options):
         """Iterate through the entire parameter space using a single Python process.
@@ -90,17 +98,19 @@ class SequentialRunner(Runner):
 
                 result = self.dev.compile_and_benchmark(self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options)
 
+                assert util.check_result_type(result)
+
                 params.update(result)
 
-                if tuning_options.objective in result and isinstance(result[tuning_options.objective], ErrorConfig):
+                if '__error__' in result:
                     logging.debug('kernel configuration was skipped silently due to compile or runtime failure')
 
             # only compute metrics on configs that have not errored
-            if tuning_options.metrics and not isinstance(params.get(tuning_options.objective), ErrorConfig):
+            if tuning_options.metrics and '__error__' not in params:
                 params = process_metrics(params, tuning_options.metrics)
 
             # get the framework time by estimating based on other times
-            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time) 
+            total_time = 1000 * ((perf_counter() - self.start_time) - warmup_time)
             params['strategy_time'] = self.last_strategy_time
             params['framework_time'] = max(total_time - (params['compile_time'] + params['verification_time'] + params['benchmark_time'] + params['strategy_time']), 0)
             params['timestamp'] = str(datetime.now(timezone.utc))
@@ -112,6 +122,8 @@ class SequentialRunner(Runner):
 
                 # add configuration to cache
                 store_cache(x_int, params, tuning_options)
+
+            assert util.check_result_type(params)
 
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)

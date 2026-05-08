@@ -414,7 +414,7 @@ class Searchspace:
 
         # Define a bogus cost function
         costfunc = CostFunction(":")  # bash no-op
-        
+
         # set data
         self.tune_params_pyatf = self.get_tune_params_pyatf(block_size_names, max_threads)
 
@@ -464,7 +464,7 @@ class Searchspace:
             parameter_space_dict,
             size_list,
         )
-    
+
     def __build_searchspace(self, block_size_names: list, max_threads: int, solver: Solver):
         """Compute valid configurations in a search space based on restrictions and max_threads."""
         # instantiate the parameter space with all the variables
@@ -505,7 +505,8 @@ class Searchspace:
             and not isinstance(restrictions[0], (Constraint, FunctionConstraint, str))
             and callable(restrictions[0])
             and len(signature(restrictions[0]).parameters) == 1
-            and len(self.param_names) > 1):
+            and len(self.param_names) > 1
+        ):
             restrictions = restrictions[0]
         if isinstance(restrictions, list):
             for restriction in restrictions:
@@ -695,9 +696,9 @@ class Searchspace:
         return self.__dict
 
     def get_list_numpy(self) -> np.ndarray:
-        """Get the parameter space list as a NumPy array of tuples with mixed types. 
-        
-        Rarely faster or more convenient than `get_list_param_indices_numpy` or `get_list_numpy_numeric`. 
+        """Get the parameter space list as a NumPy array of tuples with mixed types.
+
+        Rarely faster or more convenient than `get_list_param_indices_numpy` or `get_list_numpy_numeric`.
         Initializes the NumPy array if not yet done.
 
         Returns:
@@ -715,8 +716,8 @@ class Searchspace:
         return self.__numpy
 
     def get_list_param_indices_numpy(self) -> np.ndarray:
-        """Get the parameter space list as a 2D NumPy array of parameter value indices. 
-        
+        """Get the parameter space list as a 2D NumPy array of parameter value indices.
+
         Same as mapping `get_param_indices` over the searchspace, but faster.
         Assumes that the parameter configs have the same order as `tune_params`.
 
@@ -732,7 +733,7 @@ class Searchspace:
             for param_name, param_values in self.tune_params.items():
                 tune_params_to_index_lookup.append({ value: index for index, value in enumerate(param_values) })
                 tune_params_from_index_lookup.append({ index: value for index, value in enumerate(param_values) })
-                if (all_values_integer_nonnegative and 
+                if (all_values_integer_nonnegative and
                     not all(isinstance(v, int) and 0 <= v < 2**15 for v in param_values)
                 ):
                     all_values_integer_nonnegative = False
@@ -776,7 +777,7 @@ class Searchspace:
                 self.__list_param_indices = self.__list_param_indices.astype(np.int64)
             # else:
                 # self.__list_param_indices = self.__list_param_indices.astype(np.int32)
-            # 
+            #
             # the below types do not have a sizable performance benifit currently
             elif largest_index >= 2**15:
                 # if the largest index is larger than 2**15, use int32 to avoid overflow
@@ -809,8 +810,8 @@ class Searchspace:
         return np.iinfo(self.get_list_param_indices_numpy().dtype).max
 
     def get_list_numpy_numeric(self) -> np.ndarray:
-        """Get the parameter space list as a 2D NumPy array of numeric values. 
-        
+        """Get the parameter space list as a 2D NumPy array of numeric values.
+
         This is a view of the NumPy array returned by `get_list_numpy`, but with only numeric values.
         If the searchspace contains non-numeric values, their index will be used instead.
 
@@ -1112,11 +1113,11 @@ class Searchspace:
             # as the selected param config does not differ anywhere, remove it from the matches
             if param_config_index is not None:
                 matching_indices.remove(param_config_index)
-            
+
             # if there are matching indices, return a random one
             if len(matching_indices) > 0:
                 self.__add_to_neighbor_partial_cache(param_config, matching_indices, "adjacent", full_neighbors=allowed_index_difference == max_index_difference)
-                
+
                 # get a random index from the matching indices
                 random_neighbor_index = choice(matching_indices)
                 return self.get_param_configs_at_indices([random_neighbor_index])[0]
@@ -1268,7 +1269,7 @@ class Searchspace:
             num_samples = round(self.size / 2)
         if num_samples == self.size:
             return np.shuffle([range(self.size)])
-        
+
         # adjust the number of random samples if necessary
         sampling_factor = max(1, sampling_factor)
         num_random_samples = min(sampling_factor * num_samples, self.size)
@@ -1345,9 +1346,9 @@ class Searchspace:
 
         # get the Latin Hypercube of samples
         target_samples_param_indices = LatinHypercube(len(self.params_values)).integers(
-            l_bounds=self.get_param_indices_lower_bounds(), 
-            u_bounds=self.get_param_indices_upper_bounds(), 
-            n=num_samples, 
+            l_bounds=self.get_param_indices_lower_bounds(),
+            u_bounds=self.get_param_indices_upper_bounds(),
+            n=num_samples,
             endpoint=True)
         target_samples_param_indices = np.array(target_samples_param_indices, dtype=self.params_values_indices.dtype)
 
@@ -1482,7 +1483,7 @@ class Searchspace:
             random_neighbor = self.pop_random_partial_neighbor(param_config, neighbor_method)
             if random_neighbor is not None:
                 return random_neighbor
-    
+
         # check if there is a neighbor method to use
         if neighbor_method is None:
             neighbor_method = self.neighbor_method
