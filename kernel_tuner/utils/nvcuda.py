@@ -1,6 +1,10 @@
 """Module for kernel tuner cuda-python utility functions."""
 
 import numpy as np
+import os
+import subprocess
+import shutil
+from typing import Optional
 
 try:
     from cuda.bindings import driver, runtime, nvrtc
@@ -61,3 +65,15 @@ def cuda_error_check(error):
 def to_valid_nvrtc_gpu_arch_cc(compute_capability: str) -> str:
     """Returns a valid Compute Capability for NVRTC `--gpu-architecture=`, as per https://docs.nvidia.com/cuda/nvrtc/index.html#group__options."""
     return max(NVRTC_VALID_CC[NVRTC_VALID_CC <= compute_capability], default="75")
+
+
+def find_cuda_home() -> Optional[str]:
+    """
+    Finds the CUDA home directory by checking environment variables.
+    """
+    for var in ["CUDA_HOME", "CUDA_PATH", "CUDA_ROOT"]:
+        path = os.environ.get(var)
+        if path and os.path.exists(path):
+            return path
+
+    return None

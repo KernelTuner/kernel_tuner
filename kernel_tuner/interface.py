@@ -69,6 +69,8 @@ _STRATEGY_IMPORTS = {
     "firefly_algorithm": "kernel_tuner.strategies.firefly_algorithm",
     "bayes_opt": "kernel_tuner.strategies.bayes_opt",
     "pyatf_strategies": "kernel_tuner.strategies.pyatf_strategies",
+    "hybrid_vndx": "kernel_tuner.strategies.gen_hybrid_vndx",
+    "adaptive_tabu_greywolf": "kernel_tuner.strategies.gen_adaptive_tabu_greywolf",
 }
 
 
@@ -411,6 +413,8 @@ _tuning_options = Options(
             * "random_sample" takes a random sample of the search space
             * "simulated_annealing" simulated annealing strategy
             * "skopt" uses the minimization methods from `skopt`
+            * "HybridVNDX" a hybrid variable neighborhood descent strategy
+            * "AdaptiveTabuGreyWolf" an adaptive tabu-guided grey wolf optimization strategy
 
         Strategy-specific parameters and options are explained under strategy_options.
 

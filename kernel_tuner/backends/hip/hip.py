@@ -149,13 +149,16 @@ class HipFunctions(GPUBackend):
         # Format kernel string
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
-        if 'extern "C"' not in kernel_string:
-            kernel_string = 'extern "C" {\n' + kernel_string + "\n}"
+        expression_name = kernel_name.encode()
 
         # Create program
         prog = hip_check(hiprtc.hiprtcCreateProgram(kernel_string.encode(), kernel_name.encode(), 0, [], []))
 
         try:
+            # Add the kernel as an expression. This forces hiprtc to instantiate the kernel if it
+            # is templated or if it is in a namespace.
+            hip_check(hiprtc.hiprtcAddNameExpression(prog, expression_name))
+
             # Get device properties
             props = hip.hipDeviceProp_t()
             hip_check(hip.hipGetDeviceProperties(props, 0))
@@ -174,6 +177,10 @@ class HipFunctions(GPUBackend):
                 hip_check(hiprtc.hiprtcGetProgramLog(prog, log))
                 raise RuntimeError(log.decode())
 
+            # Get the lowered name. This is the name that can be used in hipModuleGetFunction to
+            # get the kernel. For templated kernels, this differs from the original kernel name.
+            lowered_name = hip_check(hiprtc.hiprtcGetLoweredName(prog, expression_name))
+
             # Get compiled code
             code_size = hip_check(hiprtc.hiprtcGetCodeSize(prog))
             code = bytearray(code_size)
@@ -182,7 +189,7 @@ class HipFunctions(GPUBackend):
             # Load module and get function
             module = hip_check(hip.hipModuleLoadData(code))
             self.current_module = module
-            kernel = hip_check(hip.hipModuleGetFunction(module, kernel_name.encode()))
+            kernel = hip_check(hip.hipModuleGetFunction(module, lowered_name))
 
         except Exception as e:
             # Cleanup
