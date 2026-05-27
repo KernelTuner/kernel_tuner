@@ -5,6 +5,8 @@ from kernel_tuner import tune_kernel
 from kernel_tuner.backends import nvcuda
 from kernel_tuner.core import KernelInstance, KernelSource
 
+from kernel_tuner.utils.nvcuda import cuda_error_check
+
 from .context import skip_if_no_cuda
 from .test_runners import env  # noqa: F401
 
@@ -73,6 +75,8 @@ def test_compile_template():
     kernel_instance = create_kernel_instance(kernel_name, kernel_string)
     dev = nvcuda.CudaFunctions(0, compiler_options=["-std=c++17"])
     dev.compile(kernel_instance)
+    err = nvcuda.runtime.cudaGetLastError()
+    cuda_error_check(err)
 
 @skip_if_no_cuda
 def test_compile_include():
@@ -91,6 +95,8 @@ def test_compile_include():
     kernel_instance = create_kernel_instance("vector_add", kernel_string)
     dev = nvcuda.CudaFunctions(0, compiler_options=["-std=c++17"])
     dev.compile(kernel_instance)
+    err = nvcuda.runtime.cudaGetLastError()
+    cuda_error_check(err)
 
 @skip_if_no_cuda
 def test_tune_kernel(env):

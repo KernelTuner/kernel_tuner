@@ -34,12 +34,12 @@ from constraint import (
 
 from kernel_tuner.accuracy import Tunable
 
-try:
-    import cupy as cp
-except ImportError:
-    cp = np
-
-from kernel_tuner.observers.nvml import NVMLObserver
+def _get_cupy():
+    try:
+        import cupy as _cp
+    except ImportError:
+        return None
+    return _cp
 
 # number of special values to insert when a configuration cannot be measured
 
@@ -132,6 +132,8 @@ def check_argument_type(dtype, kernel_argument):
 
 def check_argument_list(kernel_name, kernel_string, args):
     """Raise an exception if kernel arguments do not match host arguments."""
+    cp = _get_cupy()
+    cupy_ndarray = (cp.ndarray,) if cp is not None else ()
     kernel_arguments = list()
     collected_errors = list()
 
@@ -155,7 +157,7 @@ def check_argument_list(kernel_name, kernel_string, args):
                 continue
 
             # Handle numpy arrays and other array types
-            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray)):
+            if not isinstance(arg, (np.ndarray, np.generic, torch.Tensor, DeviceArray) + cupy_ndarray):
                 raise TypeError(
                     f"Argument at position {i} of type: {type(arg)} should be of type "
                     "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
@@ -219,6 +221,7 @@ def check_tune_params_list(tune_params, observers, simulation_mode=False):
         if name in forbidden_names:
             raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
     if any("nvml_" in param for param in tune_params):
+        from kernel_tuner.observers.nvml import NVMLObserver
         if not simulation_mode and (not observers or not any(isinstance(obs, NVMLObserver) for obs in observers)):
             raise ValueError("Tune parameters starting with nvml_ require an NVMLObserver!")
 
@@ -425,6 +428,36 @@ def get_best_config(results, objective, objective_higher_is_better=False):
         key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val,
     )
     return best_config
+
+
+# specifies for a number of pre-defined objectives whether
+# the objective should be minimized or maximized (boolean value denotes higher is better)
+objective_default_map = {
+    "time": False,
+    "energy": False,
+    "fitness": True,
+    "cost": False,
+    "loss": False,
+    "GFLOP/s": True,
+    "TFLOP/s": True,
+    "GB/s": True,
+    "TB/s": True,
+    "GFLOPS/W": True,
+    "TFLOPS/W": True,
+    "GFLOP/J": True,
+    "TFLOP/J": True,
+}
+
+
+def get_objective_defaults(objective, objective_higher_is_better):
+    """Use time as default objective and infer objective_higher_is_better for known objectives."""
+    objective = objective or "time"
+    if objective_higher_is_better is None:
+        if objective in objective_default_map:
+            objective_higher_is_better = objective_default_map[objective]
+        else:
+            raise ValueError(f"Please specify objective_higher_is_better for objective {objective}")
+    return objective, objective_higher_is_better
 
 
 def get_config_string(params, keys=None, units=None):

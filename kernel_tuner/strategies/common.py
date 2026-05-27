@@ -5,7 +5,6 @@ import sys
 from time import perf_counter
 
 import numpy as np
-from scipy.spatial import distance
 
 from kernel_tuner import util
 from kernel_tuner.searchspace import Searchspace
@@ -325,6 +324,7 @@ def unscale_and_snap_to_nearest_valid(x, params, searchspace, eps):
 
     if neighbors:
         # sort on distance to x
+        from scipy.spatial import distance
         neighbors.sort(key=lambda y: distance.euclidean(x,scale_from_params(y, searchspace.tune_params, eps)))
 
         # return closest valid neighbor
