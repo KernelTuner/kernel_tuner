@@ -170,6 +170,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_instance_string"><code class="docutils literal notranslate"><span class="pre">get_instance_string()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_interval"><code class="docutils literal notranslate"><span class="pre">get_interval()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_kernel_string"><code class="docutils literal notranslate"><span class="pre">get_kernel_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_objective_defaults"><code class="docutils literal notranslate"><span class="pre">get_objective_defaults()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_problem_size"><code class="docutils literal notranslate"><span class="pre">get_problem_size()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_smem_args"><code class="docutils literal notranslate"><span class="pre">get_smem_args()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_temp_filename"><code class="docutils literal notranslate"><span class="pre">get_temp_filename()</span></code></a></li>
@@ -2091,6 +2092,12 @@ kernel instance, only needed when kernel_source is a generator.</p></li>
 <dd class="field-odd"><p>string</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.get_objective_defaults">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">get_objective_defaults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">objective</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective_higher_is_better</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_objective_defaults" title="Link to this definition">¶</a></dt>
+<dd><p>Use time as default objective and infer objective_higher_is_better for known objectives.</p>
 </dd></dl>
 
 <dl class="py function">
