@@ -16,14 +16,6 @@ def _get_cupy():
 
 import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
-from kernel_tuner.backends.compiler import CompilerFunctions
-from kernel_tuner.backends.cupy import CupyFunctions
-from kernel_tuner.backends.hip import HipFunctions
-from kernel_tuner.backends.hypertuner import HypertunerFunctions
-from kernel_tuner.backends.nvcuda import CudaFunctions
-from kernel_tuner.backends.opencl import OpenCLFunctions
-from kernel_tuner.backends.pycuda import PyCudaFunctions
-from kernel_tuner.observers.nvml import NVMLObserver
 from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver, OutputObserver, PrologueObserver
 from kernel_tuner.observers.tegra import TegraObserver
 
@@ -233,7 +225,7 @@ def instantiate_observer(observer, args):
         return observer
     elif callable(observer):
         return instantiate_observer(observer(args), args) # Check again if BenchmarkObserver
-    else:    
+    else:
         raise TypeError(f"Invalid observer: {observer!r} does not extend BenchmarkObserver")
 
 
