@@ -10,7 +10,6 @@ from collections import defaultdict, deque
 from inspect import signature
 
 import numpy as np
-from scipy.stats.qmc import LatinHypercube
 from constraint import (
     BacktrackingSolver,
     Constraint,
@@ -1333,6 +1332,7 @@ class Searchspace:
 
     def get_LHS_sample_indices(self, num_samples: int) -> List[int]:
         """Get a Latin Hypercube sample of parameter configuration indices."""
+        from scipy.stats.qmc import LatinHypercube
         if num_samples > self.size:
             warn(
                 f"Too many samples requested ({num_samples}), reducing the number of samples to half of the searchspace size ({self.size})"
