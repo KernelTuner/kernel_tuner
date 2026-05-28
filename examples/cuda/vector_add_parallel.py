@@ -2,6 +2,7 @@
 
 import numpy
 from kernel_tuner import tune_kernel
+from pprint import pprint
 
 
 def tune():
@@ -35,7 +36,8 @@ def tune():
     tune_params["unroll_factor"] = [1, 2, 3, 4, 5, 6, 7, 8]
 
     results, env = tune_kernel("vector_add", kernel_string, size, args, tune_params, parallel=True)
-    print(env)
+
+    pprint(env)
     return results
 
 

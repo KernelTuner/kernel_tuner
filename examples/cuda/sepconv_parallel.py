@@ -57,7 +57,7 @@ def tune():
         cmem_args=cmem_args,
         verbose=False,
         restrictions=restrict,
-        parallel_runner=1024,
+        parallel=True,
         cache="convolution_kernel_row",
     )
 
