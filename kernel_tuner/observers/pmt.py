@@ -64,7 +64,7 @@ class PMTObserver(BenchmarkObserver):
         for obs in observable.keys():
             if not obs in supported:
                 raise ValueError(f"Observable {obs} not in supported: {supported}")
-        
+
         self.observable = observable
         self.use_continuous_observer = use_continuous_observer
         self.continuous_duration = continuous_duration
@@ -90,7 +90,7 @@ class PMTObserver(BenchmarkObserver):
 
     def after_finish(self):
         end_states = [pm.read() for pm in self.pms]
-    
+
         for i in range(len(self.pms)):
             begin_state = self.begin_states[i]
             end_state = end_states[i]

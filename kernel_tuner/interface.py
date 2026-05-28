@@ -499,10 +499,10 @@ _tuning_options = Options(
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
         ("parallel", ("Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.", "int|bool")),
         (
-            "observers", 
+            "observers",
             (
                 """A list of Observers to use during tuning, please see :ref:`observers`.
-                Each entry must be either: an instance of :class:`BenchmarkObserver` or a callable (e.g., lambda) returning a :class:`BenchmarkObserver`. """, 
+                Each entry must be either: an instance of :class:`BenchmarkObserver` or a callable (e.g., lambda) returning a :class:`BenchmarkObserver`. """,
                 "list"
             )
         ),
@@ -657,10 +657,10 @@ def tune_kernel(
             max_fevals = strategy_options["max_fevals"]
             tuning_options["max_fevals"] = max_fevals  # TODO: Is this used?
         if "time_limit" in strategy_options:
-            time_limit = strategy_options["time_limit"] 
+            time_limit = strategy_options["time_limit"]
             tuning_options["time_limit"] = time_limit  # TODO: Is this used?
         if "searchspace_construction_options" in strategy_options:
-            searchspace_construction_options = strategy_options["searchspace_construction_options"]         
+            searchspace_construction_options = strategy_options["searchspace_construction_options"]
 
 
     # log the user inputs
@@ -736,7 +736,7 @@ def tune_kernel(
     tuning_options.restrictions_unmodified = deepcopy(restrictions)
     device_info = runner.get_device_info()
     searchspace = Searchspace(tune_params, restrictions, device_info.max_threads, **searchspace_construction_options)
-    
+
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
 
@@ -940,7 +940,7 @@ def tune_kernel_T1(
     strategy_options: dict={},
 ) -> tuple:
     """Call the tune function with a T1 input file.
-    
+
     The device, strategy and strategy_options can be overridden by passing a strategy name and options, otherwise the input file specification is used.
     """
     inputs = get_input_file(input_filepath)

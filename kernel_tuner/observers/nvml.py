@@ -393,9 +393,9 @@ class NVMLObserver(BenchmarkObserver):
             uuid = env.get("uuid")
             pci_bus = env.get("pci_bus_id")
 
-            if uuid:
+            if uuid is not None:
                 self.nvml = nvml(device_uuid=uuid, **self.nvml_kwargs)
-            elif pci_bus:
+            elif pci_bus is not None:
                 self.nvml = nvml(device_pci_bus=pci_bus, **self.nvml_kwargs)
             else:
                 raise ValueError("failed to detect NVIDIA device: no UUID or PCI-bus-id in environment")

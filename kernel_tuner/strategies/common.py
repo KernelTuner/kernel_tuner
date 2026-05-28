@@ -181,7 +181,7 @@ class CostFunc:
         self.tuning_options.budget.raise_exception_if_done()
         self.budget_spent_fraction = self.tuning_options.budget.get_fraction_consumed()
 
-        # If some results are missing (`None`), then the runner did not return all results 
+        # If some results are missing (`None`), then the runner did not return all results
         # because the budget has been exceed or some other reason causing the runner to fail.
         if not all(final_results):
             raise util.StopCriterionReached("runner did not evaluate all given configurations")
@@ -219,10 +219,10 @@ class CostFunc:
 
     def __call__(self, x, check_restrictions=True):
         return self.eval(x, check_restrictions=check_restrictions)
-    
+
     def get_results(self):
         return self.results
-    
+
     def get_num_unique_results(self):
         return len(self.unique_results)
 

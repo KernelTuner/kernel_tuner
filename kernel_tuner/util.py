@@ -230,7 +230,7 @@ class TuningBudget:
 
         if max_fevals is not None and max_fevals <= 0:
             raise ValueError("max_fevals must be greater than zero")
-        
+
         if time_limit is not None and time_limit <= timedelta(seconds=0):
             raise ValueError("time_limit must be greater than zero")
 
@@ -239,32 +239,32 @@ class TuningBudget:
         self.time_limit = time_limit
         self.num_fevals = 0
         self.max_fevals = max_fevals
-    
+
     def add_evaluations(self, n=1):
         self.num_fevals += n
-    
+
     def add_time(self, seconds=0, milliseconds=0):
         self.time_spent_extra += timedelta(seconds=seconds, milliseconds=milliseconds)
-    
+
     def get_time_spent(self) -> timedelta:
         seconds_passed = self.start_timer.get()
         return timedelta(seconds=seconds_passed) + self.time_spent_extra
-    
+
     def get_time_remaining(self) -> timedelta:
         if self.time_limit is not None:
             return max(self.time_limit - self.get_time_spent(), timedelta(seconds=0))
         else:
             return timedelta.max
-    
+
     def get_evaluations_spent(self) -> int:
         return self.num_fevals
-    
+
     def get_evaluations_remaining(self) -> int:
         if self.max_fevals is not None:
             return max(self.max_fevals - self.num_fevals, 0)
         else:
             return float("inf")
-    
+
     def is_done(self) -> bool:
         if self.max_fevals is not None and self.num_fevals >= self.max_fevals:
             return True
@@ -272,15 +272,15 @@ class TuningBudget:
         if self.time_limit is not None and self.get_time_spent() > self.time_limit:
             return True
 
-        return False   
-    
+        return False
+
     def raise_exception_if_done(self):
         if self.max_fevals is not None and self.num_fevals >= self.max_fevals:
             raise StopCriterionReached(f"max_fevals ({self.max_fevals}) reached")
-        
+
         if self.time_limit is not None and self.get_time_spent() > self.time_limit:
             raise StopCriterionReached("time limit exceeded")
-    
+
     def get_fraction_consumed(self) -> float:
         if self.max_fevals is not None and self.time_limit is not None:
             time_spent = self.get_time_spent()
@@ -292,7 +292,6 @@ class TuningBudget:
         else:
             return 0.0
 
-    
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
     """Raise an exception if a tune parameter has a forbidden name."""
@@ -714,8 +713,8 @@ def get_thread_block_dimensions(params, block_size_names=None):
     return (int(block_size_x), int(block_size_y), int(block_size_z))
 
 
-def disable_benchmark_timings(result: dict) -> dict:
-    """Returns a new dict where all the timing information related 
+def copy_without_benchmark_timings(result: dict) -> dict:
+    """Returns a new dict where all the timing information related
     to benchmarking a single configurations have been disable. """
     result = dict(result)  # Copy
     result["compile_time"] = 0
@@ -1035,7 +1034,7 @@ def parse_restrictions(
             return param
         else:
             return key
-    
+
     # remove functionally duplicate restrictions (preserves order and whitespace)
     if all(isinstance(r, str) for r in restrictions):
         # clean the restriction strings to functional equivalence
