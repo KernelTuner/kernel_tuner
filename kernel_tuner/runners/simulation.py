@@ -135,7 +135,8 @@ class SimulationRunner(Runner):
             params_dict = dict(zip(tuning_options['tune_params'].keys(), element))
             check = util.check_restrictions(tuning_options.restrictions, params_dict, True)
             if not check:
-                result = util.copy_without_benchmark_timings(params_dict) # Set timings to zero
+                # Set timings to zero
+                result = util.copy_without_benchmark_timings(params_dict)
                 result[tuning_options.objective] = util.InvalidConfig()
                 results.append(result)
                 warn(f"Configuration {element} not in cache, does not pass restrictions. Will be treated as an InvalidConfig, but make sure you are evaluating the correct cache file.")

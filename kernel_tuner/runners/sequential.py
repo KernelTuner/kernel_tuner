@@ -122,7 +122,8 @@ class SequentialRunner(Runner):
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)
 
-        num_valid_results = sum(bool(r) for r in results)  # Count the number of valid results
+        # Count the number of valid results
+        num_valid_results = sum(bool(r) for r in results)
 
         if num_valid_results > 0:
             strategy_time = self.accumulated_strategy_time

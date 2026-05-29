@@ -18,6 +18,7 @@ class Runner(ABC):
         self.accumulated_strategy_time += seconds
 
     def shutdown(self):
+        """ Signal to this runner that we are about to shut down. """
         pass
 
     def available_parallelism(self):

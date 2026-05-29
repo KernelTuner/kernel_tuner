@@ -28,6 +28,7 @@ except ImportError as e:
 
 @ray.remote(num_gpus=1)
 class WorkerActor:
+    """A Ray actor that owns a single GPU and benchmarks kernel configurations on it."""
     def __init__(
         self, kernel_source, kernel_options, device_options, tuning_options, iterations, observers
     ):
@@ -67,7 +68,7 @@ class WorkerActor:
         return env
 
     def run(self, params):
-        # TODO: logging.debug("sequential runner started for " + self.kernel_options.kernel_name)
+        # logging.debug("sequential runner started for " + self.kernel_options.kernel_name)
         result = None
 
         # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
@@ -86,17 +87,20 @@ class WorkerActor:
         params["ray_actor_id"] = ray.get_runtime_context().get_actor_id()
         params["host_name"] = socket.gethostname()
 
-        # all visited configurations are added to results to provide a trace for optimization strategies
         return params
 
 
 class Worker:
+    """Local handle for a ``WorkerActor`` running in a remote Ray worker process."""
+
     def __init__(self, index, actor):
         self.index = index
         self.running_jobs = []
         self.maximum_running_jobs = 2
         self.is_running = True
         self.actor = actor
+
+        # Note: This will block until the environment is available locally
         self.env = ray.get(actor.get_environment.remote())
 
     def __repr__(self):
@@ -108,8 +112,13 @@ class Worker:
             return f"{self.index}"
 
     def shutdown(self):
+        """Request the remote actor to exit and mark this handle as stopped."""
         if not self.is_running:
             return
+
+        # Wait until running jobs complete
+        if self.running_jobs:
+            ray.wait(self.running_jobs)
 
         self.is_running = False
 
@@ -119,11 +128,14 @@ class Worker:
             logger.exception("failed to request actor shutdown: worker %s", self)
 
     def submit(self, config):
+        """Submit a kernel configuration for benchmarking."""
         job = self.actor.run.remote(config)
         self.running_jobs.append(job)
         return job
 
     def is_available(self):
+        """Return True if this worker can accept another job right now."""
+
         if not self.is_running:
             return False
 
@@ -139,25 +151,25 @@ def launch_workers(n, *args):
     workers = []
 
     try:
-        # Start all actors in parallel
+        # Start all actors in parallel since `WorkerActor.remote` does not block
         for _ in range(n):
             actors.append(WorkerActor.remote(*args))
 
-        # Create `Worker` objects. This blocks until each worker is ready
+        # Create local `Worker` objects. This blocks until each worker is ready
         for index, actor in enumerate(actors):
             worker = Worker(index, actor)
             workers.append(worker)
             logging.info("connected: worker %s", worker)
-
-        return workers
-    except:
-        # Attempt to shut down actors
+    except Exception:
+        # Attempt to shut down the running actors
         for actor in actors:
             try:
                 actor.shutdown.remote()
             except:
                 logger.exception("failed to request actor shutdown: %s", actor)
         raise
+
+    return workers
 
 
 class ParallelRunner(Runner):
@@ -228,7 +240,7 @@ class ParallelRunner(Runner):
         for worker in self.workers:
             try:
                 worker.shutdown()
-            except Exception as err:
+            except Exception:
                 logger.exception(f"error while shutting down worker {worker}")
 
     def available_parallelism(self):
@@ -350,8 +362,7 @@ class ParallelRunner(Runner):
                 result = process_metrics(result, metrics)
             else:
                 logging.error(
-                    "kernel configuration {key} was skipped silently due to compile or runtime failure",
-                    key,
+                    f"kernel configuration {key} was skipped silently due to compile or runtime failure"
                 )
 
             # print configuration to the console

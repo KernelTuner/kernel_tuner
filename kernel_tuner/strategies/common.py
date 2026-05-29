@@ -145,7 +145,6 @@ class CostFunc:
         for index, x in enumerate(xs):
             config, is_legal = self._normalize_and_validate_config(x, check_restrictions=check_restrictions)
             logging.debug("normalize config: %s -> %s (legal: %s)", str(x), str(config), is_legal)
-            key = ",".join([str(i) for i in config])
 
             # Not legal, just return `InvalidConfig`
             if not is_legal:

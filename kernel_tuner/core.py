@@ -224,7 +224,8 @@ def instantiate_observer(observer, args):
     if isinstance(observer, BenchmarkObserver):
         return observer
     elif callable(observer):
-        return instantiate_observer(observer(args), args) # Check again if BenchmarkObserver
+        # Check again if BenchmarkObserver
+        return instantiate_observer(observer(args), args)
     else:
         raise TypeError(f"Invalid observer: {observer!r} does not extend BenchmarkObserver")
 
