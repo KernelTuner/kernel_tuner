@@ -60,7 +60,7 @@ class SimulationRunner(Runner):
 
     def get_device_info(self):
         return self.dev
-    
+
     def get_environment(self, tuning_options):
         env = self.dev.get_environment()
         env["simulation"] = True
@@ -90,7 +90,7 @@ class SimulationRunner(Runner):
             if tuning_options.budget.is_done():
                 results.append(None)
                 continue
-            
+
             # check if element is in the cache
             key = ",".join([str(i) for i in element])
 
@@ -109,17 +109,11 @@ class SimulationRunner(Runner):
                 # is served from the cache beyond the first timel. That is, when the
                 # configuration is already counted towards the unique_results.
                 if key in self.visited_results:
-                    result = util.disable_benchmark_timings(result)
+                    result = util.copy_without_benchmark_timings(result)
                 else:
                     # configuration is evaluated for the first time, print to the console
                     util.print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
                     self.visited_results.add(key)
-
-                # Simulate the evaluation of this configuration
-                tuning_options.budget.add_evaluations(1)
-                tuning_options.budget.add_time(milliseconds=result["compile_time"])
-                tuning_options.budget.add_time(milliseconds=result["verification_time"])
-                tuning_options.budget.add_time(milliseconds=result["benchmark_time"])
 
                 try:
                     self.total_simulated_time += result["compile_time"] + result["verification_time"] + result["benchmark_time"]
@@ -128,6 +122,12 @@ class SimulationRunner(Runner):
                         "Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations"
                     )
 
+                # Simulate the evaluation of this configuration
+                tuning_options.budget.add_evaluations(1)
+                tuning_options.budget.add_time(milliseconds=result["compile_time"])
+                tuning_options.budget.add_time(milliseconds=result["verification_time"])
+                tuning_options.budget.add_time(milliseconds=result["benchmark_time"])
+
                 results.append(result)
                 continue
 
@@ -135,7 +135,7 @@ class SimulationRunner(Runner):
             params_dict = dict(zip(tuning_options['tune_params'].keys(), element))
             check = util.check_restrictions(tuning_options.restrictions, params_dict, True)
             if not check:
-                result = util.disable_benchmark_timings(params_dict) # Set timings to zero
+                result = util.copy_without_benchmark_timings(params_dict) # Set timings to zero
                 result[tuning_options.objective] = util.InvalidConfig()
                 results.append(result)
                 warn(f"Configuration {element} not in cache, does not pass restrictions. Will be treated as an InvalidConfig, but make sure you are evaluating the correct cache file.")
@@ -159,8 +159,8 @@ class SimulationRunner(Runner):
             for result in results:
                 if result:
                     # Time must be in ms
-                    result["strategy_time"] = strategy_time / num_valid_results
-                    result["framework_time"] = framework_time / num_valid_results
+                    result["strategy_time"] = 1000 * strategy_time / num_valid_results
+                    result["framework_time"] = 1000 * framework_time / num_valid_results
 
 
         return results

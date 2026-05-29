@@ -9,7 +9,7 @@ from kernel_tuner.interface import Options
 from kernel_tuner.runners.runner import Runner
 from kernel_tuner.util import (
     Timer,
-    disable_benchmark_timings,
+    copy_without_benchmark_timings,
     ErrorConfig,
     TuningBudget,
     print_config_output,
@@ -313,7 +313,7 @@ class ParallelRunner(Runner):
             if key in tuning_options.cache:
                 # We must disable the timings as otherwise these will counted
                 # as part of the total_compile/benchmark/verification_time
-                result = disable_benchmark_timings(tuning_options.cache[key])
+                result = copy_without_benchmark_timings(tuning_options.cache[key])
 
                 # recompute matrics for this entry
                 result = process_metrics(result, metrics)
@@ -369,7 +369,7 @@ class ParallelRunner(Runner):
         # as otherwise we would count them multiple times in the total
         for i, j in duplicate_entries:
             if results[j]:
-                results[i] = disable_benchmark_timings(results[j])
+                results[i] = copy_without_benchmark_timings(results[j])
 
         # Count the number of valid results
         num_valid_results = sum(bool(r) for r in results)
@@ -388,7 +388,7 @@ class ParallelRunner(Runner):
             for result in results:
                 if result:
                     # Time must be in ms
-                    result["strategy_time"] = strategy_time / num_valid_results
-                    result["framework_time"] = framework_time / num_valid_results
+                    result["strategy_time"] = 1000 * strategy_time / num_valid_results
+                    result["framework_time"] = 1000 * framework_time / num_valid_results
 
         return results

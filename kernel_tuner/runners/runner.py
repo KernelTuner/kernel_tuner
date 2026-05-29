@@ -13,7 +13,8 @@ class Runner(ABC):
         self.timer = Timer()
         self.accumulated_strategy_time = 0
 
-    def add_strategy_time(self, seconds):
+    def add_strategy_time(self, seconds: float):
+        """ Notify this runner of the amount of time spent by the search strategy."""
         self.accumulated_strategy_time += seconds
 
     def shutdown(self):

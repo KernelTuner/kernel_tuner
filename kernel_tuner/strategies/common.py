@@ -71,7 +71,6 @@ class CostFunc:
         scaling=False,
         snap=True,
         return_invalid=False,
-        return_raw=None,
         invalid_value=sys.float_info.max,
     ):
         """An abstract method to handle evaluation of configurations.
@@ -207,7 +206,7 @@ class CostFunc:
             else:
                 # this is not a valid configuration, replace with float max if needed
                 if not self.return_invalid:
-                    return_value = sys.float_info.max
+                    return_value = self.invalid_return_value
 
             # include raw data in return if requested
             return_values.append(return_value)

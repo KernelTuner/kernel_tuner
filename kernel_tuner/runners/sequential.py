@@ -5,7 +5,7 @@ from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
-from kernel_tuner.util import ErrorConfig, Timer, print_config_output, process_metrics, store_cache, disable_benchmark_timings
+from kernel_tuner.util import ErrorConfig, Timer, print_config_output, process_metrics, store_cache, copy_without_benchmark_timings
 
 
 class SequentialRunner(Runner):
@@ -63,6 +63,7 @@ class SequentialRunner(Runner):
 
         results = []
         worker_time = 0
+        warmup_time = 0
 
         # iterate over parameter space
         for element in parameter_space:
@@ -71,18 +72,16 @@ class SequentialRunner(Runner):
             if tuning_options.budget.is_done():
                 results.append(None)
                 continue
-            
+
             tuning_options.budget.add_evaluations(1)
             params = dict(zip(tuning_options.tune_params.keys(), element))
-
             result = None
-            warmup_time = 0
 
             # check if configuration is in the cache
             x_int = ",".join([str(i) for i in element])
             if tuning_options.cache and x_int in tuning_options.cache:
                 cache_entry = tuning_options.cache[x_int]
-                params.update(disable_benchmark_timings(cache_entry))
+                params.update(copy_without_benchmark_timings(cache_entry))
             else:
                 # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
                 if not self.warmed_up:
@@ -136,6 +135,7 @@ class SequentialRunner(Runner):
             # Amortize the time over all the results
             for result in results:
                 if result:
+                    # Time must be in ms
                     result["strategy_time"] = 1000 * strategy_time / num_valid_results
                     result["framework_time"] = 1000 * framework_time / num_valid_results
 
