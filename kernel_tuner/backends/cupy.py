@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import numpy as np
+import uuid
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.cupy import CupyRuntimeObserver
@@ -74,12 +75,17 @@ class CupyFunctions(GPUBackend):
             s.split(":")[0].strip(): s.split(":")[1].strip() for s in cupy_info
         }
         env["device_name"] = info_dict[f"Device {device} Name"]
+        env["pci_bus_id"] = info_dict[f"Device {device} PCI Bus ID"]
 
         env["cuda_version"] = cp.cuda.runtime.driverGetVersion()
         env["compute_capability"] = self.cc
         env["iterations"] = self.iterations
         env["compiler_options"] = compiler_options
         env["device_properties"] = self.devprops
+
+        props = cp.cuda.runtime.getDeviceProperties(device)
+        env["uuid"] = str(uuid.UUID(bytes=props["uuid"]))
+
         self.env = env
         self.name = env["device_name"]
 

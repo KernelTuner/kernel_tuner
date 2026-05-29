@@ -53,6 +53,7 @@ for s in strategy_map.keys():
         strategies.append(pytest.param(s, marks=skip_if_no_pyatf))
     else:
         strategies.append(s)
+
 @pytest.mark.parametrize('strategy', strategies)
 def test_strategies(vector_add, strategy):
     options = dict(popsize=5, neighbor='adjacent')
@@ -96,7 +97,7 @@ def test_strategies(vector_add, strategy):
         tune_params = vector_add[-1]
         unique_results = {}
         for result in results:
-            x_int = ",".join([str(v) for k, v in result.items() if k in tune_params])
+            x_int = ",".join([str(v) for k, v in result.items() if k in tune_params.keys()])
             if not isinstance(result["time"], InvalidConfig):
                 unique_results[x_int] = result["time"]
         assert len(unique_results) <= filter_options["max_fevals"]

@@ -4,7 +4,7 @@ from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.common import CostFunc
 
 
-def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searchspace: Searchspace, tuning_options,
+def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searchspace: Searchspace,
                    cost_func: CostFunc, restart=True, randomize=True, order=None):
     """Hillclimbing search until max_fevals is reached or no improvement is found.
 
@@ -24,10 +24,6 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
 
     :params searchspace: The searchspace object.
     :type searchspace: Seachspace
-
-    :param tuning_options: A dictionary with all options regarding the tuning
-        process.
-    :type tuning_options: dict
 
     :param cost_func: An instance of `kernel_tuner.strategies.common.CostFunc`
     :type runner: kernel_tuner.strategies.common.CostFunc
@@ -72,33 +68,39 @@ def base_hillclimb(base_sol: tuple, neighbor_method: str, max_fevals: int, searc
         if randomize:
             random.shuffle(indices)
 
+        children = []
+
         # in each dimension see the possible values
         for index in indices:
             neighbors = searchspace.get_param_neighbors(tuple(child), index, neighbor_method, randomize)
 
             # for each value in this dimension
             for val in neighbors:
-                orig_val = child[index]
+                child = list(child)
                 child[index] = val
+                children.append(child)
 
+        if restart:
+            for child in children:
                 # get score for this position
                 score = cost_func(child)
 
-                # generalize this to other tuning objectives
                 if score < best_score:
                     best_score = score
                     base_sol = child[:]
                     found_improved = True
-                    if restart:
-                        break
-                else:
-                    child[index] = orig_val
+                    break
+        else:
+            # get score for all positions in parallel
+            scores = cost_func.eval_all(children, check_restrictions=False)
 
-                fevals = len(tuning_options.unique_results)
-                if fevals >= max_fevals:
-                    return base_sol
+            for child, score in zip(children, scores):
+                if score < best_score:
+                    best_score = score
+                    base_sol = child[:]
+                    found_improved = True
 
-            if found_improved and restart:
-                break
+        if found_improved and restart:
+            break
 
     return base_sol

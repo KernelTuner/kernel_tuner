@@ -16,7 +16,7 @@ def _get_cupy():
 
 import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
-from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
+from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver, OutputObserver, PrologueObserver
 from kernel_tuner.observers.tegra import TegraObserver
 
 try:
@@ -218,6 +218,18 @@ class KernelSource(object):
                 logging.debug("Checking of arguments list not supported yet for code generators.")
 
 
+def instantiate_observer(observer, args):
+    """Instantiate or build an observer from a class/factory/instance."""
+
+    if isinstance(observer, BenchmarkObserver):
+        return observer
+    elif callable(observer):
+        # Check again if BenchmarkObserver
+        return instantiate_observer(observer(args), args)
+    else:
+        raise TypeError(f"Invalid observer: {observer!r} does not extend BenchmarkObserver")
+
+
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner."""
 
@@ -265,6 +277,14 @@ class DeviceInterface(object):
         self.requires_warmup = True
 
         logging.debug("DeviceInterface instantiated, lang=%s", lang)
+
+        # Ensure observers is a list
+        observers = observers or []
+
+        # Observers can either be an object that extends BenchmarkObserver or
+        # lambda function that returns such an object.
+        observer_args = dict(device=device, platform=platform, compiler=compiler, lang=lang)
+        observers = [instantiate_observer(ob, observer_args) for ob in observers]
 
         if lang.upper() == "CUDA":
             from kernel_tuner.backends.pycuda import PyCudaFunctions

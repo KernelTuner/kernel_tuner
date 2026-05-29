@@ -19,6 +19,8 @@ tune_params["z"] = [7]
 strategy_options = dict(popsize=0, max_fevals=10)
 tuning_options = Options(dict(restrictions=[], tune_params=tune_params, strategy_options=strategy_options))
 tuning_options["scaling"] = True
+tuning_options["objective"] = "time"
+tuning_options["objective_higher_is_better"] = False
 tuning_options["snap"] = True
 max_threads = 1024
 searchspace = Searchspace(tune_params, [], max_threads)

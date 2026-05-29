@@ -68,7 +68,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
                 pos = new_pos
                 old_cost = new_cost
 
-        c = len(tuning_options.unique_results)
+        c = cost_func.get_num_unique_results()
         T = T_start * alpha**(max_iter/max_fevals*c)
 
         # check if solver gets stuck and if so restart from random position
