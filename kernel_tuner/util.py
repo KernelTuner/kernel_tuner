@@ -191,10 +191,12 @@ def check_argument_list(kernel_name, kernel_string, args):
 
 
 class Timer:
+    """Measures elapsed wall-clock time."""
     def __init__(self):
         self.reset()
 
     def reset(self):
+        """Reset the timer to now."""
         self._start_ns = time.perf_counter_ns()
 
     def get(self) -> float:
@@ -214,13 +216,15 @@ class Timer:
         elapsed = self.get()
 
         if elapsed < 1:
-            return f"{elapsed * 1e3:.2f} ms"
+            result = f"{elapsed * 1e3:.2f} ms"
         elif elapsed < 60:
-            return f"{elapsed:.3f} s"
+            result = f"{elapsed:.3f} s"
         elif elapsed < 3600:
-            return f"{elapsed / 60:.2f} min"
+            result = f"{elapsed / 60:.2f} min"
         else:
-            return f"{elapsed / 3600:.2f} h"
+            result = f"{elapsed / 3600:.2f} h"
+
+        return result
 
 
 class TuningBudget:
@@ -282,15 +286,15 @@ class TuningBudget:
             raise StopCriterionReached("time limit exceeded")
 
     def get_fraction_consumed(self) -> float:
-        if self.max_fevals is not None and self.time_limit is not None:
-            time_spent = self.get_time_spent()
-            return min(1.0, time_spent / self.time_limit, self.num_fevals / self.max_fevals)
-        elif self.max_fevals is not None:
-            return min(1.0, self.num_fevals / self.max_fevals)
-        elif self.time_limit is not None:
-            return min(1.0, self.get_time_spent() / self.time_limit)
-        else:
-            return 0.0
+        result = 0.0
+
+        if self.max_fevals is not None:
+            result = max(result, self.num_fevals / self.max_fevals)
+
+        if self.time_limit is not None:
+            result = max(result, self.get_time_spent() / self.time_limit)
+
+        return min(1.0, result)
 
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
@@ -1322,7 +1326,9 @@ def process_cache(cachefile, kernel_options, tuning_options, runner):
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
             device_name = cached_data["device_name"]
-            runner.dev.name = device_name  # Is this always safe?
+
+            # Is this always safe?
+            runner.dev.name = device_name
 
         # check if it is safe to continue tuning from this cache
         if cached_data["device_name"] != device_name:
