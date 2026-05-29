@@ -67,6 +67,7 @@
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
 <li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel and Remote Tuning</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -198,8 +199,6 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.check_restrictions">check_restrictions() (in module kernel_tuner.util)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.util.check_stop_criterion">check_stop_criterion() (in module kernel_tuner.util)</a>
-</li>
       <li><a href="design.html#kernel_tuner.util.check_thread_block_dimensions">check_thread_block_dimensions() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.check_tune_params_list">check_tune_params_list() (in module kernel_tuner.util)</a>
@@ -232,10 +231,10 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.ConstraintLambdaTransformer">ConstraintLambdaTransformer (class in kernel_tuner.util)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.convert_constraint_lambdas">convert_constraint_lambdas() (in module kernel_tuner.util)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.util.convert_constraint_restriction">convert_constraint_restriction() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.backends.cupy.CupyFunctions.copy_constant_memory_args">copy_constant_memory_args() (kernel_tuner.backends.cupy.CupyFunctions method)</a>
@@ -274,6 +273,8 @@
         <li><a href="design.html#kernel_tuner.backends.pycuda.PyCudaFunctions.copy_texture_memory_args">(kernel_tuner.backends.pycuda.PyCudaFunctions method)</a>
 </li>
       </ul></li>
+      <li><a href="design.html#kernel_tuner.util.copy_without_benchmark_timings">copy_without_benchmark_timings() (in module kernel_tuner.util)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.correct_open_cache">correct_open_cache() (in module kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.strategies.common.CostFunc">CostFunc (class in kernel_tuner.strategies.common)</a>
@@ -318,6 +319,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.strategies.common.CostFunc.eval_all">eval_all() (kernel_tuner.strategies.common.CostFunc method)</a>
+</li>
       <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.exponential_crossover">exponential_crossover() (in module kernel_tuner.strategies.diff_evo)</a>
 </li>
   </ul></td>
@@ -338,7 +341,11 @@
 </li>
       <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.generate_population">generate_population() (in module kernel_tuner.strategies.diff_evo)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.util.Timer.get">get() (kernel_tuner.util.Timer method)</a>
+</li>
       <li><a href="design.html#kernel_tuner.util.get_all_lambda_asts">get_all_lambda_asts() (in module kernel_tuner.util)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.util.Timer.get_and_reset">get_and_reset() (kernel_tuner.util.Timer method)</a>
 </li>
       <li><a href="design.html#kernel_tuner.util.get_best_config">get_best_config() (in module kernel_tuner.util)</a>
 </li>
@@ -384,10 +391,10 @@
 </li>
       <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_neighbors_no_cache">get_neighbors_no_cache() (kernel_tuner.searchspace.Searchspace method)</a>
 </li>
-      <li><a href="design.html#kernel_tuner.util.get_objective_defaults">get_objective_defaults() (in module kernel_tuner.util)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="design.html#kernel_tuner.util.get_objective_defaults">get_objective_defaults() (in module kernel_tuner.util)</a>
+</li>
       <li><a href="design.html#kernel_tuner.strategies.common.get_options">get_options() (in module kernel_tuner.strategies.common)</a>
 </li>
       <li><a href="design.html#kernel_tuner.searchspace.Searchspace.get_param_config_from_numeric">get_param_config_from_numeric() (kernel_tuner.searchspace.Searchspace method)</a>
@@ -824,6 +831,8 @@
 </li>
       <li><a href="design.html#kernel_tuner.util.replace_param_occurrences">replace_param_occurrences() (in module kernel_tuner.util)</a>
 </li>
+      <li><a href="design.html#kernel_tuner.util.Timer.reset">reset() (kernel_tuner.util.Timer method)</a>
+</li>
       <li><a href="optimization.html#kernel_tuner.strategies.diff_evo.round_and_clip">round_and_clip() (in module kernel_tuner.strategies.diff_evo)</a>
 </li>
       <li><a href="design.html#kernel_tuner.runners.sequential.SequentialRunner.run">run() (kernel_tuner.runners.sequential.SequentialRunner method)</a>
@@ -935,6 +944,8 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="design.html#kernel_tuner.searchspace.Searchspace.tensor_to_param_config">tensor_to_param_config() (kernel_tuner.searchspace.Searchspace method)</a>
+</li>
+      <li><a href="design.html#kernel_tuner.util.Timer">Timer (class in kernel_tuner.util)</a>
 </li>
       <li><a href="design.html#kernel_tuner.searchspace.Searchspace.to_ax_searchspace">to_ax_searchspace() (kernel_tuner.searchspace.Searchspace method)</a>
 </li>

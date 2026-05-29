@@ -70,6 +70,7 @@
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
 <li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel and Remote Tuning</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -147,18 +148,19 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.RuntimeFailedConfig"><code class="docutils literal notranslate"><span class="pre">RuntimeFailedConfig</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.SkippableFailure"><code class="docutils literal notranslate"><span class="pre">SkippableFailure</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.StopCriterionReached"><code class="docutils literal notranslate"><span class="pre">StopCriterionReached</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.Timer"><code class="docutils literal notranslate"><span class="pre">Timer</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_argument_list"><code class="docutils literal notranslate"><span class="pre">check_argument_list()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_argument_type"><code class="docutils literal notranslate"><span class="pre">check_argument_type()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_matching_problem_size"><code class="docutils literal notranslate"><span class="pre">check_matching_problem_size()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_restriction"><code class="docutils literal notranslate"><span class="pre">check_restriction()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_restrictions"><code class="docutils literal notranslate"><span class="pre">check_restrictions()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_stop_criterion"><code class="docutils literal notranslate"><span class="pre">check_stop_criterion()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_thread_block_dimensions"><code class="docutils literal notranslate"><span class="pre">check_thread_block_dimensions()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_tune_params_list"><code class="docutils literal notranslate"><span class="pre">check_tune_params_list()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.compile_restrictions"><code class="docutils literal notranslate"><span class="pre">compile_restrictions()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.config_valid"><code class="docutils literal notranslate"><span class="pre">config_valid()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.convert_constraint_lambdas"><code class="docutils literal notranslate"><span class="pre">convert_constraint_lambdas()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.convert_constraint_restriction"><code class="docutils literal notranslate"><span class="pre">convert_constraint_restriction()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.copy_without_benchmark_timings"><code class="docutils literal notranslate"><span class="pre">copy_without_benchmark_timings()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.correct_open_cache"><code class="docutils literal notranslate"><span class="pre">correct_open_cache()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.delete_temp_file"><code class="docutils literal notranslate"><span class="pre">delete_temp_file()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.detect_language"><code class="docutils literal notranslate"><span class="pre">detect_language()</span></code></a></li>
@@ -582,8 +584,14 @@ Assumes that the parameter configs have the same order as <cite>tune_params</cit
 <p>Module for functionality that is commonly used throughout the strategies.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="kernel_tuner.strategies.common.CostFunc">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.common.</span></span><span class="sig-name descname"><span class="pre">CostFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">searchspace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#kernel_tuner.searchspace.Searchspace" title="kernel_tuner.searchspace.Searchspace"><span class="pre">Searchspace</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_invalid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_raw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invalid_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.7976931348623157e+308</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.CostFunc" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.strategies.common.</span></span><span class="sig-name descname"><span class="pre">CostFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">searchspace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#kernel_tuner.searchspace.Searchspace" title="kernel_tuner.searchspace.Searchspace"><span class="pre">Searchspace</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_invalid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invalid_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.7976931348623157e+308</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.CostFunc" title="Link to this definition">¶</a></dt>
 <dd><p>Class encapsulating the CostFunc method.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.strategies.common.CostFunc.eval_all">
+<span class="sig-name descname"><span class="pre">eval_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_restrictions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.CostFunc.eval_all" title="Link to this definition">¶</a></dt>
+<dd><p>Cost function used by almost all strategies.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.strategies.common.CostFunc.get_bounds">
 <span class="sig-name descname"><span class="pre">get_bounds</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.strategies.common.CostFunc.get_bounds" title="Link to this definition">¶</a></dt>
@@ -677,10 +685,8 @@ Assumes that the parameter configs have the same order as <cite>tune_params</cit
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_source</strong> (<em>kernel_tuner.core.KernelSource</em>) – The kernel source</p></li>
 <li><p><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the kernel.</p></li>
-<li><p><strong>device_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the device
-on which the kernel should be tuned.</p></li>
-<li><p><strong>iterations</strong> (<em>int</em>) – The number of iterations used for benchmarking
-each kernel instance.</p></li>
+<li><p><strong>device_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the device on which the kernel should be tuned.</p></li>
+<li><p><strong>iterations</strong> (<em>int</em>) – The number of iterations used for benchmarking each kernel instance.</p></li>
 </ul>
 </dd>
 </dl>
@@ -694,16 +700,14 @@ each kernel instance.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>parameter_space</strong> (<em>iterable</em>) – The parameter space as an iterable.</p></li>
-<li><p><strong>tuning_options</strong> (<em>kernel_tuner.iterface.Options</em>) – A dictionary with all options regarding the tuning
-process.</p></li>
+<li><p><strong>tuning_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options regarding the tuning process.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A list of dictionaries for executed kernel configurations and their
-execution times.</p>
+<dd class="field-even"><p>A list of dictionaries for executed kernel configurations and their execution times.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict())</p>
+<dd class="field-odd"><p>dict()</p>
 </dd>
 </dl>
 </dd></dl>
@@ -726,10 +730,8 @@ execution times.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel_source</strong> (<em>kernel_tuner.core.KernelSource</em>) – The kernel source</p></li>
 <li><p><strong>kernel_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the kernel.</p></li>
-<li><p><strong>device_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the device
-on which the kernel should be tuned.</p></li>
-<li><p><strong>iterations</strong> (<em>int</em>) – The number of iterations used for benchmarking
-each kernel instance.</p></li>
+<li><p><strong>device_options</strong> (<em>kernel_tuner.interface.Options</em>) – A dictionary with all options for the device on which the kernel should be tuned.</p></li>
+<li><p><strong>iterations</strong> (<em>int</em>) – The number of iterations used for benchmarking each kernel instance.</p></li>
 </ul>
 </dd>
 </dl>
@@ -743,13 +745,11 @@ each kernel instance.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>parameter_space</strong> (<em>iterable</em>) – The parameter space as an iterable.</p></li>
-<li><p><strong>tuning_options</strong> (<em>kernel_tuner.iterface.Options</em>) – A dictionary with all options regarding the tuning
-process.</p></li>
+<li><p><strong>tuning_options</strong> (<em>kernel_tuner.iterface.Options</em>) – A dictionary with all options regarding the tuning process.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A list of dictionaries for executed kernel configurations and their
-execution times.</p>
+<dd class="field-even"><p>A list of dictionaries for executed kernel configurations and their execution times.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>dict()</p>
@@ -1662,7 +1662,7 @@ interface as Backend.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="kernel_tuner.backends.hip.HipFunctions">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.backends.hip.</span></span><span class="sig-name descname"><span class="pre">HipFunctions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.hip.HipFunctions" title="Link to this definition">¶</a></dt>
-<dd><p>Class that groups the HIP functions on maintains state about the device.</p>
+<dd><p>Class that groups the HIP functions and maintains state about the device.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.hip.HipFunctions.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.hip.HipFunctions.__init__" title="Link to this definition">¶</a></dt>
@@ -1906,6 +1906,30 @@ implement default like this:</p>
 <dd><p>Exception thrown when a stop criterion has been reached.</p>
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="kernel_tuner.util.Timer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">Timer</span></span><a class="headerlink" href="#kernel_tuner.util.Timer" title="Link to this definition">¶</a></dt>
+<dd><p>Measures elapsed wall-clock time.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.util.Timer.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#kernel_tuner.util.Timer.get" title="Link to this definition">¶</a></dt>
+<dd><p>Elapsed time in seconds.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.util.Timer.get_and_reset">
+<span class="sig-name descname"><span class="pre">get_and_reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#kernel_tuner.util.Timer.get_and_reset" title="Link to this definition">¶</a></dt>
+<dd><p>Elapsed time in seconds, then reset.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.util.Timer.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.Timer.reset" title="Link to this definition">¶</a></dt>
+<dd><p>Reset the timer to now.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.check_argument_list">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_argument_list" title="Link to this definition">¶</a></dt>
@@ -1934,26 +1958,6 @@ implement default like this:</p>
 <dt class="sig sig-object py" id="kernel_tuner.util.check_restrictions">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_restrictions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restrictions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#kernel_tuner.util.check_restrictions" title="Link to this definition">¶</a></dt>
 <dd><p>Check whether a configuration meets the search space restrictions.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="kernel_tuner.util.check_stop_criterion">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_stop_criterion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#kernel_tuner.util.check_stop_criterion" title="Link to this definition">¶</a></dt>
-<dd><p>Check if the stop criterion is reached.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>to</strong> (<em>dict</em>) – tuning options.</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#kernel_tuner.util.StopCriterionReached" title="kernel_tuner.util.StopCriterionReached"><strong>StopCriterionReached</strong></a> – if the max_fevals is reached or time limit is exceeded.</p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>fraction of budget spent. If both max_fevals and time_limit are set, it returns the fraction of time.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>float</p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -1993,8 +1997,15 @@ implement default like this:</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.copy_without_benchmark_timings">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">copy_without_benchmark_timings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#kernel_tuner.util.copy_without_benchmark_timings" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a new dict where all the timing information related
+to benchmarking a single configurations have been disable.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.correct_open_cache">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">correct_open_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.correct_open_cache" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">correct_open_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cachefile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.correct_open_cache" title="Link to this definition">¶</a></dt>
 <dd><p>If cache file was not properly closed, pretend it was properly closed.</p>
 </dd></dl>
 
@@ -2205,7 +2216,7 @@ tunable parameter is defined as preprocessor macro instead.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.process_cache">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">process_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.process_cache" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">process_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cachefile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.process_cache" title="Link to this definition">¶</a></dt>
 <dd><p>Cache file for storing tuned configurations.</p>
 <p>the cache file is stored using JSON and uses the following format:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="n">device_name</span><span class="p">:</span> <span class="s2">&quot;name of device&quot;</span>
@@ -2260,7 +2271,7 @@ metrics[“GFLOP/s”] = lambda p : 10000 / p[“time”]</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.read_cache">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">read_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.read_cache" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">read_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cachefile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.read_cache" title="Link to this definition">¶</a></dt>
 <dd><p>Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending.</p>
 </dd></dl>
 
@@ -2284,7 +2295,7 @@ metrics[“GFLOP/s”] = lambda p : 10000 / p[“time”]</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.store_cache">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">store_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.store_cache" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">store_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cachefile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.store_cache" title="Link to this definition">¶</a></dt>
 <dd><p>Stores a new entry (key, params) to the cachefile.</p>
 </dd></dl>
 

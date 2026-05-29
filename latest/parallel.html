@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parallel and Remote Tuning &mdash; Kernel Tuner 1.3.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=28d163b9"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Documentation" href="user-api.html" />
+    <link rel="prev" title="Observers" href="observers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="contents.html" class="icon icon-home">
+            Kernel Tuner
+          </a>
+              <div class="version">
+                1.3.3
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Kernel Tuner</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="convolution.html">Convolution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion.html">Diffusion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Kernel Tuner Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Features</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="backends.html">Backends</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cache_files.html">Cache files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="correctness.html">Correctness Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hostcode.html">Tuning Host Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structs.html">Using structs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Templated kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics and Objectives</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observers.html">Observers</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Parallel and Remote Tuning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-use">How to use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parallel-tuning-and-optimization-strategies">Parallel tuning and optimization strategies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-ray">Setting up Ray</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#local-multi-gpu-machine">Local multi-GPU machine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#distributed-cluster-with-slurm-easy-ray-2-49">Distributed cluster with SLURM (easy, Ray ≥2.49)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#distributed-cluster-with-slurm-manual-ray-2-49">Distributed Cluster with SLURM (manual, Ray &lt;2.49)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user-api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vocabulary.html">Parameter Vocabulary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="design.html">Design documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribution guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev-environment.html">Development environment</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="contents.html">Kernel Tuner</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="contents.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Parallel and Remote Tuning</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/KernelTuner/kernel_tuner/blob/master/doc/source/parallel.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="parallel-and-remote-tuning">
+<h1>Parallel and Remote Tuning<a class="headerlink" href="#parallel-and-remote-tuning" title="Link to this heading">¶</a></h1>
+<p>By default, Kernel Tuner benchmarks GPU kernel configurations sequentially on a single local GPU.
+While this works well for small tuning problems, it can become a bottleneck for larger search spaces.</p>
+<a class="reference internal image-reference" href="_images/parallel_runner.png"><img alt="Example of sequential versus parallel tuning." src="_images/parallel_runner.png" style="width: 700px;" /></a>
+<p>Kernel Tuner also supports <strong>parallel tuning</strong>, allowing multiple GPUs to evaluate kernel configurations in parallel.
+The same mechanism can be used for <strong>remote tuning</strong>, where Kernel Tuner runs on a host system while one or more GPUs are located on remote machines.</p>
+<p>Parallel/remote tuning is implemented using <a class="reference external" href="https://docs.ray.io/en/latest/">Ray</a> and works on both local multi-GPU systems and distributed clusters.</p>
+<section id="how-to-use">
+<h2>How to use<a class="headerlink" href="#how-to-use" title="Link to this heading">¶</a></h2>
+<p>To enable parallel tuning, pass the <code class="docutils literal notranslate"><span class="pre">parallel</span></code> argument to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_tuner</span><span class="o">.</span><span class="n">tune_kernel</span><span class="p">(</span>
+    <span class="s2">&quot;vector_add&quot;</span><span class="p">,</span>
+    <span class="n">kernel_string</span><span class="p">,</span>
+    <span class="n">size</span><span class="p">,</span>
+    <span class="n">args</span><span class="p">,</span>
+    <span class="n">tune_params</span><span class="p">,</span>
+    <span class="n">parallel</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>If <code class="docutils literal notranslate"><span class="pre">parallel</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, Kernel Tuner will use all available Ray workers for tuning.
+The <code class="docutils literal notranslate"><span class="pre">parallel</span></code> option can also be set to an integer <code class="docutils literal notranslate"><span class="pre">n</span></code> to use exactly <code class="docutils literal notranslate"><span class="pre">n</span></code> workers.</p>
+<p>Alternatively, define the environment variable <code class="docutils literal notranslate"><span class="pre">KERNEL_TUNER_PARALLEL</span></code> to enable parallel execution without modifying your Python code.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nv">KERNEL_TUNER_PARALLEL</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>python3<span class="w"> </span>my_tuning_script.py
+</pre></div>
+</div>
+</section>
+<section id="parallel-tuning-and-optimization-strategies">
+<h2>Parallel tuning and optimization strategies<a class="headerlink" href="#parallel-tuning-and-optimization-strategies" title="Link to this heading">¶</a></h2>
+<p>The achievable speedup from using multiple GPUs depends in part on the <strong>optimization strategy</strong> used during tuning.</p>
+<p>Some optimization strategies support <strong>maximum parallelism</strong> and can evaluate all configurations independently.
+Other strategies support <strong>limited parallelism</strong>, typically by repeatly evaluating a fixed-size population of configurations in parallel.
+Finally, some strategies are <strong>inherently sequential</strong> and always evaluate configurations one by one, providing no parallelism.</p>
+<p>The current optimization strategies can be grouped as follows:</p>
+<ul class="simple">
+<li><p><strong>Maximum parallelism</strong>:
+<code class="docutils literal notranslate"><span class="pre">brute_force</span></code>, <code class="docutils literal notranslate"><span class="pre">random_sample</span></code></p></li>
+<li><p><strong>Limited parallelism</strong>:
+<code class="docutils literal notranslate"><span class="pre">genetic_algorithm</span></code>, <code class="docutils literal notranslate"><span class="pre">pso</span></code>, <code class="docutils literal notranslate"><span class="pre">diff_evo</span></code>, <code class="docutils literal notranslate"><span class="pre">firefly_algorithm</span></code></p></li>
+<li><p><strong>No parallelism</strong>:
+<code class="docutils literal notranslate"><span class="pre">minimize</span></code>, <code class="docutils literal notranslate"><span class="pre">basinhopping</span></code>, <code class="docutils literal notranslate"><span class="pre">greedy_mls</span></code>, <code class="docutils literal notranslate"><span class="pre">ordered_greedy_mls</span></code>,
+<code class="docutils literal notranslate"><span class="pre">greedy_ils</span></code>, <code class="docutils literal notranslate"><span class="pre">dual_annealing</span></code>, <code class="docutils literal notranslate"><span class="pre">mls</span></code>,
+<code class="docutils literal notranslate"><span class="pre">simulated_annealing</span></code>, <code class="docutils literal notranslate"><span class="pre">bayes_opt</span></code></p></li>
+</ul>
+</section>
+<section id="setting-up-ray">
+<h2>Setting up Ray<a class="headerlink" href="#setting-up-ray" title="Link to this heading">¶</a></h2>
+<p>Kernel Tuner uses <a class="reference external" href="https://docs.ray.io/en/latest/">Ray</a> to distribute kernel evaluations across multiple GPUs.
+Ray is an open-source framework for distributed computing in Python.</p>
+<p>To use parallel tuning, you must first install Ray itself:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>ray
+</pre></div>
+</div>
+<p>Next, you must set up a Ray cluster.
+Kernel Tuner will internally attempt to connect to an existing cluster by calling:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ray</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Refer to the Ray documentation for details on how <code class="docutils literal notranslate"><span class="pre">ray.init()</span></code> connects to a local or remote cluster
+(<a class="reference external" href="https://docs.ray.io/en/latest/ray-core/api/doc/ray.init.html">documentation</a>).
+For example, you can set the <code class="docutils literal notranslate"><span class="pre">RAY_ADDRESS</span></code> environment variable to point to the address of a remote Ray head node.
+Alternatively, you may manually call <code class="docutils literal notranslate"><span class="pre">ray.init(address=&quot;your_head_node_ip:6379&quot;)</span></code> before calling <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>.</p>
+<p>Here are some common ways to set up your cluster:</p>
+<section id="local-multi-gpu-machine">
+<h3>Local multi-GPU machine<a class="headerlink" href="#local-multi-gpu-machine" title="Link to this heading">¶</a></h3>
+<p>By default, on a machine with multiple GPUs, Ray will start a temporary local cluster and automatically detect all available GPUs.
+Kernel Tuner can then use these GPUs in parallel for tuning.</p>
+</section>
+<section id="distributed-cluster-with-slurm-easy-ray-2-49">
+<h3>Distributed cluster with SLURM (easy, Ray ≥2.49)<a class="headerlink" href="#distributed-cluster-with-slurm-easy-ray-2-49" title="Link to this heading">¶</a></h3>
+<p>The most straightforward way to use Ray on a SLURM cluster is to use the <code class="docutils literal notranslate"><span class="pre">ray</span> <span class="pre">symmetric-run</span></code> command, available from Ray <strong>2.49</strong> onwards.
+This launches a Ray environment, runs your script, and then shuts it down again.</p>
+<p>Consider the following script <code class="docutils literal notranslate"><span class="pre">launch_ray.sh</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env bash</span>
+<span class="nb">set</span><span class="w"> </span>-euo<span class="w"> </span>pipefail
+
+<span class="c1"># Get SLURM variables</span>
+<span class="nv">NODELIST</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">SLURM_STEP_NODELIST</span><span class="k">:-</span><span class="si">${</span><span class="nv">SLURM_JOB_NODELIST</span><span class="k">:-</span><span class="si">}}</span><span class="s2">&quot;</span>
+<span class="nv">NUM_NODES</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">SLURM_STEP_NUM_NODES</span><span class="k">:-</span><span class="si">${</span><span class="nv">SLURM_JOB_NUM_NODES</span><span class="k">:-</span><span class="si">}}</span><span class="s2">&quot;</span>
+
+<span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NODELIST</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NUM_NODES</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;ERROR: Not running under Slurm (missing SLURM_* vars).&quot;</span>
+<span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+<span class="k">fi</span>
+
+<span class="c1"># Get head node</span>
+<span class="nv">NODES</span><span class="o">=</span><span class="k">$(</span>scontrol<span class="w"> </span>show<span class="w"> </span>hostnames<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NODELIST</span><span class="s2">&quot;</span><span class="k">)</span>
+<span class="nv">NODES_ARRAY</span><span class="o">=(</span><span class="nv">$NODES</span><span class="o">)</span>
+<span class="nv">RAY_IP</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">NODES_ARRAY</span><span class="p">[0]</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nv">RAY_PORT</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">RAY_PORT</span><span class="k">:-</span><span class="nv">6379</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nv">RAY_ADDRESS</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">RAY_IP</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">RAY_PORT</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="c1"># Ensure command exists (Ray &gt;= 2.49 per docs)</span>
+<span class="k">if</span><span class="w"> </span>!<span class="w"> </span>ray<span class="w"> </span>symmetric-run<span class="w"> </span>--help<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;ERROR: &#39;ray symmetric-run&#39; not available. Check Ray installation (needs Ray 2.49+).&quot;</span>
+<span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+<span class="k">fi</span>
+
+<span class="c1"># Launch cluster!</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Ray head node: </span><span class="nv">$RAY_ADDRESS</span><span class="s2">&quot;</span>
+
+<span class="nb">exec</span><span class="w"> </span>ray<span class="w"> </span>symmetric-run<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--address<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$RAY_ADDRESS</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--min-nodes<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NUM_NODES</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;</span><span class="nv">$@</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+<p>Next, run your Kernel Tuner script using <code class="docutils literal notranslate"><span class="pre">srun</span></code>.
+The exact command depends on your cluster.
+In the example below, <code class="docutils literal notranslate"><span class="pre">-N4</span></code> indicates 4 nodes and <code class="docutils literal notranslate"><span class="pre">--gres=gpu:1</span></code> indicates 1 GPU per node.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>srun<span class="w"> </span>-N4<span class="w"> </span>--gres<span class="o">=</span>gpu:1<span class="w"> </span>launch_ray.sh<span class="w"> </span>python3<span class="w"> </span>my_tuning_script.py
+</pre></div>
+</div>
+</section>
+<section id="distributed-cluster-with-slurm-manual-ray-2-49">
+<h3>Distributed Cluster with SLURM (manual, Ray &lt;2.49)<a class="headerlink" href="#distributed-cluster-with-slurm-manual-ray-2-49" title="Link to this heading">¶</a></h3>
+<p>An alternative way to use Ray on SLURM is to launch a Ray cluster, obtain the IP address of the head node, and the connect to it remotely.</p>
+<p>Consider the following sbatch script <code class="docutils literal notranslate"><span class="pre">submit_ray.sh</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1">#SBATCH --time=00:10:00</span>
+<span class="c1">#SBATCH --nodes=2</span>
+<span class="c1">#SBATCH --ntasks-per-node=1</span>
+<span class="c1">#SBATCH --gpus-per-task=1</span>
+<span class="nb">set</span><span class="w"> </span>-euo<span class="w"> </span>pipefail
+
+<span class="nv">HEAD_NODE</span><span class="o">=</span><span class="k">$(</span>scontrol<span class="w"> </span>show<span class="w"> </span>hostnames<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$SLURM_JOB_NODELIST</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n1<span class="k">)</span>
+<span class="nv">HEAD_NODE_IP</span><span class="o">=</span><span class="k">$(</span>srun<span class="w"> </span>-N1<span class="w"> </span>-n1<span class="w"> </span>-w<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HEAD_NODE</span><span class="s2">&quot;</span><span class="w"> </span>bash<span class="w"> </span>-lc<span class="w"> </span><span class="s1">&#39;hostname -I | awk &quot;{print \$1}&quot;&#39;</span><span class="k">)</span>
+<span class="nv">RAY_PORT</span><span class="o">=</span><span class="m">6379</span>
+<span class="nv">RAY_ADDRESS</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HEAD_NODE_IP</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">RAY_PORT</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Launching head node: RAY_ADDRESS=</span><span class="nv">$RAY_ADDRESS</span><span class="s2">&quot;</span>
+srun<span class="w"> </span>--nodes<span class="o">=</span><span class="m">1</span><span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>-w<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HEAD_NODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>ray<span class="w"> </span>start<span class="w"> </span>--head<span class="w"> </span>--node-ip-address<span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HEAD_NODE_IP</span><span class="s2">&quot;</span><span class="w"> </span>--port<span class="o">=</span><span class="s2">&quot;</span><span class="nv">$RAY_PORT</span><span class="s2">&quot;</span><span class="w"> </span>--block<span class="w"> </span><span class="p">&amp;</span>
+sleep<span class="w"> </span><span class="m">5</span>
+
+<span class="nv">NUM_WORKERS</span><span class="o">=</span><span class="k">$((</span><span class="nv">SLURM_JOB_NUM_NODES</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="k">))</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Launching </span><span class="si">${</span><span class="nv">NUM_WORKERS</span><span class="si">}</span><span class="s2"> worker node(s)&quot;</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NUM_WORKERS</span><span class="s2">&quot;</span><span class="w"> </span>-gt<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">  </span>srun<span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NUM_WORKERS</span><span class="s2">&quot;</span><span class="w"> </span>--nodes<span class="o">=</span><span class="s2">&quot;</span><span class="nv">$NUM_WORKERS</span><span class="s2">&quot;</span><span class="w"> </span>--ntasks-per-node<span class="o">=</span><span class="m">1</span><span class="w"> </span>--exclude<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HEAD_NODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>ray<span class="w"> </span>start<span class="w"> </span>--address<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$RAY_ADDRESS</span><span class="s2">&quot;</span><span class="w"> </span>--block<span class="w"> </span><span class="p">&amp;</span>
+<span class="k">fi</span>
+
+<span class="c1"># Keep job alive (or replace with running your workload on the head)</span>
+<span class="nb">wait</span>
+</pre></div>
+</div>
+<p>Next, submit your job using <code class="docutils literal notranslate"><span class="pre">sbatch</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sbatch<span class="w"> </span>submit_ray.sh
+Submitted<span class="w"> </span>batch<span class="w"> </span>job<span class="w"> </span><span class="m">1223577</span>
+</pre></div>
+</div>
+<p>After this, inspect the file <cite>slurm-1223577.out</cite> and search for the following line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ grep RAY_ADDRESS slurm-1223577.out
+Launching head node: RAY_ADDRESS=145.184.221.164:6379
+</pre></div>
+</div>
+<p>Finally, launch your application using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">RAY_ADDRESS</span><span class="o">=</span><span class="mf">145.184.221.164</span><span class="p">:</span><span class="mi">6379</span> <span class="n">python</span> <span class="n">my_tuning_script</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="observers.html" class="btn btn-neutral float-left" title="Observers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="user-api.html" class="btn btn-neutral float-right" title="API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2016-2026, Ben van Werkhoven, Alessio Sclocco, Stijn Heldens, Floris-Jan Willemsen, Willem-Jan Palenstijn, Bram Veenboer, Richard Schoonhoven and Leon Oostrum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
