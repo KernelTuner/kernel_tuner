@@ -76,6 +76,7 @@ _STRATEGY_IMPORTS = {
     "adaptive_tabu_greywolf": "kernel_tuner.strategies.gen_adaptive_tabu_greywolf",
 }
 
+_STRATEGY_PARALLEL = ["brute_force", "random_sample", "diff_evo", "genetic_algorithm", "pso", "firefly_algorithm"]
 
 def _strategy_import_error(strategy_name, module_path, err):
     base_msg = (
@@ -704,6 +705,9 @@ def tune_kernel(
         from kernel_tuner.runners.simulation import SimulationRunner
         runner = SimulationRunner(kernelsource, kernel_options, device_options, iterations, observers)
     elif parallel:
+        # Avoid using multiple workers on strategies not supporting parallelism
+        if strategy not in _STRATEGY_PARALLEL:
+            parallel = 1
         from kernel_tuner.runners.parallel import ParallelRunner
         num_workers = None if parallel is True else parallel
         runner = ParallelRunner(kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers)
