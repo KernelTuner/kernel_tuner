@@ -167,7 +167,6 @@ def get_t4_results(results, tune_params, objective="time"):
         out["measurements"] = measurements
 
         # objectives
-        # out["objectives"] = objective
         objectives = [objective] if isinstance(objective, str) else list(objective)
         assert isinstance(objectives, list)
         out["objectives"] = objectives

@@ -249,6 +249,7 @@ class Timer:
             result = f"{elapsed / 60:.2f} min"
         else:
             result = f"{elapsed / 3600:.2f} h"
+        return result
 
 
 class TuningBudget:
