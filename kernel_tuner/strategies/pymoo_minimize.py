@@ -24,13 +24,10 @@ from kernel_tuner.strategies.common import (
     get_strategy_docstring,
 )
 
-from enum import StrEnum
-
-class SupportedAlgos(StrEnum):
-    NSGA2 = "nsga2"
-    NSGA3 = "nsga3"
-
-supported_algos = [ algo.value for algo in SupportedAlgos ]
+_SUPPORTED_ALGOS = {
+    "nsga2": NSGA2,
+    "nsga3": NSGA3
+}
 
 crossover_oper_dict = {
     "uniform-crossover": UniformCrossover,
@@ -59,8 +56,8 @@ def tune(
     strategy_options = tuning_options.strategy_options
 
     algo_name = algo_name.lower()
-    if algo_name in SupportedAlgos:
-        algo_name = SupportedAlgos(algo_name)
+    if algo_name in _SUPPORTED_ALGOS:
+        algo = _SUPPORTED_ALGOS[algo_name]
     else:
         raise ValueError(f"\"{algo_name}\" is not supported. The supported algorithms are: {supported_algos}\n")
 
@@ -96,20 +93,10 @@ def tune(
     eliminate_duplicates = TuningParamConfigDuplicateElimination()
 
     # algorithm_type = get_algorithm(method)
-    algo: Algorithm
-    match algo_name:
-        case SupportedAlgos.NSGA2:
-            algo = NSGA2(
-                pop_size = pop_size,
-                sampling = sampling,
-                crossover = crossover,
-                mutation = mutation,
-                repair = repair,
-                eliminate_duplicates = eliminate_duplicates,
-            )
-        case SupportedAlgos.NSGA3:
-            algo = NSGA3(
-                pop_size = pop_size,
+    ref_dirs = None
+    if algo_name == "nsga3":
+        ref_dirs = ref_dirs_list
+    algo = algo(pop_size = pop_size,
                 ref_dirs = ref_dirs_list,
                 sampling = sampling,
                 crossover = crossover,
@@ -117,8 +104,6 @@ def tune(
                 repair = repair,
                 eliminate_duplicates = eliminate_duplicates,
             )
-        case _ as unreachable:
-            assert_never(unreachable)
 
     # TODO:
     # - CostFunc throws exception when done, so isn't really needed

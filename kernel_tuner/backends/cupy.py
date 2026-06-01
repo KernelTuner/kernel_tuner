@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import numpy as np
+import uuid
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.cupy import CupyRuntimeObserver
@@ -10,6 +11,7 @@ from kernel_tuner.observers.cupy import CupyRuntimeObserver
 # and run tests without cupy installed
 try:
     import cupy as cp
+    from cupyx import get_runtime_info
 except ImportError:
     cp = None
 
@@ -68,17 +70,22 @@ class CupyFunctions(GPUBackend):
 
         # collect environment information
         env = dict()
-        cupy_info = str(cp._cupyx.get_runtime_info()).split("\n")[:-1]
+        cupy_info = str(get_runtime_info()).split("\n")[:-1]
         info_dict = {
             s.split(":")[0].strip(): s.split(":")[1].strip() for s in cupy_info
         }
         env["device_name"] = info_dict[f"Device {device} Name"]
+        env["pci_bus_id"] = info_dict[f"Device {device} PCI Bus ID"]
 
         env["cuda_version"] = cp.cuda.runtime.driverGetVersion()
         env["compute_capability"] = self.cc
         env["iterations"] = self.iterations
         env["compiler_options"] = compiler_options
         env["device_properties"] = self.devprops
+
+        props = cp.cuda.runtime.getDeviceProperties(device)
+        env["uuid"] = str(uuid.UUID(bytes=props["uuid"]))
+
         self.env = env
         self.name = env["device_name"]
 

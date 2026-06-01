@@ -44,13 +44,14 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     swarm[0].position = x0
 
     # compute initial intensities
-    for j in range(num_particles):
-        try:
+    try:
+        for j in range(num_particles):
             swarm[j].compute_intensity(cost_func)
-        except StopCriterionReached as e:
-            if tuning_options.verbose:
-                print(e)
-            return cost_func.results
+    except StopCriterionReached as e:
+        if tuning_options.verbose:
+            print(e)
+        return cost_func.results
+    for j in range(num_particles):
         if swarm[j].score <= best_score_global:
             best_position_global = swarm[j].position
             best_score_global = swarm[j].score

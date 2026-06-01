@@ -85,7 +85,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     try:
         # optimization loop (KT-compatible re-implementation of `make_step` from TuningRun)
-        while len(tuning_options.unique_results) < searchspace.size:
+        while cost_func.get_num_unique_results() < searchspace.size:
 
             # get new coordinates
             if not coordinates_or_indices:
