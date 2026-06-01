@@ -1440,19 +1440,23 @@ def read_cache(cachefile, open_cache=True):
     filestr = correct_open_cache(cachefile, open_cache)
 
     error_configs = {
+        "ErrorConfig": ErrorConfig(),
         "InvalidConfig": InvalidConfig(),
         "CompilationFailedConfig": CompilationFailedConfig(),
         "RuntimeFailedConfig": RuntimeFailedConfig(),
     }
 
+
     # replace strings with ErrorConfig instances
     cache_data = json.loads(filestr)
     for element in cache_data["cache"].values():
+        error = None
         for k, v in element.items():
             if isinstance(v, str) and v in error_configs:
-                # element[k] = error_configs[v]
                 # This makes sure the old cache file format can still be used.
-                element["__error__"] = error_configs[v]
+                error = error_configs[v]
+        if not error is None:
+           element["__error__"] = error
 
     return cache_data
 
