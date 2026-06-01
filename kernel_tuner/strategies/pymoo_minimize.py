@@ -1,11 +1,9 @@
 """The Pymoo strategy that uses a minimizer method for searching through the parameter space."""
 
-from typing import assert_never
 import numpy as np
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.algorithms.moo.nsga3 import NSGA3
-from pymoo.core.algorithm import Algorithm
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.core.duplicate import ElementwiseDuplicateElimination
 from pymoo.core.termination import NoTermination, Termination
@@ -22,6 +20,7 @@ from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies.common import (
     CostFunc,
     get_strategy_docstring,
+    get_options
 )
 
 _SUPPORTED_ALGOS = {
@@ -57,21 +56,14 @@ def tune(
 
     algo_name = algo_name.lower()
     if algo_name in _SUPPORTED_ALGOS:
-        algo = _SUPPORTED_ALGOS[algo_name]
+        algorithm = _SUPPORTED_ALGOS[algo_name]
     else:
-        raise ValueError(f"\"{algo_name}\" is not supported. The supported algorithms are: {supported_algos}\n")
+        raise ValueError(f"\"{algo_name}\" is not supported. The supported algorithms are: {_SUPPORTED_ALGOS.keys}\n")
 
-    pop_size = strategy_options.get("pop_size", _option_defaults["pop_size"])
-    crossover_oper = strategy_options.get("crossover_operator", _option_defaults["crossover_operator"])
-    crossover_prob = strategy_options.get("crossover_prob", _option_defaults["crossover_prob"])
-    mutation_prob = strategy_options.get("mutation_prob", _option_defaults["mutation_prob"])
-    ref_dirs_list = strategy_options.get("ref_dirs_list", _option_defaults["ref_dirs_list"])
+    pop_size, crossover_oper, crossover_prob, mutation_prob, ref_dirs_list = get_options(strategy_options, _options, unsupported=["x0"])
 
     if algo_name == "nsga3" and len(ref_dirs_list) == 0:
         ref_dirs_list = get_reference_directions("energy", len(tuning_options.objective), pop_size)
-
-    if "x0" in strategy_options:
-        raise ValueError(f"\"x0\" is not a supported option.")
 
     if crossover_oper in crossover_oper_dict:
         crossover_oper = crossover_oper_dict[crossover_oper]
@@ -92,12 +84,8 @@ def tune(
     repair = TuningParamConfigRepair()
     eliminate_duplicates = TuningParamConfigDuplicateElimination()
 
-    # algorithm_type = get_algorithm(method)
-    ref_dirs = None
-    if algo_name == "nsga3":
-        ref_dirs = ref_dirs_list
-    algo = algo(pop_size = pop_size,
-                ref_dirs = ref_dirs_list,
+    algo = algorithm(pop_size = pop_size,
+                ref_dirs = ref_dirs_list if algo_name == "nsga3" else None,
                 sampling = sampling,
                 crossover = crossover,
                 mutation = mutation,
@@ -105,8 +93,7 @@ def tune(
                 eliminate_duplicates = eliminate_duplicates,
             )
 
-    # TODO:
-    # - CostFunc throws exception when done, so isn't really needed
+    # CostFunc throws exception when done, so isn't really needed
     termination = None
     if "max_fevals" in tuning_options.strategy_options or "time_limit" in tuning_options.strategy_options:
         termination = NoTermination()
@@ -127,18 +114,14 @@ def tune(
         if tuning_options.verbose:
             print(f"Stopped because of {e}")
 
-    results = cost_func.results
-
-    if results and tuning_options.verbose:
-        print(f"{results.message=}")
-
-    return results
+    return cost_func.results
 
 
 tune.__doc__ = get_strategy_docstring("Pymoo minimize", _options)
 
 
 class TuningProblem(ElementwiseProblem):
+    """ Class used by PyMoo to wrap the objective function and calculate Pareto front. """
     def __init__(
         self,
         cost_func: CostFunc,
@@ -156,7 +139,7 @@ class TuningProblem(ElementwiseProblem):
         self.tuning_options = cost_func.tuning_options
 
     def _evaluate( self, x, out, *args, **kwargs, ):
-        # A copy of `x` is made to make sure sharing does not happen
+        # A copy of `x` is made to make sure sharing does not happen.
         F = self.cost_func(tuple(x))
         out["F"] = F
 
@@ -173,7 +156,7 @@ class TuningProblem(ElementwiseProblem):
             higher_is_better,
         )
 
-        pareto_front_list = list()
+        pareto_front_list = []
         for res in pareto_results:
             cost = util.get_result_cost(res, objectives, higher_is_better)
             pareto_front_list.append(cost)
@@ -182,6 +165,7 @@ class TuningProblem(ElementwiseProblem):
 
 
 class TuningTermination(Termination):
+    """ Class used by PyMoo to detect termination. """
     def __init__( self, tuning_options, ):
         super().__init__()
         self.tuning_options = tuning_options
@@ -192,8 +176,8 @@ class TuningTermination(Termination):
         algorithm,
     ):
         try:
-            util.check_stop_criterion(self.tuning_options)
-            print(f"progress: {len(self.tuning_options.unique_results) / self.tuning_options.max_fevals}")
+            self.tuning_options.budget.raise_exception_if_done()
+            print(f"progress: {self.tuning_options.budget.get_fraction_consumed()}")
             return 0.0
         except util.StopCriterionReached as e:
             self.terminate()
@@ -202,6 +186,7 @@ class TuningTermination(Termination):
 
 
 class TuningSearchspaceRandomSampling(Sampling):
+    """ Class used by PyMoo to generate a random sample config. """
     def __init__( self, searchspace, ):
         super().__init__()
         self.searchspace = searchspace
@@ -212,6 +197,7 @@ class TuningSearchspaceRandomSampling(Sampling):
 
 
 class TuningParamConfigNeighborhoodMutation(Mutation):
+    """ Class used by PyMoo to mutate configs. """
     def __init__(
         self,
         prob,
@@ -220,7 +206,6 @@ class TuningParamConfigNeighborhoodMutation(Mutation):
     ):
         super().__init__(
             prob = prob,
-            # prob_var = None,
             **kwargs,
         )
         self.searchspace = searchspace
@@ -243,7 +228,7 @@ class TuningParamConfigNeighborhoodMutation(Mutation):
 
 
 class TuningParamConfigRepair(Repair):
-
+    """ Class used by PyMoo to repair invalid configs. """
     def _do(
         self,
         problem: TuningProblem,
@@ -253,7 +238,7 @@ class TuningParamConfigRepair(Repair):
         for X_index in range(X.shape[0]):
             params_config_tuple = tuple(X[X_index])
             if problem.searchspace.is_param_config_valid(params_config_tuple):
-               continue
+                continue
             for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
                 neighbors_indices = problem.searchspace.get_neighbors_indices_no_cache(params_config_tuple, neighbor_method)
                 if len(neighbors_indices) > 0:
@@ -266,6 +251,6 @@ class TuningParamConfigRepair(Repair):
 
 
 class TuningParamConfigDuplicateElimination(ElementwiseDuplicateElimination):
-
+    """ Class needed by PyMoo to eliminate duplicates. """
     def is_equal(self, a, b):
         return np.all(a.X == b.X)
