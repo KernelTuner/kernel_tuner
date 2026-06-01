@@ -28,7 +28,6 @@ Before creating a pull request please ensure the following:
 * You are a human developer. We are not interested in purely AI generated code contributions.
 * You have written unit tests to test your additions and all unit tests pass (run :bash:`nox`). If you do not have the required hardware, you can run :bash:`nox -- skip-gpu`, or :bash:`skip-cuda`, :bash:`skip-hip`, :bash:`skip-opencl`.
 * The examples still work and produce the same (or better) results
-* An entry about the change or addition is created in :bash:`CHANGELOG.md`
 
 If you are in doubt on where to put your additions to the Kernel Tuner, please
 have look at the :ref:`design documentation <design documentation>`, or discuss it in the issue regarding your additions.
