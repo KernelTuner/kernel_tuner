@@ -69,8 +69,8 @@ def test_strategies(vector_add, strategy):
         filter_options["max_fevals"] = 10
 
     restrictions = [
-        "test_string == 'alg_2'", 
-        "test_bool == True", 
+        "test_string == 'alg_2'",
+        "test_bool == True",
         "test_mixed == 2.45"
     ]
 
