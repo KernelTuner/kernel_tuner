@@ -796,6 +796,7 @@ def get_total_timings(results, env, overhead_time):
         for result in results:
             if (
                 "framework_time" not in result
+                or "benchmark_time" not in result
                 or "strategy_time" not in result
                 or "compile_time" not in result
                 or "verification_time" not in result
@@ -1527,7 +1528,6 @@ def infer_args_from_cache(cache: dict) -> dict:
         problem_size = tuple(prob_size),
         arguments = [],
         tune_params = cache['tune_params'],
-        # restrictions = infer_restrictions_from_cache(cache),
     )
 
     return inferred_args

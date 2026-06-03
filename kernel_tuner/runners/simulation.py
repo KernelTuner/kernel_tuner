@@ -123,6 +123,12 @@ class SimulationRunner(Runner):
                     self.visited_results.add(key)
                     tuning_options.budget.add_evaluations(1)
 
+                # add simulated time if info is available
+                try:
+                    self.total_simulated_time += result["compile_time"] + result["verification_time"] + result["benchmark_time"]
+                except KeyError:
+                    pass
+
                 # Simulate the evaluation of this configuration
                 if tuning_options.budget.time_limit:
                     try:
