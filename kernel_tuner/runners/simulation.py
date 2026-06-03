@@ -113,7 +113,7 @@ class SimulationRunner(Runner):
                 # served from the cache by the sequential runner, the compile_time,
                 # verification_time, and benchmark_time are set to 0.
                 # This step is only performed in the simulation runner when a configuration
-                # is served from the cache beyond the first timel. That is, when the
+                # is served from the cache beyond the first time. That is, when the
                 # configuration is already counted towards the unique_results.
                 if key in self.visited_results:
                     result = util.copy_without_benchmark_timings(result)
@@ -121,19 +121,18 @@ class SimulationRunner(Runner):
                     # configuration is evaluated for the first time, print to the console
                     util.print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
                     self.visited_results.add(key)
-
-                try:
-                    self.total_simulated_time += result["compile_time"] + result["verification_time"] + result["benchmark_time"]
-                except KeyError:
-                    raise RuntimeError(
-                        "Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations"
-                    )
+                    tuning_options.budget.add_evaluations(1)
 
                 # Simulate the evaluation of this configuration
-                tuning_options.budget.add_evaluations(1)
-                tuning_options.budget.add_time(milliseconds=result["compile_time"])
-                tuning_options.budget.add_time(milliseconds=result["verification_time"])
-                tuning_options.budget.add_time(milliseconds=result["benchmark_time"])
+                if tuning_options.budget.time_limit:
+                    try:
+                        tuning_options.budget.add_time(milliseconds=result["compile_time"])
+                        tuning_options.budget.add_time(milliseconds=result["verification_time"])
+                        tuning_options.budget.add_time(milliseconds=result["benchmark_time"])
+                    except KeyError:
+                        raise RuntimeError(
+                            "Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations"
+                        )
 
                 results.append(result)
                 continue
