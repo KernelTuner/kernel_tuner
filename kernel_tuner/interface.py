@@ -834,7 +834,7 @@ def tune_kernel(
 tune_kernel.__doc__ = _tune_kernel_docstring
 
 
-def tune_cache(*,
+def tune_cache(
     cache_path,
     restrictions = None,
     **kwargs,

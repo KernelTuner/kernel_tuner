@@ -1515,10 +1515,16 @@ def infer_restrictions_from_cache(cache: dict):
 
 
 def infer_args_from_cache(cache: dict) -> dict:
+    prob_size = cache['problem_size']
+    if isinstance(prob_size, str):
+        raise ValueError("Inferring kernel arguments from cache file that used callable for problem size is not possible")
+    elif isinstance(prob_size, int):
+        prob_size = (prob_size,)
+
     inferred_args = dict(
         kernel_name = cache['kernel_name'],
         kernel_source = "",
-        problem_size = tuple(cache['problem_size']),
+        problem_size = tuple(prob_size),
         arguments = [],
         tune_params = cache['tune_params'],
         # restrictions = infer_restrictions_from_cache(cache),
