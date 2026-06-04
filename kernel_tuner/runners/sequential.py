@@ -40,17 +40,12 @@ class SequentialRunner(Runner):
         # move data to the GPU
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
-        # It is the task of the cost function to increment there counters
-        self.config_eval_count = 0
-        self.infeasable_config_eval_count = 0
-
     def get_device_info(self):
+        """ Return the backend used by this runner. """
         return self.dev
 
     def get_environment(self, tuning_options):
         env = self.dev.get_environment()
-        env["config_eval_count"] = self.config_eval_count
-        env["infeasable_config_eval_count"] = self.infeasable_config_eval_count
         return env
 
     def run(self, parameter_space, tuning_options):

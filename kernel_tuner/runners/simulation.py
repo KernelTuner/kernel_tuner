@@ -59,18 +59,13 @@ class SimulationRunner(Runner):
         self.visited_results = set()
         self.units = {}
 
-        # It is the task of the cost function to increment there counters
-        self.config_eval_count = 0
-        self.infeasable_config_eval_count = 0
-
     def get_device_info(self):
+        """ Return the backend used by this runner. """
         return self.dev
 
     def get_environment(self, tuning_options):
         env = self.dev.get_environment()
         env["simulation"] = True
-        env["config_eval_count"] = self.config_eval_count
-        env["infeasable_config_eval_count"] = self.infeasable_config_eval_count
         env["simulated_time"] = self.total_simulated_time
         return env
 
