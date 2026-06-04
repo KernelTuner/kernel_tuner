@@ -806,7 +806,8 @@ def tune_kernel(
                 keys += [objective]
                 if metrics:
                     keys += list(metrics.keys())
-                print(f"\nBEST PERFORMING CONFIGURATION FOR OBJECTIVE {objective}:")
+                if not quiet:
+                    print(f"\nBEST PERFORMING CONFIGURATION FOR OBJECTIVE {objective}:")
                 print(util.get_config_string(best_config, keys, units))
         else:
             pareto_front = util.get_pareto_results(results, objective, objective_higher_is_better)
@@ -818,7 +819,8 @@ def tune_kernel(
                 keys += list(objective)
                 if metrics:
                     keys += list(metrics.keys)
-                print(f"\nBEST PERFORMING CONFIGURATIONS FOR OBJECTIVES: {objective}:")
+                if not quiet:
+                    print(f"\nBEST PERFORMING CONFIGURATIONS FOR OBJECTIVES: {objective}:")
                 for best_config in pareto_front:
                     print(util.get_config_string(best_config, keys, units))
     elif not device_options.quiet:
