@@ -36,7 +36,7 @@ crossover_oper_dict = {
 supported_crossover_oper_names = list(crossover_oper_dict.keys())
 
 _options = {
-    "pop_size": ("Initial population size", 20),
+    "popsize": ("Initial population size", 20),
     "crossover_operator": (f"The crossover operator, can be one of {supported_crossover_oper_names}", "two-point-crossover"),
     "crossover_prob": ("Crossover probability", 1.0),
     "mutation_prob": ("Mutation probability", 0.1),
