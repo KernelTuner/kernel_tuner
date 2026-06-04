@@ -8,7 +8,7 @@ import os
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.nvcuda import CudaRuntimeObserver
 from kernel_tuner.util import SkippableFailure
-from kernel_tuner.utils.nvcuda import cuda_error_check, to_valid_nvrtc_gpu_arch_cc, find_cuda_home
+from kernel_tuner.utils.nvcuda import cuda_error_check, to_valid_nvrtc_gpu_arch_cc, find_cuda_home, _check
 
 # embedded in try block to be able to generate documentation
 # and run tests without cuda-python installed
@@ -84,6 +84,7 @@ class CudaFunctions(GPUBackend):
         cuda_error_check(err)
         err, self.end = driver.cuEventCreate(0)
         cuda_error_check(err)
+        self.green_ctx = None
 
         # default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
@@ -115,6 +116,61 @@ class CudaFunctions(GPUBackend):
                 err = driver.cuMemFree(device_memory)
                 cuda_error_check(err)
 
+
+    def set_sm_percentage(self, sm_percentage):
+        """
+        Create a CUDA green context owning ~`sm_percentage` of the device's SMs
+        and return a stream bound to it. Kernels launched on the returned stream
+        are restricted to that SM partition.
+
+        Returns: (green_ctx, stream, num_sms_assigned)
+        Requires: CUDA >= 12.4 and a GPU that supports SM partitioning.
+        """
+
+        if not 0 < sm_percentage <= 100:
+            raise ValueError("sm_percentage must be in (0, 100]")
+
+        # Cleanup old stream and green context if any
+        _check(driver.cuStreamDestroy(self.stream))
+        if self.green_ctx:
+            _check(driver.cuGreenCtxDestroy(self.green_ctx))
+
+        # Get total SMs and desired percentage
+        total_sms = _check(driver.cuDeviceGetAttribute(
+            driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, self.device))
+        want = max(1, round(total_sms * sm_percentage / 100.0))
+
+        # Full SM resource pool of the device.
+        sm_resource = _check(driver.cuDeviceGetDevResource(
+            self.device, driver.CUdevResourceType.CU_DEV_RESOURCE_TYPE_SM))
+
+        # Split off one group of at least `want` SMs. The driver rounds up to the
+        # device's partitioning granularity, so the actual count may be larger.
+        groups, _nb, _remaining = _check(driver.cuDevSmResourceSplitByCount(
+            1,            # number of groups requested
+            sm_resource,  # input resource
+            0,            # useFlags (0 = default)
+            want,         # minCount of SMs per group
+        ))
+        group = groups[0]
+        assigned = group.sm.smCount
+
+        # Descriptor -> green context.
+        desc = _check(driver.cuDevResourceGenerateDesc([group], 1))
+        green_ctx = _check(driver.cuGreenCtxCreate(
+            desc, self.device, driver.CUgreenCtxCreate_flags.CU_GREEN_CTX_DEFAULT_STREAM))
+
+        # A stream from the green context confines launches to its SMs.
+        stream = _check(driver.cuGreenCtxStreamCreate(
+            green_ctx,
+            driver.CUstream_flags.CU_STREAM_NON_BLOCKING,
+            0,  # priority
+        ))
+        self.green_ctx = green_ctx
+        self.stream = stream
+        self.assigned_sm_count = assigned
+
+
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
 
@@ -139,6 +195,7 @@ class CudaFunctions(GPUBackend):
             else:
                 gpu_args.append(arg)
         return gpu_args
+
 
     def compile(self, kernel_instance):
         """Call the CUDA compiler to compile the kernel, return the device function.
@@ -222,6 +279,9 @@ class CudaFunctions(GPUBackend):
             nvrtc.nvrtcGetProgramLog(program, log)
             print(log.decode("utf-8"))
             raise re
+
+        if "CUDA_SM_PERCENTAGE" in kernel_instance.params:
+            self.set_sm_percentage(kernel_instance.params["CUDA_SM_PERCENTAGE"])
 
         return self.func
 
