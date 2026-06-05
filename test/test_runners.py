@@ -8,7 +8,7 @@ from kernel_tuner import core, tune_kernel, util
 from kernel_tuner.interface import Options, _device_options, _kernel_options, _tuning_options
 from kernel_tuner.runners.sequential import SequentialRunner
 
-from .context import skip_if_no_pycuda
+from .context import skip_if_no_cuda
 
 cache_filename = os.path.dirname(
     os.path.realpath(__file__)) + "/test_cache_file.json"
@@ -38,7 +38,7 @@ def env():
     return ["vector_add", kernel_string, size, args, tune_params]
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_sequential_runner_alt_block_size_names(env):
 
     kernel_string = """__global__ void vector_add(float *c, float *a, float *b, int n) {
@@ -71,7 +71,7 @@ def test_sequential_runner_alt_block_size_names(env):
     assert len(result) == len(tune_params["block_dim_x"])
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_smem_args(env):
     result, _ = tune_kernel(*env,
                             smem_args=dict(size="block_size_x*4"),
@@ -86,7 +86,7 @@ def test_smem_args(env):
     assert len(result) == len(tune_params["block_size_x"])
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_build_cache(env):
     if not os.path.isfile(cache_filename):
         result, _ = tune_kernel(*env,
@@ -157,7 +157,7 @@ def test_restrictions(env):
     assert len(result) == 6
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_time_keeping(env):
     kernel_name, kernel_string, size, args, tune_params = env
     answer = [args[1] + args[2], None, None, None]
@@ -223,7 +223,7 @@ def test_random_sample(env):
         assert v['time'] > 0.0 and v['time'] < 1.0
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_interface_handles_compile_failures(env):
     kernel_name, kernel_string, size, args, tune_params = env
 
@@ -260,7 +260,7 @@ def test_interface_handles_compile_failures(env):
     assert isinstance(failed_config["time"], util.CompilationFailedConfig)
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_runner(env):
 
     kernel_name, kernel_source, problem_size, arguments, tune_params = env

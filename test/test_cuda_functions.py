@@ -102,3 +102,36 @@ def test_compile_include():
 def test_tune_kernel(env):
     result, _ = tune_kernel(*env, lang="nvcuda", verbose=True)
     assert len(result) > 0
+
+@skip_if_no_cuda
+def test_copy_constant_memory_args():
+    kernel_string = """
+    __constant__ float my_constant_data[100];
+    __global__ void copy_data_kernel(float* output) {
+        int idx = threadIdx.x + blockIdx.x * blockDim.x;
+        if (idx < 100) {
+            output[idx] = my_constant_data[idx];
+        }
+    }
+    """
+
+    kernel_name = "copy_data_kernel"
+    kernel_sources = KernelSource(kernel_name, kernel_string, "NVCUDA")
+    kernel_instance = KernelInstance(kernel_name, kernel_sources, kernel_string, [], None, None, dict(), [])
+    dev = nvcuda.CudaFunctions(0)
+    kernel = dev.compile(kernel_instance)
+
+    my_constant_data = np.full(100, 23).astype(np.float32)
+    cmem_args = {'my_constant_data': my_constant_data}
+    dev.copy_constant_memory_args(cmem_args)
+
+    output = np.full(100, 0).astype(np.float32)
+    gpu_args = dev.ready_argument_list([output])
+
+    threads = (100, 1, 1)
+    grid = (1, 1, 1)
+    dev.run_kernel(kernel, gpu_args, threads, grid)
+
+    dev.memcpy_dtoh(output, gpu_args[0])
+
+    assert (my_constant_data == output).all()
