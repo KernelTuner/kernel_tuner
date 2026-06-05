@@ -94,9 +94,9 @@ priority = "explicit"
 hip-python = { version = "^6.3.3.540.31", source = "testpypi", optional = true }  # Note: when released, switch this package to pypi and remove tool.poetry.source and move this to [project.optional-dependencies]
 
 [project.optional-dependencies]
-cuda = ["pycuda>=2025.1", "nvidia-ml-py>=12.535.108", "pynvml>=11.4.1"] # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
+cuda = ["cuda-python>=12.6.0", "nvidia-ml-py>=12.535.108", "pynvml>=11.4.1"] # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 opencl = ["pyopencl"]                                                   # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
-cuda_opencl = ["pycuda>=2024.1", "pyopencl"]                            # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
+cuda_opencl = ["cuda-python>=12.6.0", "pyopencl"]                            # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 hip = ["hip-python"]
 tutorial = ["jupyter>=1.0.0", "matplotlib>=3.5.0", "nvidia-ml-py>=12.535.108"]
 
