@@ -4,7 +4,6 @@ import re
 import numpy as np
 
 from kernel_tuner.util import StopCriterionReached
-from scipy.stats.qmc import LatinHypercube
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc
@@ -116,7 +115,7 @@ def generate_population(tune_params, max_idx, popsize, searchspace, constraint_a
     return population
 
 
-def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, CR, method, constraint_aware, verbose):
+def differential_evolution(searchspace, cost_func: CostFunc, bounds, popsize, maxiter, F, CR, method, constraint_aware, verbose):
     """
     A basic implementation of the Differential Evolution algorithm.
 
@@ -140,7 +139,7 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
     population[0] = cost_func.get_start_pos()
 
     # Calculate the initial cost for each individual in the population
-    population_cost = np.array([cost_func(ind) for ind in population])
+    population_cost = np.array(cost_func.eval_all(population))
 
     # Keep track of the best solution found so far
     best_idx = np.argmin(population_cost)
@@ -209,7 +208,7 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
         # --- c. Selection ---
 
         # Calculate the cost of the new trial vectors
-        trial_population_cost = np.array([cost_func(ind) for ind in trial_population])
+        trial_population_cost = np.array(cost_func.eval_all(trial_population))
 
         # Keep track of whether population changes over time
         no_change = True
@@ -245,7 +244,7 @@ def differential_evolution(searchspace, cost_func, bounds, popsize, maxiter, F, 
             print(f"Generation {generation + 1}, Best Cost: {best_cost:.6f}")
 
     if verbose:
-        print(f"Differential Evolution completed fevals={len(cost_func.tuning_options.unique_results)}")
+        print(f"Differential Evolution completed fevals={cost_func.get_num_unique_results()}")
 
     return {"solution": best_solution, "cost": best_cost}
 
@@ -387,12 +386,13 @@ def repair(trial_vector, searchspace):
     """
     Attempts to repair trial_vector if trial_vector is invalid
     """
-    if not searchspace.is_param_config_valid(tuple(trial_vector)):
+    trial_tuple = tuple(trial_vector)
+    if not searchspace.is_param_config_valid(trial_tuple):
         # search for valid configurations neighboring trial_vector
         for neighbor_method in ["closest-param-indices"]:
         # start from strictly-adjacent to increasingly allowing more neighbors
         # for neighbor_method in ["strictly-adjacent", "adjacent", "Hamming"]:
-            new_trial_vector = searchspace.get_random_neighbor(tuple(trial_vector), neighbor_method=neighbor_method)
+            new_trial_vector = searchspace.get_random_neighbor(trial_tuple, neighbor_method=neighbor_method)
             if new_trial_vector is not None:
                 # print(f"Differential evolution resulted in invalid config {trial_vector=}, repaired to {new_trial_vector=}")
                 return list(new_trial_vector)

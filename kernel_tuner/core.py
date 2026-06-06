@@ -7,24 +7,19 @@ from collections import namedtuple
 
 import numpy as np
 
-try:
-    import cupy as cp
-except ImportError:
-    cp = np
+def _get_cupy():
+    try:
+        import cupy as _cp
+    except ImportError:
+        return None
+    return _cp
 
 import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
-from kernel_tuner.backends.compiler import CompilerFunctions
-from kernel_tuner.backends.cupy import CupyFunctions
-from kernel_tuner.backends.hip import HipFunctions
-from kernel_tuner.backends.hypertuner import HypertunerFunctions
-from kernel_tuner.backends.nvcuda import CudaFunctions
-from kernel_tuner.backends.opencl import OpenCLFunctions
-from kernel_tuner.backends.pycuda import PyCudaFunctions
 from kernel_tuner.backends.generic_python import GenericPythonFunctions
 from kernel_tuner.kernel_sources.kernel_source import KernelSource
 from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
+from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver, OutputObserver, PrologueObserver
 from kernel_tuner.observers.tegra import TegraObserver
 from kernel_tuner.language import Language
 
@@ -37,6 +32,7 @@ try:
     from hip._util.types import DeviceArray
 except ImportError:
     DeviceArray = Exception # using Exception here as a type that will never be among kernel arguments
+
 
 _KernelInstance = namedtuple(
     "_KernelInstance",
@@ -88,6 +84,18 @@ class KernelInstance(_KernelInstance):
 # KernelSource has been moved to kernel_sources/kernel_source_str.py to support Generic Python
 
 
+def instantiate_observer(observer, args):
+    """Instantiate or build an observer from a class/factory/instance."""
+
+    if isinstance(observer, BenchmarkObserver):
+        return observer
+    elif callable(observer):
+        # Check again if BenchmarkObserver
+        return instantiate_observer(observer(args), args)
+    else:
+        raise TypeError(f"Invalid observer: {observer!r} does not extend BenchmarkObserver")
+
+
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner."""
 
@@ -136,7 +144,17 @@ class DeviceInterface(object):
 
         logging.debug("DeviceInterface instantiated, lang=%s", lang)
 
+        
+        # Ensure observers is a list
+        observers = observers or []
+
+        # Observers can either be an object that extends BenchmarkObserver or
+        # lambda function that returns such an object.
+        observer_args = dict(device=device, platform=platform, compiler=compiler, lang=lang)
+        observers = [instantiate_observer(ob, observer_args) for ob in observers]
+
         if lang == Language.CUDA:
+            from kernel_tuner.backends.pycuda import PyCudaFunctions
             dev = PyCudaFunctions(
                 device,
                 compiler_options=compiler_options,
@@ -144,6 +162,7 @@ class DeviceInterface(object):
                 observers=observers,
             )
         elif lang == Language.CUPY:
+            from kernel_tuner.backends.cupy import CupyFunctions
             dev = CupyFunctions(
                 device,
                 compiler_options=compiler_options,
@@ -151,6 +170,7 @@ class DeviceInterface(object):
                 observers=observers,
             )
         elif lang == Language.NVCUDA:
+            from kernel_tuner.backends.nvcuda import CudaFunctions
             dev = CudaFunctions(
                 device,
                 compiler_options=compiler_options,
@@ -158,6 +178,7 @@ class DeviceInterface(object):
                 observers=observers,
             )
         elif lang == Language.OPENCL:
+            from kernel_tuner.backends.opencl import OpenCLFunctions
             dev = OpenCLFunctions(
                 device,
                 platform,
@@ -166,6 +187,7 @@ class DeviceInterface(object):
                 observers=observers,
             )
         elif lang == Language.C or lang == Language.FORTRAN:
+            from kernel_tuner.backends.compiler import CompilerFunctions
             dev = CompilerFunctions(
                 compiler=compiler,
                 compiler_options=compiler_options,
@@ -173,6 +195,7 @@ class DeviceInterface(object):
                 observers=observers,
             )
         elif lang == Language.HIP:
+            from kernel_tuner.backends.hip import HipFunctions
             dev = HipFunctions(
                 device,
                 compiler_options=compiler_options,
@@ -180,6 +203,7 @@ class DeviceInterface(object):
                 observers=observers,
             )
         elif lang == Language.HYPERTUNER:
+            from kernel_tuner.backends.hypertuner import HypertunerFunctions
             dev = HypertunerFunctions(
                 iterations=iterations,
                 compiler_options=compiler_options
@@ -205,8 +229,12 @@ class DeviceInterface(object):
         self.output_observers = []
         self.prologue_observers = []
         if observers:
+            try:
+                from kernel_tuner.observers.nvml import NVMLObserver as _NVMLObserver
+            except ImportError:
+                _NVMLObserver = None
             for obs in observers:
-                if isinstance(obs, NVMLObserver):
+                if _NVMLObserver is not None and isinstance(obs, _NVMLObserver):
                     self.nvml = obs.nvml
                     self.use_nvml = True
                 if isinstance(obs, TegraObserver):
@@ -380,7 +408,12 @@ class DeviceInterface(object):
 
             should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
         else:
-            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) for arg in instance.arguments]
+            cp = _get_cupy()
+            cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+            should_sync = [
+                isinstance(arg, (np.ndarray, torch.Tensor, DeviceArray) + cupy_ndarray)
+                for arg in instance.arguments
+            ]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
         # by earlier kernel runs
@@ -627,7 +660,7 @@ class DeviceInterface(object):
         name = instance_data.kernel_name
         kernel_string=instance_data.kernel_str
         # check for templated kernel
-        if kernel_source.lang in ["CUDA", "NVCUDA", "HIP"] and "<" in name and ">" in name:
+        if kernel_source.lang in ["CUDA"] and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         # Preprocess GPU arguments. Require for handling `Tunable` arguments
@@ -722,8 +755,10 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     # for each element in the argument list, check if the types match
     for i, arg in enumerate(instance.arguments):
         if answer[i] is not None:  # skip None elements in the answer list
-            if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(
-                arg, (np.ndarray, cp.ndarray)
+            cp = _get_cupy()
+            cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+            if isinstance(answer[i], (np.ndarray,) + cupy_ndarray) and isinstance(
+                arg, (np.ndarray,) + cupy_ndarray
             ):
                 if not np.can_cast(arg.dtype, answer[i].dtype):
                     raise TypeError(
@@ -772,7 +807,9 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                     )
             else:
                 # either answer[i] and argument have different types or answer[i] is not a numpy type
-                if not isinstance(answer[i], (np.ndarray, cp.ndarray, torch.Tensor)) or not isinstance(
+                cp = _get_cupy()
+                cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+                if not isinstance(answer[i], (np.ndarray, torch.Tensor) + cupy_ndarray) or not isinstance(
                     answer[i], np.number
                 ):
                     raise TypeError(
@@ -797,7 +834,8 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
         if expected is not None:
             result = _ravel(result_host[i])
             expected = _flatten(expected)
-            if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
+            cp = _get_cupy()
+            if cp is not None and any([isinstance(array, cp.ndarray) for array in [expected, result]]):
                 output_test = cp.allclose(expected, result, atol=atol)
             elif isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
                 output_test = torch.allclose(expected, result, atol=atol)

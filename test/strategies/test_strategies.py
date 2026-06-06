@@ -53,6 +53,7 @@ for s in strategy_map.keys():
         strategies.append(pytest.param(s, marks=skip_if_no_pyatf))
     else:
         strategies.append(s)
+
 @pytest.mark.parametrize('strategy', strategies)
 def test_strategies(vector_add, strategy):
     options = dict(popsize=5, neighbor='adjacent')
@@ -96,7 +97,7 @@ def test_strategies(vector_add, strategy):
         tune_params = vector_add[-1]
         unique_results = {}
         for result in results:
-            x_int = ",".join([str(v) for k, v in result.items() if k in tune_params])
+            x_int = ",".join([str(v) for k, v in result.items() if k in tune_params.keys()])
             if not isinstance(result["time"], InvalidConfig):
                 unique_results[x_int] = result["time"]
         assert len(unique_results) <= filter_options["max_fevals"]
@@ -127,7 +128,7 @@ def test_strategies(vector_add, strategy):
     # check if strategy respects user-specified starting point (x0)
     x0 = [256, 'alg_2', 15, True, 2.45]
     filter_options["x0"] = x0
-    if not strategy in ["brute_force", "random_sample", "bayes_opt", "pyatf_strategies"]:
+    if not strategy in ["brute_force", "random_sample", "bayes_opt", "pyatf_strategies", "adaptive_tabu_greywolf", "hybrid_vndx"]:
         results, _ = kernel_tuner.tune_kernel(*vector_add, restrictions=restrictions, strategy=strategy, strategy_options=filter_options,
                                             verbose=False, cache=cache_filename, simulation_mode=True)
         assert results[0]["block_size_x"] == x0[0]

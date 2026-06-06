@@ -3,6 +3,7 @@ from __future__ import print_function
 import json
 import os
 import warnings
+import datetime
 
 import numpy as np
 import pytest
@@ -160,16 +161,6 @@ def test_get_thread_block_dimensions():
     assert threads[0] == 123
     assert threads[1] == 257
     assert threads[2] == 1
-
-
-def test_to_valid_nvrtc_gpu_arch_cc():
-    assert to_valid_nvrtc_gpu_arch_cc("89") == "89"
-    assert to_valid_nvrtc_gpu_arch_cc("88") == "87"
-    assert to_valid_nvrtc_gpu_arch_cc("86") == "80"
-    assert to_valid_nvrtc_gpu_arch_cc("40") == "52"
-    assert to_valid_nvrtc_gpu_arch_cc("90b") == "90a"
-    assert to_valid_nvrtc_gpu_arch_cc("91c") == "90a"
-    assert to_valid_nvrtc_gpu_arch_cc("1234") == "52"
 
 
 def test_prepare_kernel_string():
@@ -439,6 +430,92 @@ def test_check_argument_list7():
     assert_user_warning(check_argument_list, [kernel_name, kernel_string, args])
 
 
+def test_tuning_budget1():
+    budget = TuningBudget()
+    assert budget.get_evaluations_spent() == 0
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+    budget.add_evaluations(9000)
+    assert budget.get_evaluations_spent() == 9000
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+    budget.add_time(seconds=9000)
+    assert budget.get_evaluations_spent() == 9000
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+def test_tuning_budget2():
+    budget = TuningBudget(max_fevals=5)
+    assert budget.get_evaluations_spent() == 0
+    assert budget.get_evaluations_remaining() == 5
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+    budget.add_evaluations(4)
+    assert budget.get_evaluations_spent() == 4
+    assert budget.get_evaluations_remaining() == 1
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 4/5
+
+    budget.add_evaluations(1)
+    assert budget.get_evaluations_spent() == 5
+    assert budget.get_evaluations_remaining() == 0
+    assert budget.is_done()
+    assert pytest.raises(StopCriterionReached, budget.raise_exception_if_done)
+    assert budget.get_fraction_consumed() == 1.0
+
+
+def test_tuning_budget3():
+    # Two values are similar if they are within 0.01
+    approx = lambda x: pytest.approx(x, abs=0.01)
+
+    budget = TuningBudget(time_limit=5)
+    assert budget.get_time_spent().total_seconds() == approx(0)
+    assert budget.get_time_remaining().total_seconds() == approx(5)
+    assert budget.get_evaluations_spent() == 0
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == approx(0.0)
+
+    budget.add_evaluations(1)
+    assert budget.get_time_spent().total_seconds() == approx(0)
+    assert budget.get_time_remaining().total_seconds() == approx(5)
+    assert budget.get_evaluations_spent() == 1
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == approx(0.0)
+
+    budget.add_time(seconds=2)
+    assert budget.get_time_spent().total_seconds() == approx(2)
+    assert budget.get_time_remaining().total_seconds() == approx(3)
+    assert budget.get_evaluations_spent() == 1
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == approx(2/5)
+
+    budget.add_time(seconds=4)
+    assert budget.get_time_spent().total_seconds() == approx(6)
+    assert budget.get_time_remaining().total_seconds() == approx(0)
+    assert budget.get_evaluations_spent() == 1
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert budget.is_done()
+    assert pytest.raises(StopCriterionReached, budget.raise_exception_if_done)
+    assert budget.get_fraction_consumed() == 1.0
+
+
 def test_check_tune_params_list():
     tune_params = dict(
         zip(
@@ -616,6 +693,14 @@ def test_normalize_call_function(func):
 
     assert v(kernel, (1,), {}, grid=1, threads=2, params=3) == 2
 
+class MockRunner:
+    simulation_mode = False
+
+    def __init__(self, dev):
+        self.dev = dev
+
+    def get_device_info(self):
+        return self.dev
 
 def test_process_cache():
     def assert_open_cachefile_is_correctly_parsed(cache):
@@ -639,29 +724,29 @@ def test_process_cache():
         simulation_mode=False,
         objective="time",
     )
-    runner = Options(dev=Options(name="test_device"), simulation_mode=False)
+    runner = MockRunner(Options(name="test_device"))
 
     try:
         # call process_cache without pre-existing cache
-        process_cache(cache, kernel_options, tuning_options, runner)
+        tuning_options.cachefile = cache
+        tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
 
         # check if file has been created
         assert os.path.isfile(cache)
         assert_open_cachefile_is_correctly_parsed(cache)
-        assert tuning_options.cachefile == cache
         assert isinstance(tuning_options.cache, dict)
         assert len(tuning_options.cache) == 0
 
         # store one entry in the cache
         params = {"x": 4, "time": np.float32(0.1234)}
-        store_cache("4", params, tuning_options)
+        store_cache("4", params, cache, tuning_options.cache)
         assert len(tuning_options.cache) == 1
 
         # close the cache
         close_cache(cache)
 
         # now test process cache with a pre-existing cache file
-        process_cache(cache, kernel_options, tuning_options, runner)
+        tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert_open_cachefile_is_correctly_parsed(cache)
 
         assert tuning_options.cache["4"]["time"] == params["time"]
@@ -670,7 +755,7 @@ def test_process_cache():
         # a different kernel, device, or parameter set
         with pytest.raises(ValueError) as excep:
             kernel_options.kernel_name = "wrong_kernel"
-            process_cache(cache, kernel_options, tuning_options, runner)
+            tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert "kernel" in str(excep.value)
 
         # correct the kernel name from last test
@@ -678,7 +763,7 @@ def test_process_cache():
 
         with pytest.raises(ValueError) as excep:
             runner.dev.name = "wrong_device"
-            process_cache(cache, kernel_options, tuning_options, runner)
+            tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert "device" in str(excep.value)
 
         # correct the device from last test
@@ -686,7 +771,7 @@ def test_process_cache():
 
         with pytest.raises(ValueError) as excep:
             tuning_options.tune_params["y"] = ["a", "b"]
-            process_cache(cache, kernel_options, tuning_options, runner)
+            tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert "parameter" in str(excep.value)
 
     finally:

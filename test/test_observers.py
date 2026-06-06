@@ -8,6 +8,8 @@ from kernel_tuner.observers.register import RegisterObserver
 from .context import (
     skip_if_no_cuda,
     skip_if_no_cupy,
+    skip_if_no_gcc,
+    skip_if_no_openmp,
     skip_if_no_opencl,
     skip_if_no_pycuda,
     skip_if_no_hip,
@@ -15,6 +17,7 @@ from .context import (
 )
 from .test_hip_functions import env as env_hip  # noqa: F401
 from .test_opencl_functions import env as env_opencl  # noqa: F401
+from .test_compiler_functions import env as env_compiler  # noqa: F401
 from .test_runners import env  # noqa: F401
 
 
@@ -42,6 +45,21 @@ def test_custom_observer(env):
 
     assert "name" in result[0]
     assert len(result[0]["name"]) > 0
+
+@skip_if_no_openmp
+@skip_if_no_gcc
+def test_lambda_observer(env_compiler):
+    class MyObserver(BenchmarkObserver):
+        def __init__(self, args):
+            self.observer_args = args
+
+        def get_results(self):
+            return {"observer_args": self.observer_args}
+        
+    result, _ = kernel_tuner.tune_kernel(*env_compiler, observers=[lambda args: MyObserver(args)], compiler_options=["-fopenmp"])
+
+    # Check if the observer has correctly received the lang option
+    assert result[0]["observer_args"]["lang"] == "C"
 
 @skip_if_no_pycuda
 def test_register_observer_pycuda(env):

@@ -29,15 +29,14 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     #while searching
     while fevals < max_fevals:
         try:
-            base_hillclimb(candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=randomize, order=order)
+            base_hillclimb(candidate, neighbor, max_fevals, searchspace, cost_func, restart=restart, randomize=randomize, order=order)
         except StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)
             return cost_func.results
 
         candidate = searchspace.get_random_sample(1)[0]
-
-        fevals = len(tuning_options.unique_results)
+        fevals = cost_func.get_num_unique_results()
 
     return cost_func.results
 

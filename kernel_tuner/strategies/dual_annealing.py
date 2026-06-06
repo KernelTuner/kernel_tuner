@@ -1,5 +1,6 @@
 """The strategy that uses the dual annealing optimization method."""
 import scipy.optimize
+import numpy as np
 
 from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
@@ -16,7 +17,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     method, max_fevals = common.get_options(tuning_options.strategy_options, _options)
 
     #scale variables in x to make 'eps' relevant for multiple variables
-    cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
+    cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True, invalid_value=np.inf)
 
     bounds, x0, _ = cost_func.get_bounds_x0_eps()
 
