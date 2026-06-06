@@ -236,10 +236,10 @@ def tune_basic(M, N, K):
     ]
 
     tune_params = dict()
-    tune_params["BLOCK_SIZE_M"] = [2**i for i in range(1, 10)]
-    tune_params["BLOCK_SIZE_N"] = [2**i for i in range(1, 10)]
-    tune_params["BLOCK_SIZE_K"] = [2**i for i in range(4, 10)] # tl.dot requires K >= 16
-    tune_params["num_warps"] = [1, 2, 4, 8, 16, 32]
+    tune_params["BLOCK_SIZE_M"] = [2**i for i in range(5, 9)]
+    tune_params["BLOCK_SIZE_N"] = [2**i for i in range(5, 9)]
+    tune_params["BLOCK_SIZE_K"] = [2**i for i in range(4, 8)] 
+    tune_params["num_warps"] = [2, 4, 8, 16]
     tune_params["num_stages"] = [1, 2, 3, 4, 5]
 
     results, env = tune_kernel(
@@ -274,12 +274,15 @@ def tune_opt(M, N, K):
     ]
 
     tune_params = dict()
-    tune_params["BLOCK_SIZE_M"] = [2**i for i in range(1, 10)]
-    tune_params["BLOCK_SIZE_N"] = [2**i for i in range(1, 10)]
-    tune_params["BLOCK_SIZE_K"] = [2**i for i in range(4, 10)] # tl.dot requires K >= 16
-    tune_params["GROUP_SIZE_M"] = [1, 2, 4, 8, 16, 32, 64]
-    tune_params["num_warps"] = [1, 2, 4, 8, 16, 32]
+    tune_params["BLOCK_SIZE_M"] = [2**i for i in range(5, 9)]
+    tune_params["BLOCK_SIZE_N"] = [2**i for i in range(5, 9)]
+    tune_params["BLOCK_SIZE_K"] = [2**i for i in range(4, 8)] 
+    tune_params["GROUP_SIZE_M"] = [4, 6, 8, 10]
+    tune_params["num_warps"] = [2, 4, 8, 16]
     tune_params["num_stages"] = [1, 2, 3, 4, 5]
+    tune_params["M_dim"] = [M]
+
+    restrictions = ["GROUP_SIZE_M * BLOCK_SIZE_M < M_dim"] # Otherwise grouped ordering has no effect
 
     results, env = tune_kernel(
         kernel_name="matmul_opt",
@@ -292,6 +295,7 @@ def tune_opt(M, N, K):
         atol=M * 2**(-11),
         block_size_names = ["BLOCK_SIZE_M", "BLOCK_SIZE_M"],
         grid_div_x = ["BLOCK_SIZE_M", "BLOCK_SIZE_N"],
+        restrictions = restrictions,
         strategy = "bayes_opt",
         strategy_options = {"max_fevals": 100},
         call_function=call_triton,

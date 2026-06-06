@@ -24,12 +24,8 @@ class MatmulBasic(tilus.Script):
 
     def __call__(
         self,
-        m_size: int32,  # the size of the m dimension of the input matrix A and output matrix C
-        n_size: int,  # the size of the n dimension of the input matrix B and output matrix C
-        k_size: int,  # the size of the k dimension of the input matrix A and B
-        a_ptr: ~float16,  # the pointer to the input matrix A, which is a 2D tensor of shape [m_size, k_size]
-        b_ptr: ~float16,  # the pointer to the input matrix B, which is a 2D tensor of shape [k_size, n_size]
-        c_ptr: ~float16,  # the pointer to the output matrix C, which is a 2D tensor of shape [m_size, n_size]
+        m_size: int32, n_size: int, k_size: int, # Matrix dimensions 
+        a_ptr: ~float16, b_ptr: ~float16, c_ptr: ~float16, # Matrix pointers 
     ):
         self.attrs.blocks = [
             cdiv(m_size, self.block_m),  # the x dimension size of the grid
@@ -95,12 +91,8 @@ class MatmulOpt(tilus.Script):
 
     def __call__(
         self,
-        m_size: int32,
-        n_size: int,
-        k_size: int,
-        a_ptr: ~float16,
-        b_ptr: ~float16,
-        c_ptr: ~float16,
+        m_size: int32, n_size: int, k_size: int,
+        a_ptr: ~float16, b_ptr: ~float16, c_ptr: ~float16,
     ):
         self.attrs.blocks = [cdiv(m_size, self.block_m), cdiv(n_size, self.block_n)]
         self.attrs.warps = self.num_warps
@@ -176,7 +168,7 @@ def run_basic(M, N, K):
     print("Succes")
 
 
-def run_optmized(M, N, K):
+def run_optimized(M, N, K):
     A = torch.randn(M, K, device="cuda", dtype=torch.float16)
     B = torch.randn(K, N, device="cuda", dtype=torch.float16)
     C = torch.empty((M, N), device='cuda', dtype=torch.float16)
@@ -203,9 +195,9 @@ def tune_basic(M, N, K):
     args = [M, N, K, A, B, C]
 
     tune_params = dict()
-    tune_params["block_m"] = [16, 32, 64, 128]
-    tune_params["block_n"] = [16, 32, 64, 128]
-    tune_params["block_k"] = [16, 32, 64, 128] 
+    tune_params["block_m"] = [2**i for i in range(5, 9)]
+    tune_params["block_n"] = [2**i for i in range(5, 9)]
+    tune_params["block_k"] = [2**i for i in range(4, 8)]
     tune_params["num_warps"] = [2, 4, 8, 16]
 
 
@@ -235,11 +227,11 @@ def tune_opt(M, N, K):
     args = [M, N, K, A, B, C]
 
     tune_params = dict()
-    tune_params["block_m"] = [16, 32, 64, 128, 256]
-    tune_params["block_n"] = [16, 32, 64, 128, 256]
-    tune_params["block_k"] = [16, 32, 64, 128] 
+    tune_params["block_m"] = [2**i for i in range(5, 9)]
+    tune_params["block_n"] = [2**i for i in range(5, 9)]
+    tune_params["block_k"] = [2**i for i in range(4, 8)]
     tune_params["num_warps"] = [2, 4, 8, 16]
-    tune_params["num_stages"] = [2, 3, 4, 5, 6]
+    tune_params["num_stages"] = [2, 3, 4, 5]
 
     # Shared memory restriction
     restrictions = ["2 * num_stages * block_k * (block_m + block_n) <= 49152"]
@@ -268,8 +260,8 @@ if __name__ == "__main__":
     #M, N, K = 8192, 8192, 8192
     #run_basic(M, N, K)
 
-    run_optmized(M, N, K)
+    #run_optmized(M, N, K)
   
-    #tune_basic(M, N, K)
+    tune_basic(M, N, K)
 
     #tune_opt(M, N, K)

@@ -15,14 +15,7 @@ from examples.generic_python.call_functions import call_cute
 ## Basic Matmul ================================================================
 
 @cute.kernel
-def naive_matmul_kernel(
-    gA: cute.Tensor,
-    gB: cute.Tensor,
-    gC: cute.Tensor,
-    M: int,
-    K: int,
-    N: int,
-):
+def naive_matmul_kernel(gA: cute.Tensor, gB: cute.Tensor, gC: cute.Tensor, M: int, K: int, N: int):
     tx, ty, _ = cute.arch.thread_idx()
     bx, by, _ = cute.arch.block_idx()
     bdx, bdy, _ = cute.arch.block_dim()
@@ -95,12 +88,21 @@ def tune_naive_matmul(M, N, K):
     tune_params = dict()
     tune_params["block_size_x"] = [2**i for i in range(1, 10)]
     tune_params["block_size_y"] = [2**i for i in range(1, 10)]
-    restrictions = ["block_size_x * block_size_y <= 1024"]
+    restrictions = ["block_size_x * block_size_y >= 32, block_size_x * block_size_y <= 1024"]
 
     results, env = tune_kernel("matmul", __file__, size, args, tune_params, lang="generic_python", 
         call_function=call_cute, answer=answer,  atol=M * 2 **(-11), restrictions=restrictions, verbose=False)
 
 
+
+# This kernel is copied from the CuTe DSL project:
+# https://github.com/NVIDIA/cutlass/blob/main/examples/python/CuTeDSL/ampere/tensorop_gemm.py
+#
+# Original example: tensorop_gemm.py
+# Copyright (c) 2025 - 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+#
+# Modifications in file:
+# - Tuning paramters made more explicit
 
 ## Optimized matmul ==========================================================
 # Copyright (c) 2025 - 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.

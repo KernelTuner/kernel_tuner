@@ -40,11 +40,16 @@ def matmul_basic(M:int, N:int, K:int, block_M:int, block_N:int, block_K:int, dty
 
 
 
-
-# https://github.com/tile-ai/tilelang/tree/main/examples/gemm
-# num_threads and num_stages were added as metaparameters to make it possible to compare the built-in tuner
-# with Kernel Tuner.
-# Removed annotated memory layout for tiles A and B
+# This kernel is copied from the TileLang project:
+# https://github.com/tile-ai/tilelang/tree/main/examples/gemm/example_gemm.py
+#
+# Original example: example_gemm.py
+# Copyright (c) the TileLang authors
+#
+# Modifications in file:
+# - num_threads and num_stages added as metaparameters
+# - Removed annotated memory layout for tiles A and B
+# - dummy parameter to trigger fresh compilation when timing repeated tuning
 @tilelang.jit
 def matmul_opt(M, N, K, block_M, block_N, block_K, num_threads=128, num_stages=3, dummy=0, dtype=T.float16, accum_dtype=T.float):
     @T.prim_func
@@ -60,7 +65,8 @@ def matmul_opt(M, N, K, block_M, block_N, block_K, num_threads=128, num_stages=3
             C_local  = T.alloc_fragment((block_M, block_N), accum_dtype)
 
             # Enable swizzle-based rasterization for better L2 locality
-            T.use_swizzle(panel_size=10, enable=True)
+            panel_size = 10
+            T.use_swizzle(panel_size=panel_size, enable=True)
 
             # Clear the local accumulation buffer
             T.clear(C_local)
@@ -84,7 +90,7 @@ def matmul_opt(M, N, K, block_M, block_N, block_K, num_threads=128, num_stages=3
 
 
 
-# TODO
+
 def get_configs(kt=False):
     """
     Generate a list of kernel tuning configuration dictionaries for a tiled matrix-multiply.
@@ -94,30 +100,22 @@ def get_configs(kt=False):
         List[dict]: A list of configuration dictionaries 
     """
     
-    '''
-    block_M = [64, 128, 256]
-    block_N = [64, 128, 256]
-    block_K = [32, 64]
-    num_stages = [0, 1, 2, 3]
-    thread_num = [128, 256]
-    enable_rasterization = [True, False]
-    '''
+    block_M = [32, 64, 128, 256]
+    block_N = [32, 64, 128, 256]
+    block_K = [16, 32, 64, 128]
+    num_threads = [256]#[64, 128, 256, 512]
+    num_stages = [3]#[0, 1, 2, 3, 4]
+    panel_size = [10]#[4, 6, 8, 10]
 
-    block_M = [64]
-    block_N = [64]
-    block_K = [32, 64]
-    num_stages = [0, 3]
-    thread_num = [128]
-    enable_rasterization = [True]
 
     _configs = list(
         itertools.product(
             block_M,
             block_N,
             block_K,
+            num_threads,
             num_stages,
-            thread_num,
-            enable_rasterization,
+            panel_size,
         )
     )
 
@@ -127,8 +125,8 @@ def get_configs(kt=False):
             "block_N": block_N,
             "block_K": block_K,
             "num_stages": num_stages,
-            "thread_num": thread_num,
-            "enable_rasteration": enable_rasterization,  
+            "num_threads": num_threads,
+            "panel_size": panel_size,
         }
     else:
         configs = [
@@ -136,9 +134,9 @@ def get_configs(kt=False):
                 "block_M": c[0],
                 "block_N": c[1],
                 "block_K": c[2],
-                "num_stages": c[3],
-                "thread_num": c[4],
-                "enable_rasteration": c[5],  # keep param name for backward-compat
+                "num_threads": c[3],
+                "num_stages": c[4],
+                "panel_size": c[5],
             }
             for c in _configs
         ]
@@ -146,58 +144,45 @@ def get_configs(kt=False):
 
 
 
-# TODO
+# For autotuning experiment
 # https://github.com/tile-ai/tilelang/blob/main/examples/gemm/example_gemm_autotune.py
-# changed gemm_autotune to gemm
-# originally, B was transposed. I changed this so the kernel input is the same as in other languages.
-@tilelang.autotune(configs=get_configs())
+@tilelang.autotune(configs=get_configs(), warmup=1, rep=32)
 @tilelang.jit
-def matmul_opt_autotune(M, N, K, dummy, block_M, block_N, block_K, num_stages, thread_num, enable_rasteration, dtype=T.float16, accum_dtype=T.float32):
+def matmul_opt_autotune(M, N, K, block_M, block_N, block_K, num_threads=128, num_stages=3, panel_size=10, dummy=0, dtype=T.float16, accum_dtype=T.float):
     @T.prim_func
-    def gemm(
+    def main(
         A: T.Tensor((M, K), dtype),
-        B: T.Tensor((N, K), dtype),
+        B: T.Tensor((K, N), dtype),
         C: T.Tensor((M, N), dtype),
     ):
-        with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=thread_num) as (bx, by):
+        with T.Kernel(T.ceildiv(N, block_N), T.ceildiv(M, block_M), threads=num_threads) as (bx, by):
+            # Allocate shared and local fragments
             A_shared = T.alloc_shared((block_M, block_K), dtype)
-            B_shared = T.alloc_shared((block_N, block_K), dtype)
-            C_local = T.alloc_fragment((block_M, block_N), accum_dtype)
-            C_shared = T.alloc_shared((block_M, block_N), dtype)
-            T.use_swizzle(panel_size=10, enable=enable_rasteration)
+            B_shared = T.alloc_shared((block_K, block_N), dtype)
+            C_local  = T.alloc_fragment((block_M, block_N), accum_dtype)
+
+            # Enable swizzle-based rasterization for better L2 locality
+            T.use_swizzle(panel_size=panel_size, enable=True)
+
+            # Clear the local accumulation buffer
             T.clear(C_local)
-            for k in T.Pipelined(T.ceildiv(K, block_K), num_stages=num_stages):
-                T.copy(A[by * block_M, k * block_K], A_shared)
-                T.copy(B[bx * block_N, k * block_K], B_shared)
-                T.gemm(
-                    A_shared,
-                    B_shared,
-                    C_local,
-                    transpose_B=True,
-                )
-            T.copy(C_local, C_shared)
-            T.copy(C_shared, C[by * block_M, bx * block_N])
 
-    return gemm
+            # Pipelined iteration over K dimension
+            for idx in T.Pipelined(T.ceildiv(K, block_K), num_stages=num_stages):
+                # Copy tile of A
+                T.copy(A[by * block_M, idx * block_K], A_shared)
 
+                # Parallel copy tile of B
+                for ko, j in T.Parallel(block_K, block_N):
+                    B_shared[ko, j] = B[idx * block_K + ko, bx * block_N + j]
 
+                # Perform local GEMM on the shared-memory tiles
+                T.gemm(A_shared, B_shared, C_local)
 
-# DEZE mag denk ik weg
-def main():
-    kernel = matmul_opt_autotune(1024, 1024, 1024)
-    import torch
+            # Copy the result tile back
+            T.copy(C_local, C[by * block_M, bx * block_N])
 
-    a = torch.randn(1024, 1024).cuda().half()
-    b = torch.randn(1024, 1024).cuda().half()
-    c = torch.empty((1024, 1024), device='cuda', dtype=torch.float16)
-
-    kernel(a, b, c)
-
-    ref_c = a @ b
-
-    torch.testing.assert_close(c, ref_c, rtol=1e-2, atol=1e-2)
-    print("All check passed.")
-
+    return main
 
 
 
@@ -254,11 +239,11 @@ def tune_basic(M, N, K):
     args = [A, B, C]
 
     tune_params = dict()
-    tune_params["block_M"] = [2**i for i in range(4, 10)]
-    tune_params["block_N"] = [2**i for i in range(4, 10)]
-    tune_params["block_K"] = [2**i for i in range(4, 10)] 
-    tune_params["num_threads"] = [2**i for i in range(5, 11)]
-    tune_params["num_stages"] = [1, 2, 3, 4, 5]
+    tune_params["block_M"] = [2**i for i in range(5, 9)]
+    tune_params["block_N"] = [2**i for i in range(5, 9)]
+    tune_params["block_K"] = [2**i for i in range(4, 8)] 
+    tune_params["num_threads"] = [64, 128, 256, 512]
+    tune_params["num_stages"] = [0, 1, 2, 3, 4]
     tune_params["M"] = [M]
     tune_params["N"] = [N]
     tune_params["K"] = [K]
@@ -295,11 +280,12 @@ def tune_opt(M, N, K):
     args = [A, B, C]
 
     tune_params = dict()
-    tune_params["block_M"] = [2**i for i in range(4, 10)]
-    tune_params["block_N"] = [2**i for i in range(4, 10)]
-    tune_params["block_K"] = [2**i for i in range(4, 10)] 
-    tune_params["num_threads"] = [2**i for i in range(5, 11)]
-    tune_params["num_stages"] = [1, 2, 3, 4, 5]
+    tune_params["block_M"] = [2**i for i in range(5, 9)]
+    tune_params["block_N"] = [2**i for i in range(5, 9)]
+    tune_params["block_K"] = [2**i for i in range(4, 8)] 
+    tune_params["num_threads"] = [64, 128, 256, 512]
+    tune_params["num_stages"] = [0, 1, 2, 3, 4]
+    tune_params["panel_size"] = [4, 6, 8, 10]
     tune_params["M"] = [M]
     tune_params["N"] = [N]
     tune_params["K"] = [K]
@@ -332,7 +318,7 @@ if __name__ == "__main__":
     #run_basic(M, N, K)
     #run_opt(M, N, K)
 
-    #tune_basic(M, N, K)
-    tune_opt(M, N, K)
+    tune_basic(M, N, K)
+    #tune_opt(M, N, K)
 
 

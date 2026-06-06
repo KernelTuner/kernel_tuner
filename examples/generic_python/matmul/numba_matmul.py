@@ -152,9 +152,8 @@ def run_optimized(M, N, K):
     )
 
     # launch
-    for i in range(10000):
-        optimized_matmul[blocks_per_grid, threads_per_block](M, N, K, dA, dB, dC)
-        cuda.synchronize()
+    optimized_matmul[blocks_per_grid, threads_per_block](M, N, K, dA, dB, dC)
+    cuda.synchronize()
 
     # copy result back
     C_result = dC.copy_to_host()
