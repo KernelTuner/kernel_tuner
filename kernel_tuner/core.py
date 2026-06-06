@@ -400,6 +400,7 @@ class DeviceInterface(object):
     ):
         """Runs the kernel once and checks the result against answer."""
         logging.debug("check_kernel_output")
+        cp = _get_cupy()
 
         # if not using custom verify function, check if the length is the same
         if answer:
@@ -408,7 +409,6 @@ class DeviceInterface(object):
 
             should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
         else:
-            cp = _get_cupy()
             cupy_ndarray = (cp.ndarray,) if cp is not None else ()
             should_sync = [
                 isinstance(arg, (np.ndarray, torch.Tensor, DeviceArray) + cupy_ndarray)
