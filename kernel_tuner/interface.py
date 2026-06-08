@@ -808,7 +808,7 @@ def tune_kernel(
                     keys += list(metrics.keys())
                 if not quiet:
                     print(f"\nBEST PERFORMING CONFIGURATION FOR OBJECTIVE {objective}:")
-                print(util.get_config_string(best_config, keys, units))
+                    print(util.get_config_string(best_config, keys, units))
         else:
             pareto_front = util.get_pareto_results(results, objective, objective_higher_is_better)
             # add the best configuration to env
@@ -818,11 +818,11 @@ def tune_kernel(
                 keys = list(tune_params.keys())
                 keys += list(objective)
                 if metrics:
-                    keys += list(metrics.keys)
+                    keys += list(metrics.keys())
                 if not quiet:
                     print(f"\nBEST PERFORMING CONFIGURATIONS FOR OBJECTIVES: {objective}:")
-                for best_config in pareto_front:
-                    print(util.get_config_string(best_config, keys, units))
+                    for best_config in pareto_front:
+                        print(util.get_config_string(best_config, keys, units))
     elif not device_options.quiet:
         print("no results to report")
 
