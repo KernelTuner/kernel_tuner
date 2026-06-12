@@ -1320,6 +1320,24 @@ of the grid</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.backends.nvcuda.CudaFunctions.set_sm_percentage">
+<span class="sig-name descname"><span class="pre">set_sm_percentage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sm_percentage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.nvcuda.CudaFunctions.set_sm_percentage" title="Link to this definition">¶</a></dt>
+<dd><p>Set the active SM percentage</p>
+<p>Create a CUDA green context owning ~`sm_percentage` of the device’s SMs
+and a stream bound to it. Kernels launched afterwards are restricted
+to that SM partition. Green contexts are cached in self.green_ctx_cache.
+The actual number of SMs in the partition may not exactly match the
+requested percentage. An observer may be used to query:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Currently assigned number of SMs: self.assigned_sm_count</p></li>
+<li><p>Currently requested SM percentage: self.current_sm_percentage</p></li>
+</ul>
+</div></blockquote>
+<p>Requires: CUDA &gt;= 12.4 and a GPU that supports SM partitioning.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.nvcuda.CudaFunctions.start_event">
 <span class="sig-name descname"><span class="pre">start_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.nvcuda.CudaFunctions.start_event" title="Link to this definition">¶</a></dt>
 <dd><p>Records the event that marks the start of a measurement.</p>
