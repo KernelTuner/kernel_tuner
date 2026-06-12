@@ -4,7 +4,7 @@ import time
 import numpy as np
 import pytest
 
-from kernel_tuner import core, tune_kernel, util
+from kernel_tuner import core, tune_kernel, tune_cache, util
 from kernel_tuner.interface import Options, _device_options, _kernel_options, _tuning_options
 from kernel_tuner.runners.sequential import SequentialRunner
 
@@ -128,6 +128,11 @@ def test_simulation_runner(env):
     # ensure difference between recorded time and actual time + simulated less then 10ms
     max_time = actual_time + res_env['simulated_time']
     assert max_time - recorded_time_including_simulation < 10
+
+
+def test_tune_cache(env):
+    results, env = tune_cache(cache_filename)
+    assert len(results) > 10
 
 
 def test_constraint_aware_GA(env):
@@ -257,7 +262,7 @@ def test_interface_handles_compile_failures(env):
     failed_config = [
         record for record in results if record["block_size_x"] == 256
     ][0]
-    assert isinstance(failed_config["time"], util.CompilationFailedConfig)
+    assert isinstance(failed_config["__error__"], util.CompilationFailedConfig)
 
 
 @skip_if_no_pycuda

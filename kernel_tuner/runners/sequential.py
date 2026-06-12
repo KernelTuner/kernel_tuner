@@ -5,7 +5,7 @@ from time import perf_counter
 
 from kernel_tuner.core import DeviceInterface
 from kernel_tuner.runners.runner import Runner
-from kernel_tuner.util import ErrorConfig, Timer, print_config_output, process_metrics, store_cache, copy_without_benchmark_timings
+from kernel_tuner.util import ErrorConfig, Timer, print_config_output, process_metrics, store_cache, copy_without_benchmark_timings, check_result_type
 
 
 class SequentialRunner(Runner):
@@ -41,10 +41,12 @@ class SequentialRunner(Runner):
         self.gpu_args = self.dev.ready_argument_list(kernel_options.arguments)
 
     def get_device_info(self):
+        """ Return the backend used by this runner. """
         return self.dev
 
     def get_environment(self, tuning_options):
-        return self.dev.get_environment()
+        env = self.dev.get_environment()
+        return env
 
     def run(self, parameter_space, tuning_options):
         """Iterate through the entire parameter space using a single Python process.
@@ -101,13 +103,15 @@ class SequentialRunner(Runner):
                     result["compile_time"] + result["verification_time"] + result["benchmark_time"]
                 ) / 1000
 
+                assert check_result_type(result)
+
                 params.update(result)
 
-                if isinstance(result.get(tuning_options.objective), ErrorConfig):
+                if '__error__' in result:
                     logging.debug("kernel configuration was skipped silently due to compile or runtime failure")
 
             # only compute metrics on configs that have not errored
-            if not isinstance(params.get(tuning_options.objective), ErrorConfig):
+            if tuning_options.metrics and '__error__' not in params:
                 params = process_metrics(params, tuning_options.metrics)
 
             params["timestamp"] = str(datetime.now(timezone.utc))
@@ -118,6 +122,8 @@ class SequentialRunner(Runner):
 
                 # add configuration to cache
                 store_cache(x_int, params, tuning_options.cachefile, tuning_options.cache)
+
+            assert check_result_type(params)
 
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)
