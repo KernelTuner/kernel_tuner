@@ -127,12 +127,17 @@ class CudaFunctions(GPUBackend):
 
 
     def set_sm_percentage(self, sm_percentage):
-        """
-        Create a CUDA green context owning ~`sm_percentage` of the device's SMs
-        and return a stream bound to it. Kernels launched on the returned stream
-        are restricted to that SM partition.
+        """ Set the active SM percentage
 
-        Returns: (green_ctx, stream, num_sms_assigned)
+        Create a CUDA green context owning ~`sm_percentage` of the device's SMs
+        and a stream bound to it. Kernels launched afterwards are restricted
+        to that SM partition. Green contexts are cached in self.green_ctx_cache.
+        The actual number of SMs in the partition may not exactly match the
+        requested percentage. An observer may be used to query:
+
+         *   Currently assigned number of SMs: self.assigned_sm_count
+         *   Currently requested SM percentage: self.current_sm_percentage
+
         Requires: CUDA >= 12.4 and a GPU that supports SM partitioning.
         """
 
