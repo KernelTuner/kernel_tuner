@@ -56,6 +56,23 @@ def test_compile():
     dev = nvcuda.CudaFunctions(0)
     dev.compile(kernel_instance)
 
+
+@skip_if_no_cuda
+def test_set_sm_percentage():
+
+    dev = nvcuda.CudaFunctions(0)
+    default_stream = dev.stream
+
+    test_value = 50
+    dev.set_sm_percentage(test_value)
+
+    assert dev.current_sm_percentage == test_value
+    assert test_value in dev.green_ctx_cache
+    assert dev.green_ctx is not None
+    assert not dev.stream == default_stream
+    assert dev.assigned_sm_count
+
+
 @skip_if_no_cuda
 def test_compile_template():
 
