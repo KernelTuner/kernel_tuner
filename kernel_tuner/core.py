@@ -470,8 +470,12 @@ class DeviceInterface(object):
         logging.debug("thread block dimensions x,y,z=%d,%d,%d", *instance.threads)
         logging.debug("grid dimensions x,y,z=%d,%d,%d", *instance.grid)
 
+        # Set execution parameters
         if self.use_nvml and not skip_nvml_setting:
             self.set_nvml_parameters(instance)
+        if "cuda_sm_percentage" in instance.params:
+            # Currently only supported on cuda-python (NVCUDA)
+            self.dev.set_sm_percentage(instance.params["cuda_sm_percentage"])
 
         # Call the observers to register the configuration to be benchmarked
         for obs in self.dev.observers:

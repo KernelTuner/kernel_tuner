@@ -84,6 +84,8 @@ class CudaFunctions(GPUBackend):
         cuda_error_check(err)
         err, self.end = driver.cuEventCreate(0)
         cuda_error_check(err)
+        self.current_sm_percentage = 100
+        self.green_ctx_cache = {}
         self.green_ctx = None
 
         # default dynamically allocated shared memory size, can be overwritten using smem_args
@@ -111,10 +113,17 @@ class CudaFunctions(GPUBackend):
         self.name = env["device_name"]
 
     def __del__(self):
+        # Cleanup streams and green contexts, if any
+        if self.green_ctx_cache:
+            for val in self.green_ctx_cache.values():
+                green_ctx, stream, _ = val
+                _check(driver.cuStreamDestroy(stream))
+                _check(driver.cuGreenCtxDestroy(green_ctx))
+
+        # Cleanup
         for device_memory in self.allocations:
             if isinstance(device_memory, driver.CUdeviceptr):
-                err = driver.cuMemFree(device_memory)
-                cuda_error_check(err)
+                _check(driver.cuMemFree(device_memory))
 
 
     def set_sm_percentage(self, sm_percentage):
@@ -130,10 +139,15 @@ class CudaFunctions(GPUBackend):
         if not 0 < sm_percentage <= 100:
             raise ValueError("sm_percentage must be in (0, 100]")
 
-        # Cleanup old stream and green context if any
-        _check(driver.cuStreamDestroy(self.stream))
-        if self.green_ctx:
-            _check(driver.cuGreenCtxDestroy(self.green_ctx))
+        # Check if sm_percentage is already applied
+        if sm_percentage == self.current_sm_percentage:
+            return
+
+        # Check if this sm_percentage has been requested before
+        if sm_percentage in self.green_ctx_cache:
+            self.green_ctx, self.stream, self.assigned_sm_count = self.green_ctx_cache[sm_percentage]
+            self.current_sm_percentage = sm_percentage
+            return
 
         # Get total SMs and desired percentage
         total_sms = _check(driver.cuDeviceGetAttribute(
@@ -166,9 +180,11 @@ class CudaFunctions(GPUBackend):
             driver.CUstream_flags.CU_STREAM_NON_BLOCKING,
             0,  # priority
         ))
+        self.green_ctx_cache[sm_percentage] = (green_ctx, stream, assigned)
         self.green_ctx = green_ctx
         self.stream = stream
         self.assigned_sm_count = assigned
+        self.current_sm_percentage = sm_percentage
 
 
     def ready_argument_list(self, arguments):
@@ -279,9 +295,6 @@ class CudaFunctions(GPUBackend):
             nvrtc.nvrtcGetProgramLog(program, log)
             print(log.decode("utf-8"))
             raise re
-
-        if "CUDA_SM_PERCENTAGE" in kernel_instance.params:
-            self.set_sm_percentage(kernel_instance.params["CUDA_SM_PERCENTAGE"])
 
         return self.func
 
