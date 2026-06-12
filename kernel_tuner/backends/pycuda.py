@@ -130,12 +130,6 @@ class PyCudaFunctions(GPUBackend):
         # default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
 
-        # setup observers
-        self.observers = observers or []
-        self.observers.append(PyCudaRuntimeObserver(self))
-        for obs in self.observers:
-            obs.register_device(self)
-
         # collect environment information
         env = dict()
         env["device_name"] = self.context.get_device().name()
@@ -147,6 +141,12 @@ class PyCudaFunctions(GPUBackend):
         env["device_properties"] = devprops
         self.env = env
         self.name = env["device_name"]
+
+        # setup observers
+        self.observers = observers or []
+        self.observers.append(PyCudaRuntimeObserver(self))
+        for obs in self.observers:
+            obs.register_device(self)
 
     def __del__(self):
         for gpu_mem in self.allocations:

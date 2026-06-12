@@ -24,26 +24,42 @@ class nvml:
             use_locked_clocks=False
     ):
         """Create object to control device using NVML."""
+        # We set these first as __del__ checks these
+        # and this __init__ may exceptions midway
+        self.pwr_limit_default = None
+        self.modified_clocks = False
+
         pynvml.nvmlInit()
 
-        if sum(x is not None for x in [device_id, device_uuid, device_pci_bus]) != 1:
-            raise ValueError("invalid device: specify either the index, the UUID, or the PCI-bus")
-        elif device_id is not None:
+        if device_id is not None:
             self.dev = pynvml.nvmlDeviceGetHandleByIndex(device_id)
         elif device_uuid is not None:
             self.dev = pynvml.nvmlDeviceGetHandleByUUID(device_uuid)
         elif device_pci_bus is not None:
-            self.dev = pynvml.nvmlDeviceGetHandleByPciBusId_v2(device_pci_bus)
+            self.dev = pynvml.nvmlDeviceGetHandleByPciBusId(device_pci_bus)
 
         self.id = pynvml.nvmlDeviceGetIndex(self.dev)
+        self.uuid = pynvml.nvmlDeviceGetUUID(self.dev)
+        self.pci_bus = pynvml.nvmlDeviceGetPciInfo_v3(self.dev).busId
         self.nvidia_smi = nvidia_smi_fallback or "nvidia-smi"
+
+        if device_id is not None and self.id != device_id:
+            raise ValueError(f"NVML device ID does not match requested device: {device_id} != {self.id}")
+
+        # Some backends have UUID starting with "GPU-"
+        if device_uuid is not None and self.uuid.removeprefix("GPU-") != device_uuid.removeprefix("GPU-"):
+            raise ValueError(f"NVML device UUID does not match requested device: {device_uuid} != {self.uuid}")
+
+        # lstrip is needed since some backends use leading zeros
+        if device_pci_bus is not None and self.pci_bus.lstrip("0") != device_pci_bus.lstrip("0"):
+            raise ValueError(f"NVML device PCI-bus does not match requested device: {device_pci_bus} != {self.pci_bus}")
 
         try:
             self.pwr_limit_default = pynvml.nvmlDeviceGetPowerManagementLimit(self.dev)
             self.pwr_constraints = pynvml.nvmlDeviceGetPowerManagementLimitConstraints(self.dev)
         except pynvml.NVMLError_NotSupported:
-            self.pwr_limit_default = None
             # inverted range to make all range checks fail
+            self.pwr_limit_default = None
             self.pwr_constraints = [1, 0]
 
         try:
@@ -58,7 +74,6 @@ class nvml:
             self._auto_boost = None
 
         # try to initialize application clocks
-        self.modified_clocks = False
         try:
             if not use_locked_clocks:
                 self.gr_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(
@@ -287,6 +302,11 @@ class nvml:
         NVML_FI_DEV_POWER_INSTANT = 186
         return pynvml.nvmlDeviceGetFieldValues(self.dev, [NVML_FI_DEV_POWER_INSTANT])[0].value.uiVal
 
+    def energy_usage(self):
+        """Return total energy usage since bootup in milli joules."""
+        NVML_FI_DEV_TOTAL_ENERGY_CONSUMPTION = 83
+        return pynvml.nvmlDeviceGetFieldValues(self.dev, [NVML_FI_DEV_TOTAL_ENERGY_CONSUMPTION])[0].value.ullVal
+
     def gr_voltage(self):
         """Return current graphics voltage in millivolts."""
         args = ["nvidia-smi", "-i", str(self.id), "-q", "-d", "VOLTAGE"]
@@ -335,7 +355,7 @@ class NVMLObserver(BenchmarkObserver):
     def __init__(
         self,
         observables,
-        device=0,
+        device=None,
         save_all=False,
         nvidia_smi_fallback=None,
         use_locked_clocks=False,
@@ -374,6 +394,8 @@ class NVMLObserver(BenchmarkObserver):
 
         self.record_gr_voltage = False
         self.t0 = 0
+        self.initial_energy_reading = None
+
         if "gr_voltage" in observables:
             self.record_gr_voltage = True
             self.gr_voltage_readings = []
@@ -386,25 +408,33 @@ class NVMLObserver(BenchmarkObserver):
         self.iteration = {obs: [] for obs in self.during_obs}
 
     def register_device(self, dev):
+        env = getattr(dev, "env", dict())
+        uuid = env.get("uuid")
+        pci_bus = env.get("pci_bus_id")
+
         if self.device is not None:
             self.nvml = nvml(device_id=self.device, **self.nvml_kwargs)
+        elif uuid is not None and pci_bus is not None:
+            self.nvml = nvml(device_uuid=uuid, device_pci_bus=pci_bus, **self.nvml_kwargs)
+        elif uuid is not None:
+            self.nvml = nvml(device_uuid=uuid, **self.nvml_kwargs)
+        elif pci_bus is not None:
+            self.nvml = nvml(device_pci_bus=pci_bus, **self.nvml_kwargs)
         else:
-            env = getattr(dev, "env", dict())
-            uuid = env.get("uuid")
-            pci_bus = env.get("pci_bus_id")
-
-            if uuid is not None:
-                self.nvml = nvml(device_uuid=uuid, **self.nvml_kwargs)
-            elif pci_bus is not None:
-                self.nvml = nvml(device_pci_bus=pci_bus, **self.nvml_kwargs)
-            else:
-                raise ValueError("failed to detect NVIDIA device: no UUID or PCI-bus-id in environment")
-
-
+            raise ValueError("failed to detect NVIDIA device: no UUID or PCI-bus-id in environment")
 
     def read_power(self):
         """ Return power in Watt """
         return self.nvml.pwr_usage() / 1e3
+
+    def read_energy(self):
+        """ Return cumulative energy usage in Joule """
+        now = self.nvml.energy_usage()
+
+        if self.initial_energy_reading is None:
+            self.initial_energy_reading = now
+
+        return (now - self.initial_energy_reading) / 1e3
 
     def before_start(self):
         # clear results of the observables for next measurement
@@ -530,3 +560,4 @@ def get_idle_power(device, n=5, sleep_s=0.1):
         time.sleep(sleep_s)
         readings.append(d.pwr_usage())
     return np.mean(readings) * 1e-3  # Watt
+

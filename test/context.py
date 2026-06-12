@@ -81,6 +81,12 @@ except ImportError:
     pyatf_present = False
 
 try:
+    import pymoo
+    pymoo_present = True
+except ImportError:
+    pymoo_present = False
+
+try:
     from autotuning_methodology.report_experiments import get_strategy_scores
     methodology_present = True
 except ImportError:
@@ -110,6 +116,7 @@ skip_if_no_bayesopt_botorch = pytest.mark.skipif(not bayes_opt_botorch_present, 
 skip_if_no_hip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")
 skip_if_no_pyatf = pytest.mark.skipif(not pyatf_present, reason="PyATF not installed")
 skip_if_no_methodology = pytest.mark.skipif(not methodology_present, reason="Autotuning Methodology not found")
+skip_if_no_pymoo = pytest.mark.skipif(not pymoo_present, reason="No PyMOO found")
 
 
 def skip_backend(backend: str):

@@ -149,7 +149,8 @@ class CostFunc:
             # Not legal, just return `InvalidConfig`
             if not is_legal:
                 result = dict(zip(self.searchspace.tune_params.keys(), config))
-                result[self.objective] = util.InvalidConfig()
+                result['__error__'] = util.InvalidConfig()
+
                 final_results.append(result)
 
             # Legal config, we must evaluate this
@@ -196,16 +197,13 @@ class CostFunc:
 
         for result in results:
             # get numerical return value, taking optimization direction into account
-            return_value = result[self.objective]
+            return_value = util.get_result_cost(result,
+                self.tuning_options.objective,
+                self.tuning_options.objective_higher_is_better
+            )
 
-            if not isinstance(return_value, util.ErrorConfig):
-                # this is a valid configuration, so invert value in case of maximization
-                if self.objective_higher_is_better:
-                    return_value = -return_value
-            else:
-                # this is not a valid configuration, replace with float max if needed
-                if not self.return_invalid:
-                    return_value = self.invalid_return_value
+            if len(return_value) == 1:
+                return_value = return_value[0]
 
             # include raw data in return if requested
             return_values.append(return_value)
@@ -363,7 +361,6 @@ def scale_from_params(params, tune_params, eps):
     for i, v in enumerate(tune_params.values()):
         x[i] = 0.5 * eps + v.index(params[i]) * eps
     return x
-
 
 
 def unscale_and_snap_to_nearest_valid(x, params, searchspace, eps):

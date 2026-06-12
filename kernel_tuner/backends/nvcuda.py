@@ -91,26 +91,32 @@ class CudaFunctions(GPUBackend):
         # default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
 
-        # setup observers
-        self.observers = observers or []
-        self.observers.append(CudaRuntimeObserver(self))
-        for observer in self.observers:
-            observer.register_device(self)
-
         # collect environment information
         err, device_properties = runtime.cudaGetDeviceProperties(device)
         cuda_error_check(err)
         env = dict()
         env["uuid"] = str(uuid.UUID(bytes=device_properties.uuid.bytes))
         env["device_name"] = device_properties.name.decode()
-        env["pci_bus_id"] = device_properties.pciBusID
         env["cuda_version"] = driver.CUDA_VERSION
         env["compute_capability"] = self.cc
         env["iterations"] = self.iterations
         env["compiler_options"] = self.compiler_options
         env["device_properties"] = str(device_properties).replace("\n", ", ")
+
+        # We must use `cudaDeviceGetPCIBusId` to get the PCI bus string
+        # It returns a series of bytes containing a null byte, not a `str`
+        err, pci_bus = runtime.cudaDeviceGetPCIBusId(32, device) # 32 = length?
+        cuda_error_check(err)
+        env["pci_bus_id"] = pci_bus.decode("ascii").split("\x00", 1)[0]
+
         self.env = env
         self.name = env["device_name"]
+
+        # setup observers
+        self.observers = observers or []
+        self.observers.append(CudaRuntimeObserver(self))
+        for observer in self.observers:
+            observer.register_device(self)
 
     def __del__(self):
         # Cleanup streams and green contexts, if any

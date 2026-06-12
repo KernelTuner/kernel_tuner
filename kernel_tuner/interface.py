@@ -74,6 +74,8 @@ _STRATEGY_IMPORTS = {
     "pyatf_strategies": "kernel_tuner.strategies.pyatf_strategies",
     "hybrid_vndx": "kernel_tuner.strategies.gen_hybrid_vndx",
     "adaptive_tabu_greywolf": "kernel_tuner.strategies.gen_adaptive_tabu_greywolf",
+    "nsga2": "kernel_tuner.strategies.pymoo_minimize",
+    "nsga3": "kernel_tuner.strategies.pymoo_minimize",
 }
 
 _STRATEGY_PARALLEL = ["brute_force", "random_sample", "diff_evo", "genetic_algorithm", "pso", "firefly_algorithm"]
@@ -460,7 +462,7 @@ _tuning_options = Options(
                 """Optimization objective to sort results on, consisting of a string
             that also occurs in results as a metric or observed quantity, default 'time'.
             Please see :ref:`objectives`.""",
-                "string",
+                "str | list[str]",
             ),
         ),
         (
@@ -468,7 +470,7 @@ _tuning_options = Options(
             (
                 """boolean that specifies whether the objective should
             be maximized (True) or minimized (False), default False.""",
-                "bool",
+                "bool | list[bool]",
             ),
         ),
         (
@@ -498,6 +500,7 @@ _tuning_options = Options(
         ),
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
+        ("seed", ("""The random seed.""", "int")),
         ("parallel", ("Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.", "int|bool")),
         (
             "observers",
@@ -621,6 +624,8 @@ def tune_kernel(
     observers=None,
     objective=None,
     objective_higher_is_better=None,
+    objectives=None,
+    seed=None,
 ):
     start_overhead_time = perf_counter()
     if log:
@@ -630,8 +635,22 @@ def tune_kernel(
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
-    # default objective if none is specified
-    objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
+    if objectives:
+        if isinstance(objectives, dict):
+            objective = list(objectives.keys())
+            objective_higher_is_better = list(objectives.values())
+        else:
+            raise ValueError("objectives should be a dict of (objective, higher_is_better) pairs")
+    else:
+        objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
+        if isinstance(objective, str):
+            objective = [objective]
+        if isinstance(objective_higher_is_better, bool):
+            objective_higher_is_better = [objective_higher_is_better]
+
+    assert isinstance(objective, list)
+    assert isinstance(objective_higher_is_better, list)
+    assert len(objective) == len(objective_higher_is_better)
 
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params, observers, simulation_mode=simulation_mode)
@@ -662,7 +681,6 @@ def tune_kernel(
             tuning_options["time_limit"] = time_limit  # TODO: Is this used?
         if "searchspace_construction_options" in strategy_options:
             searchspace_construction_options = strategy_options["searchspace_construction_options"]
-
 
     # log the user inputs
     logging.debug("tune_kernel called")
@@ -776,13 +794,35 @@ def tune_kernel(
 
     # finished iterating over search space
     if results:  # checks if results is not empty
-        best_config = util.get_best_config(results, objective, objective_higher_is_better)
-        # add the best configuration to env
-        env["best_config"] = best_config
-        if not device_options.quiet:
-            units = getattr(runner, "units", None)
-            print("best performing configuration:")
-            util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)
+        if len(objective) == 1:
+            objective = objective[0]
+            objective_higher_is_better = objective_higher_is_better[0]
+            best_config = util.get_best_config(results, objective, objective_higher_is_better)
+            # add the best configuration to env
+            env['best_config'] = best_config
+            if not device_options.quiet:
+                units = getattr(runner, "units", None)
+                keys = list(tune_params.keys())
+                keys += [objective]
+                if metrics:
+                    keys += list(metrics.keys())
+                if not quiet:
+                    print(f"\nBEST PERFORMING CONFIGURATION FOR OBJECTIVE {objective}:")
+                    print(util.get_config_string(best_config, keys, units))
+        else:
+            pareto_front = util.get_pareto_results(results, objective, objective_higher_is_better)
+            # add the best configuration to env
+            env['best_config'] = pareto_front
+            if not device_options.quiet:
+                units = getattr(runner, "units", None)
+                keys = list(tune_params.keys())
+                keys += list(objective)
+                if metrics:
+                    keys += list(metrics.keys())
+                if not quiet:
+                    print(f"\nBEST PERFORMING CONFIGURATIONS FOR OBJECTIVES: {objective}:")
+                    for best_config in pareto_front:
+                        print(util.get_config_string(best_config, keys, units))
     elif not device_options.quiet:
         print("no results to report")
 
@@ -796,6 +836,28 @@ def tune_kernel(
 
 
 tune_kernel.__doc__ = _tune_kernel_docstring
+
+
+def tune_cache(
+    cache_path,
+    restrictions = None,
+    **kwargs,
+):
+    cache = util.read_cache(cache_path, open_cache=False)
+    tune_args = util.infer_args_from_cache(cache)
+    _restrictions = [util.infer_restrictions_from_cache(cache)]
+
+    # Add the user provided restrictions
+    if restrictions:
+        if isinstance(restrictions, list):
+            _restrictions.extend(restrictions)
+        else:
+            raise ValueError("The restrictions must be a list()")
+
+    tune_args.update(kwargs)
+
+    return tune_kernel(**tune_args, cache=cache_path, restrictions=_restrictions, simulation_mode=True)
+
 
 _run_kernel_docstring = """Compile and run a single kernel
 
