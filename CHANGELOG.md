@@ -3,11 +3,99 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
-<!-- ## [1.1.0] - 2025 ?? -->
+- Add support for multi-objective optimization using Pymoo
+- Add support for parallel tuning using Ray
+- Add support for templated kernels in all CUDA / HIP backends
+- Add LLaMEA-generated optimization algorithms
+- Add AMDSMIObserver
+- Fix to ensure CUDA backends and NVMLObserver use same device
+- Add support for tuning SM count using cuda-python
+- Change default CUDA backend to use cuda-python
+
+## [1.3.3] - 2026-04-22
+- No changes
+
+## [1.3.2] - 2026-04-22
+- Add initial support for scikit-optimize minimize methods (skopt)
+- Handle special case where error is a tuple in cuda_error_check
+- Fix overflow dual annealing
+- Fix _find_bfloat16_if_available always returning None
+- Updated cupyx namespace usage
+
+## [1.3.1] - 2026-01-21
+- Fix issue 335 ValueError: (...) is not in list during Bayesian optimization
+- Remove error_message_searchspace_fully_observed message in BO
+- Remove extraneous zero in HIP timings
+- Recalculate metrics for each configuration in simulation runner
+- Change test-python-package.yml to use macos-latest
+- Clarify contribution guidelines regarding AI-generated code
+- Use the new cuda-python modules
+- Optimized searchspace operations
+- Add new Hamming-adjacent neighborhood method
+- Fix backward compatibility with the old restrictions function
+- Fix bug in simulated annealing when dealing with negative objective values
+- Replace bfloat16 dtype from bfloat16 package by one from ml_dtypes package
+- Fix evaluation count in PyATF search strategies
+
+## [1.3.0] - 2025-09-03
+- Add support for user-defined optimization algorithms
+- Add Hyperparameter tuning
+- Add constrained optimization
+- Add tunable constrained optimization algorithms
+- Replace differential evolution strategy with new implementation
+
+## [1.2.0] - 2025-07-17
+- Add support for OpenMP
+- Resolve regex calls warnings
+- More user-friendly error messages for HIP backend
+- Add support for 16-bit floats in HIP backend
+- Fix display of invalid identifier name for tunable parameters on error
+- Change Firefly algorithm to use negation instead of division
+- Change CostFunc to return +inf when objective_higher_is_better
+- Extended searchspace construction and input format support
+- Fixes to documentation
+- Fix to stop writing to cache file in simulation mode
+- Fix error 'grid divisor cannot be integer' (issue #264)
+- Re-add support for user-specified starting point
+- Add default optimization direction for 'fitness' and 'cost'
+- Improve warning on kernel source not found
+- Use searchspace to check config validity in costfunc
+
+## [1.1.3] - 2025-05-21
+- Resolve deprecation warnings of regex library
+- Support three-digit compute capability
+- Add support for half and bfloat16 scalars in pyCUDA backend
+- Bug fix issue with TunablePrecision and output verification
+
+## [1.1.2] - 2025-04-08
+- No changes
+
+## [1.1.1] - 2025-04-08
+- Add Numpy2 support
+
+## [1.1.0] - 2025-04-04
+- Add Tegra Observer to control clocks on Jetson devices
+- Catch RuntimeError when importing from pyhip
+- Read instant power in pwr_usage
+- Register observer & correct clock setting
+- Compiler backend uses g++ instead of gcc
+- Improved OpenACC support
+- Small improvements to searchspaces and simulation mode
+- Simplify contributing info by @benvanwerkhoven in #255
+- Support Python 3.12 and drop Python 3.8
+- Add NCUObserver
+- Update PMTObserver for latest PMT changes
+- Fixed reading of graphics and memory clocks
+- Tegra observer with continuous observer
+- Base implementation for pmt continuous observer
+- Add support for float16 to HIP backend
+- Fixed out-of-date PMTContinuousObserver readings
+- Fixed Hip local memory error handling
+- Replaced PyHIP with new official python wrapper of ROCm HIP
+- Update PowerSensor3 observer
+- Add support for any case spelling of block size name defaults
+- Updates to documentation
 - Additional improvements to search space construction
-- changed HIP python bindings from pyhip-interface to the official hip-python
-- Added Python 3.13 and experimental 3.14 support
-- Dropped Python 3.8 and 3.9 support (due to incompatibility with newer scipy versions)
 
 ## [1.0.0] - 2024-04-04
 - HIP backend to support tuning HIP kernels on AMD GPUs
