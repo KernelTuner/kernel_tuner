@@ -78,6 +78,32 @@ class NpEncoder(json.JSONEncoder):
         return super(NpEncoder, self).default(obj)
 
 
+def get_result_cost(
+    result: dict,
+    objectives: list[str],
+    objective_higher_is_better: list[bool]
+) -> list[float]:
+    """Returns the cost of a result, taking the objective directions into account."""
+    # return the highest cost for invalid results
+    if '__error__' in result:
+        return [sys.float_info.max] * len(objectives)
+
+    cost_vec = list()
+    for objective, is_maximizer in zip(objectives, objective_higher_is_better):
+        objective_value = result[objective]
+        cost = -objective_value if is_maximizer else objective_value
+        cost_vec.append(cost)
+
+    return cost_vec
+
+
+def check_result_type(r):
+    """Check if the result has the right format."""
+    if '__error__' in r:
+        return isinstance(r['__error__'], ErrorConfig)
+    return True
+
+
 class TorchPlaceHolder:
     def __init__(self):
         self.Tensor = Exception  # using Exception here as a type that will never be among kernel arguments
@@ -223,7 +249,6 @@ class Timer:
             result = f"{elapsed / 60:.2f} min"
         else:
             result = f"{elapsed / 3600:.2f} h"
-
         return result
 
 
@@ -356,8 +381,11 @@ def check_block_size_params_names_list(block_size_names, tune_params):
 
 def check_restriction(restrict, params: dict) -> bool:
     """Check whether a configuration meets a search space restriction."""
+    # if it's a function python-constraint it can be called directly
+    if isinstance(restrict, FunctionConstraint):
+        return restrict._func(*params.values())
     # if it's a python-constraint, convert to function and execute
-    if isinstance(restrict, Constraint):
+    elif isinstance(restrict, Constraint):
         restrict = convert_constraint_restriction(restrict)
         return restrict(list(params.values()))
     # if it's a string, fill in the parameters and evaluate
@@ -508,9 +536,39 @@ def get_best_config(results, objective, objective_higher_is_better=False):
     ignore_val = sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
     best_config = func(
         results,
-        key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val,
+        key=lambda x: x[objective] if '__error__' not in x and isinstance(x[objective], float) else ignore_val,
     )
     return best_config
+
+
+def get_pareto_results(
+    results: list[dict],
+    objectives: list[str],
+    objective_higher_is_better: list[bool],
+    mark_optima=True
+):
+    from pymoo.util.nds.find_non_dominated import find_non_dominated
+    assert isinstance(results, list)
+    assert isinstance(objectives, list)
+
+    n_rows = len(results)
+    n_cols = len(objectives)
+    Y = np.empty((n_rows, n_cols), dtype=float)
+    for row_idx, result in enumerate(results):
+        if "__error__" in result:
+            Y[row_idx, :] = sys.float_info.max
+            continue
+        for col_idx, (objective_name, higher_is_better) in enumerate(zip(objectives, objective_higher_is_better)):
+            y = result[objective_name]
+            # negate for maximizers to optimize through minimization
+            Y[row_idx, col_idx] = -y if higher_is_better else y
+
+    pf_indices = find_non_dominated(Y)
+    pf = [results[idx] for idx in pf_indices]
+    if mark_optima:
+        for p in pf:
+            p["optimal"] = True
+    return pf
 
 
 # specifies for a number of pre-defined objectives whether
@@ -738,6 +796,7 @@ def get_total_timings(results, env, overhead_time):
         for result in results:
             if (
                 "framework_time" not in result
+                or "benchmark_time" not in result
                 or "strategy_time" not in result
                 or "compile_time" not in result
                 or "verification_time" not in result
@@ -1382,17 +1441,23 @@ def read_cache(cachefile, open_cache=True):
     filestr = correct_open_cache(cachefile, open_cache)
 
     error_configs = {
+        "ErrorConfig": ErrorConfig(),
         "InvalidConfig": InvalidConfig(),
         "CompilationFailedConfig": CompilationFailedConfig(),
         "RuntimeFailedConfig": RuntimeFailedConfig(),
     }
 
+
     # replace strings with ErrorConfig instances
     cache_data = json.loads(filestr)
     for element in cache_data["cache"].values():
+        error = None
         for k, v in element.items():
             if isinstance(v, str) and v in error_configs:
-                element[k] = error_configs[v]
+                # This makes sure the old cache file format can still be used.
+                error = error_configs[v]
+        if not error is None:
+           element["__error__"] = error
 
     return cache_data
 
@@ -1433,3 +1498,36 @@ def dump_cache(obj: str, tuning_options):
     if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
         with open(tuning_options.cachefile, "a") as cachefile:
             cachefile.write(obj)
+
+
+def infer_restrictions_from_cache(cache: dict):
+    param_names = cache["tune_params_keys"]
+    valid_param_config_set = set(
+        tuple(result[param_name] for param_name in param_names)
+        for result in cache['cache'].values()
+        if '__error__' not in result
+    )
+
+    def restrictions_func(*param_values) -> bool:
+        nonlocal valid_param_config_set
+        return param_values in valid_param_config_set
+
+    return FunctionConstraint(restrictions_func)
+
+
+def infer_args_from_cache(cache: dict) -> dict:
+    prob_size = cache['problem_size']
+    if isinstance(prob_size, str):
+        raise ValueError("Inferring kernel arguments from cache file that used callable for problem size is not possible")
+    elif isinstance(prob_size, int):
+        prob_size = (prob_size,)
+
+    inferred_args = dict(
+        kernel_name = cache['kernel_name'],
+        kernel_source = "",
+        problem_size = tuple(prob_size),
+        arguments = [],
+        tune_params = cache['tune_params'],
+    )
+
+    return inferred_args

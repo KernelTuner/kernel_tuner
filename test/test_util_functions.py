@@ -721,6 +721,11 @@ def test_process_cache():
         store_cache("4", params, cache, tuning_options.cache)
         assert len(tuning_options.cache) == 1
 
+        # store another entry in the cache
+        params2 = {"x": 6, "time": InvalidConfig()}
+        store_cache("6", params2, cache, tuning_options.cache)
+        assert len(tuning_options.cache) == 2
+
         # close the cache
         close_cache(cache)
 
@@ -729,6 +734,10 @@ def test_process_cache():
         assert_open_cachefile_is_correctly_parsed(cache)
 
         assert tuning_options.cache["4"]["time"] == params["time"]
+
+        # check if ErrorConfig stored in objective value is converted to __error__
+        print(tuning_options.cache["6"])
+        assert isinstance(tuning_options.cache["6"]["__error__"], ErrorConfig)
 
         # check that exceptions are raised when using a cache file for
         # a different kernel, device, or parameter set

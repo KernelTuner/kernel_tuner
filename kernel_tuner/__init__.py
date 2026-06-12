@@ -1,6 +1,6 @@
 from importlib.metadata import version
 
-from kernel_tuner.interface import run_kernel, tune_kernel, tune_kernel_T1
+from kernel_tuner.interface import run_kernel, tune_kernel, tune_kernel_T1, tune_cache
 
 __version__ = version(__package__)
 
@@ -9,6 +9,7 @@ __all__ = [
     "run_kernel",
     "store_results",
     "tune_kernel",
+    "tune_cache",
     "tune_kernel_T1",
     "__version__",
 ]
