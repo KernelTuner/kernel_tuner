@@ -276,7 +276,7 @@ def test_detect_language3():
 
 @skip_if_no_pycuda
 def test_get_device_interface1():
-    lang = "CUDA"
+    lang = "PYCUDA"
     dev = core.DeviceInterface(core.KernelSource("", "", lang=lang))
     assert isinstance(dev, core.DeviceInterface)
     assert isinstance(dev.dev, pycuda.PyCudaFunctions)

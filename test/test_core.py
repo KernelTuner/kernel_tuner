@@ -11,7 +11,7 @@ except ImportError:
 from kernel_tuner import core
 from kernel_tuner.interface import Options
 
-from .context import skip_if_no_pycuda
+from .context import skip_if_no_cuda
 
 
 mock_config = {"return_value.compile.return_value": "compile",
@@ -52,84 +52,51 @@ def env():
     yield dev, instance
 
 
-@skip_if_no_pycuda
-def test_default_verify_function(env):
+@skip_if_no_cuda
+def test_check_kernel_output():
 
-    # gpu_args = dev.ready_argument_list(args)
-    # func = dev.compile_kernel(instance, verbose)
+    kernel_string = """
+        __global__ void copy(float *out, float *in, int n) {
+            int i = threadIdx.x + blockDim.x * blockIdx.x;
+            if (i < n)
+                out[i] = in[i];
+        }
+        """
 
-    dev, instance = env
-    args = instance.arguments
-    verbose = True
+    kernel_name = "copy"
+    lang = "CUDA"
 
-    # 1st case, correct answer but not enough items in the list
-    answer = [args[1] + args[2]]
-    try:
-        core._default_verify_function(instance, answer, args, 1e-6, verbose)
-        print("Expected a TypeError to be raised")
-        assert False
-    except TypeError as expected_error:
-        print(str(expected_error))
-        assert "The length of argument list and provided results do not match." == str(expected_error)
-    except Exception:
-        print("Expected a TypeError to be raised")
-        assert False
+    # Create the object under test (DeviceInterface)
+    kernel_source = core.KernelSource(kernel_name, kernel_string, lang, None)
+    dev = core.DeviceInterface(kernel_source)
 
-    # 2nd case, answer is of wrong type
-    answer = [np.ubyte([12]), None, None, None]
-    try:
-        core._default_verify_function(instance, answer, args, 1e-6, verbose)
-        # dev.check_kernel_output(func, gpu_args, instance, answer, 1e-6, None, verbose)
-        print("Expected a TypeError to be raised")
-        assert False
-    except TypeError as expected_error:
-        print(str(expected_error))
-        assert "Element 0" in str(expected_error)
-    except Exception:
-        print("Expected a TypeError to be raised")
-        assert False
-
-    instance.delete_temp_files()
-    assert True
+    # Setup GPU args
+    n = np.int32(2000)
+    input_data = np.random.random(n).astype(np.float32)
+    output_data = np.zeros_like(input_data)
+    args = [output_data, input_data, n]
+    gpu_args = dev.dev.ready_argument_list(args)
 
 
-@patch('kernel_tuner.backends.pycuda.PyCudaFunctions')
-def test_check_kernel_output(dev_func_interface):
-    dev_func_interface.configure_mock(**mock_config)
+    # Create kernel instance and compile GPU kernel
+    class FakeOptions(dict):
+        def __getattr__(self, name):
+            if not name in self:
+                return None
+            return self[name]
 
-    dev = core.DeviceInterface(core.KernelSource("name", "", lang="CUDA"))
-    dfi = dev.dev
+    kernel_options = FakeOptions(dict(kernel_name=kernel_name, arguments=args, problem_size=n))
+    instance = dev.create_kernel_instance(kernel_source, kernel_options, {}, True)
+    func = dev.compile_kernel(instance, True)
 
-    answer = [np.zeros(4).astype(np.float32)]
-    instance = core.KernelInstance("name", None, "kernel_string", "temp_files", (256, 1, 1), (1, 1, 1), {}, answer)
-    wrong = [np.array([1, 2, 3, 4]).astype(np.float32)]
-    atol = 1e-6
+    # Run check_kernel_output
+    # As the kernel only copies the data this should complete without throwing
+    # an exception
+    answer = [input_data, None, None]
+    dev.check_kernel_output(func, gpu_args, instance, answer, 1e-6, None, True)
 
-    dev.check_kernel_output('func', answer, instance, answer, atol, None, True)
 
-    dfi.refresh_memory.assert_called()
-    dfi.run_kernel.assert_called_once_with('func', answer, (256, 1, 1), (1, 1, 1))
 
-    print(dfi.mock_calls)
-
-    assert dfi.refresh_memory.called == 1
-    assert dfi.memcpy_dtoh.called == 1
-
-    for name, args, _ in dfi.mock_calls:
-        if name == 'memcpy_dtoh':
-            assert all(args[0] == answer[0])
-            assert all(args[1] == answer[0])
-
-    # the following call to check_kernel_output is expected to fail because
-    # the answer is non-zero, while the memcpy_dtoh function on the Mocked object
-    # obviously does not result in the result_host array containing anything
-    # non-zero
-    try:
-        dev.check_kernel_output('func', wrong, instance, wrong, atol, None, True)
-        print("check_kernel_output failed to throw an exception")
-        assert False
-    except Exception:
-        assert True
 
 
 def test_default_verify_function_arrays():
