@@ -154,6 +154,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_matching_problem_size"><code class="docutils literal notranslate"><span class="pre">check_matching_problem_size()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_restriction"><code class="docutils literal notranslate"><span class="pre">check_restriction()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_restrictions"><code class="docutils literal notranslate"><span class="pre">check_restrictions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_result_type"><code class="docutils literal notranslate"><span class="pre">check_result_type()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_thread_block_dimensions"><code class="docutils literal notranslate"><span class="pre">check_thread_block_dimensions()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_tune_params_list"><code class="docutils literal notranslate"><span class="pre">check_tune_params_list()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.compile_restrictions"><code class="docutils literal notranslate"><span class="pre">compile_restrictions()</span></code></a></li>
@@ -174,6 +175,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_kernel_string"><code class="docutils literal notranslate"><span class="pre">get_kernel_string()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_objective_defaults"><code class="docutils literal notranslate"><span class="pre">get_objective_defaults()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_problem_size"><code class="docutils literal notranslate"><span class="pre">get_problem_size()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_result_cost"><code class="docutils literal notranslate"><span class="pre">get_result_cost()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_smem_args"><code class="docutils literal notranslate"><span class="pre">get_smem_args()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_temp_filename"><code class="docutils literal notranslate"><span class="pre">get_temp_filename()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_thread_block_dimensions"><code class="docutils literal notranslate"><span class="pre">get_thread_block_dimensions()</span></code></a></li>
@@ -693,6 +695,12 @@ Assumes that the parameter configs have the same order as <cite>tune_params</cit
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.runners.sequential.SequentialRunner.get_device_info">
+<span class="sig-name descname"><span class="pre">get_device_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential.SequentialRunner.get_device_info" title="Link to this definition">¶</a></dt>
+<dd><p>Return the backend used by this runner.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.runners.sequential.SequentialRunner.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.sequential.SequentialRunner.run" title="Link to this definition">¶</a></dt>
 <dd><p>Iterate through the entire parameter space using a single Python process.</p>
@@ -735,6 +743,12 @@ Assumes that the parameter configs have the same order as <cite>tune_params</cit
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="kernel_tuner.runners.simulation.SimulationRunner.get_device_info">
+<span class="sig-name descname"><span class="pre">get_device_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.runners.simulation.SimulationRunner.get_device_info" title="Link to this definition">¶</a></dt>
+<dd><p>Return the backend used by this runner.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1961,6 +1975,12 @@ implement default like this:</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.check_result_type">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_result_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_result_type" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the result has the right format.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.check_thread_block_dimensions">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_thread_block_dimensions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_thread_block_dimensions" title="Link to this definition">¶</a></dt>
 <dd><p>Check on maximum thread block dimensions.</p>
@@ -2115,6 +2135,12 @@ kernel instance, only needed when kernel_source is a generator.</p></li>
 <dt class="sig sig-object py" id="kernel_tuner.util.get_problem_size">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">get_problem_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">problem_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.get_problem_size" title="Link to this definition">¶</a></dt>
 <dd><p>Compute current problem size.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.get_result_cost">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">get_result_cost</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objectives</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective_higher_is_better</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.util.get_result_cost" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the cost of a result, taking the objective directions into account.</p>
 </dd></dl>
 
 <dl class="py function">
