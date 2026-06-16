@@ -231,7 +231,7 @@ def instantiate_observer(observer, args):
         raise TypeError(f"Invalid observer: {observer!r} does not extend BenchmarkObserver")
 
 
-def _select_default_cuda_backend(lang):
+def _select_default_cuda_backend():
     """ Select default CUDA backend, looks for which backends are installed. """
     # First try cuda-python (nvcuda)
     from kernel_tuner.backends.nvcuda import CudaFunctions, driver
@@ -319,7 +319,7 @@ class DeviceInterface(object):
             backend = CudaFunctions
         elif lang.upper() == "CUDA":
             # Select default CUDA backend, based on availability
-            backend = _select_default_cuda_backend(lang)
+            backend = _select_default_cuda_backend()
         elif lang.upper() == "OPENCL":
             from kernel_tuner.backends.opencl import OpenCLFunctions
             backend = OpenCLFunctions
