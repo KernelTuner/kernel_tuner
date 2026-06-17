@@ -73,19 +73,13 @@ class nvml:
         except pynvml.NVMLError_NotSupported:
             self._auto_boost = None
 
-        # try to initialize application clocks
+        # gather info on clock defaults
         try:
-            if not use_locked_clocks:
-                self.gr_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(
-                    self.dev, pynvml.NVML_CLOCK_GRAPHICS
-                )
-                self.mem_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
+            self.gr_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS)
+            self.mem_clock_default = pynvml.nvmlDeviceGetDefaultApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM)
         except pynvml.NVMLError_NotSupported:
             self.gr_clock_default = None
-            self.sm_clock_default = None
             self.mem_clock_default = None
-            self.supported_mem_clocks = []
-            self.supported_gr_clocks = {}
         self.applications_gr_clock = self.gr_clock_default
         self.applications_mem_clock = self.mem_clock_default
 
