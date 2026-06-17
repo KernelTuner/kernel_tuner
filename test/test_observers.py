@@ -21,7 +21,7 @@ from .test_compiler_functions import env as env_compiler  # noqa: F401
 from .test_runners import env  # noqa: F401
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 @skip_if_no_pynvml
 def test_nvml_observer(env):
     nvmlobserver = NVMLObserver(["nvml_energy", "temperature"])
@@ -33,7 +33,7 @@ def test_nvml_observer(env):
     assert "temperature" in result[0]
     assert result[0]["temperature"] > 0
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_custom_observer(env):
     env[-1]["block_size_x"] = [128]
 
@@ -55,7 +55,7 @@ def test_lambda_observer(env_compiler):
 
         def get_results(self):
             return {"observer_args": self.observer_args}
-        
+
     result, _ = kernel_tuner.tune_kernel(*env_compiler, observers=[lambda args: MyObserver(args)], compiler_options=["-fopenmp"])
 
     # Check if the observer has correctly received the lang option
@@ -63,7 +63,7 @@ def test_lambda_observer(env_compiler):
 
 @skip_if_no_pycuda
 def test_register_observer_pycuda(env):
-    result, _ = kernel_tuner.tune_kernel(*env, observers=[RegisterObserver()], lang='CUDA')
+    result, _ = kernel_tuner.tune_kernel(*env, observers=[RegisterObserver()], lang='PYCUDA')
     assert "num_regs" in result[0]
     assert result[0]["num_regs"] > 0
 

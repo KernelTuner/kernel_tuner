@@ -18,6 +18,7 @@ import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
 from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver, OutputObserver, PrologueObserver
 from kernel_tuner.observers.tegra import TegraObserver
+from kernel_tuner.backends.backend import GPUBackend
 
 try:
     import torch
@@ -230,6 +231,24 @@ def instantiate_observer(observer, args):
         raise TypeError(f"Invalid observer: {observer!r} does not extend BenchmarkObserver")
 
 
+def _select_default_cuda_backend():
+    """ Select default CUDA backend, looks for which backends are installed. """
+    # First try cuda-python (nvcuda)
+    from kernel_tuner.backends.nvcuda import CudaFunctions, driver
+    if driver:
+        return CudaFunctions
+    # Then try Cupy
+    if _get_cupy():
+        from kernel_tuner.backends.cupy import CupyFunctions
+        return CupyFunctions
+    # Then try PyCUDA
+    from kernel_tuner.backends.pycuda import PyCudaFunctions, pycuda_available
+    if pycuda_available:
+        return PyCudaFunctions
+    # Ran out of options
+    raise RuntimeError("Error: CUDA selected/detected, but missing CUDA dependencies, please run 'pip install cuda-python', or install cupy or pycuda.")
+
+
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner."""
 
@@ -286,67 +305,46 @@ class DeviceInterface(object):
         observer_args = dict(device=device, platform=platform, compiler=compiler, lang=lang)
         observers = [instantiate_observer(ob, observer_args) for ob in observers]
 
-        if lang.upper() == "CUDA":
+        backend_options = dict(compiler_options=compiler_options, iterations=iterations)
+
+        # first check for explicitly selected backends
+        if lang.upper() == "PYCUDA":
             from kernel_tuner.backends.pycuda import PyCudaFunctions
-            dev = PyCudaFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            backend = PyCudaFunctions
         elif lang.upper() == "CUPY":
             from kernel_tuner.backends.cupy import CupyFunctions
-            dev = CupyFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            backend = CupyFunctions
         elif lang.upper() == "NVCUDA":
             from kernel_tuner.backends.nvcuda import CudaFunctions
-            dev = CudaFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            backend = CudaFunctions
+        elif lang.upper() == "CUDA":
+            # Select default CUDA backend, based on availability
+            backend = _select_default_cuda_backend()
         elif lang.upper() == "OPENCL":
             from kernel_tuner.backends.opencl import OpenCLFunctions
-            dev = OpenCLFunctions(
-                device,
-                platform,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
-        elif lang.upper() in ["C", "FORTRAN"]:
-            from kernel_tuner.backends.compiler import CompilerFunctions
-            dev = CompilerFunctions(
-                compiler=compiler,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            backend = OpenCLFunctions
+            backend_options["platform"] = platform
         elif lang.upper() == "HIP":
             from kernel_tuner.backends.hip import HipFunctions
-            dev = HipFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            backend = HipFunctions
+        elif lang.upper() in ["C", "FORTRAN"]:
+            from kernel_tuner.backends.compiler import CompilerFunctions
+            backend = CompilerFunctions
+            backend_options["compiler"] = compiler
+            backend_options["observers"] = observers
         elif lang.upper() == "HYPERTUNER":
             from kernel_tuner.backends.hypertuner import HypertunerFunctions
-            dev = HypertunerFunctions(
-                iterations=iterations,
-                compiler_options=compiler_options
-            )
+            backend = HypertunerFunctions
             self.requires_warmup = False
         else:
             raise NotImplementedError(
                 "Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet"
             )
-        self.dev = dev
+
+        if issubclass(backend, GPUBackend):
+            backend_options["device"] = device
+            backend_options["observers"] = observers
+        self.dev = backend(**backend_options)
 
         # look for NVMLObserver and TegraObserver in observers, if present, enable special tunable parameters through nvml/tegra
         self.use_nvml = False
@@ -381,9 +379,9 @@ class DeviceInterface(object):
         self.iterations = iterations
 
         self.lang = lang
-        self.units = dev.units
-        self.name = dev.name
-        self.max_threads = dev.max_threads
+        self.units = self.dev.units
+        self.name = self.dev.name
+        self.max_threads = self.dev.max_threads
         if not quiet:
             print("Using: " + self.dev.name)
 
