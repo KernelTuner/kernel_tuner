@@ -3,12 +3,17 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
+
+
+## [1.4.0] - 2026-06-18
 - Add support for multi-objective optimization using Pymoo
 - Add support for parallel tuning using Ray
 - Add support for templated kernels in all CUDA / HIP backends
 - Add LLaMEA-generated optimization algorithms
 - Add AMDSMIObserver
 - Fix to ensure CUDA backends and NVMLObserver use same device
+- Fix bug blocking use of use_locked_clocks=True for NVMLObserver
+- Fix bug in NVMLObserver to reset clocks during crash
 - Add support for tuning SM count using cuda-python
 - Change default CUDA backend to use cuda-python
 
