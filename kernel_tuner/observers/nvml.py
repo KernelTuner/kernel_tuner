@@ -106,6 +106,16 @@ class nvml:
                 self.use_locked_clocks = False
 
     def __del__(self):
+        try:
+            self.restore_defaults()
+        except ImportError:
+            # ImportError happens when trying to reset clocks with
+            # nvidia-smi-fallback while Python is shutting down
+            # In this case clocks are reset using atexit, and we
+            # can safely ignore the exception
+            pass
+
+    def restore_defaults(self):
         # try to restore to defaults
         if self.pwr_limit_default is not None:
             self.pwr_limit = self.pwr_limit_default
@@ -210,6 +220,9 @@ class nvml:
             self.applications_mem_clock = mem_clock
 
         # Store the fact that we have modified the clocks
+        if not self.modified_clocks:
+            import atexit
+            atexit.register(self.reset_clocks)
         self.modified_clocks = True
 
     def reset_clocks(self):
