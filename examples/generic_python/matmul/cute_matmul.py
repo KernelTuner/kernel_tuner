@@ -1057,9 +1057,9 @@ def tune_optimized(M, N, K, L=1):
 
 if __name__ == "__main__":
     m, n, k = 4096, 4096, 4096
-    #run_naive_matmul(m, n, k)
-    #tune_naive_matmul(m, n, k)
+    run_naive_matmul(m, n, k)
+    tune_naive_matmul(m, n, k)
 
-   # mnkl = (4096, 4096, 4096, 1)
+    mnkl = (4096, 4096, 4096, 1)
     tune_optimized(m, n, k)
-    #run_optimized(m, n, k)
+    run_optimized(m, n, k)

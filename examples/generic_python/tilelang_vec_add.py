@@ -1,10 +1,10 @@
 import tilelang
 import tilelang.language as T
 import torch
-from kernel_tuner import tune_kernel
-from pathlib import Path
 
-FULL_PATH = Path(__file__).resolve()
+from kernel_tuner import tune_kernel
+from call_functions import call_tilelang
+
 
 @tilelang.jit  # infers target from tensors at first call
 def add(N: int, dtype: str = 'float32', block: int = 256,):
@@ -24,23 +24,6 @@ def add(N: int, dtype: str = 'float32', block: int = 256,):
     return add_kernel
 
 
-def run_normal():
-    # Host side (PyTorch shown; NumPy/DLPack also supported)
-    N = 1 << 20
-    A = torch.randn(N, device='cuda', dtype=torch.float32)
-    B = torch.randn(N, device='cuda', dtype=torch.float32)
-    C = torch.empty(N, device='cuda', dtype=torch.float32)
-
-    kernel = add(N)
-    kernel(A, B, C)  # runs on GPU
-    torch.testing.assert_close(C, A + B)
-    print("done")
-
-
-def call_tilelang(kernel_function, args, kwargs):
-    compiled_kernel = kernel_function(**kwargs) # cached, so second time only cache lookup is performed
-    compiled_kernel(*args)
-
 def tune():
     N = 1 << 20
     A = torch.randn(N, device='cuda', dtype=torch.float32)
@@ -54,7 +37,7 @@ def tune():
 
     answer = [None, None, (A + B).cpu()]
     
-    res, env = tune_kernel("add", FULL_PATH, N, args, tune_params, lang="generic_python", 
+    res, env = tune_kernel("add", __file__, N, args, tune_params, lang="generic_python", 
             call_function=call_tilelang, answer=answer)
 
 if __name__ == "__main__":

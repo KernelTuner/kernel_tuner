@@ -1,11 +1,13 @@
 import warp as wp
 import numpy as np
-from kernel_tuner import tune_kernel, run_kernel
 import torch
-from pathlib import Path
+
+from kernel_tuner import tune_kernel
+from call_functions import call_warp
+
 
 wp.init()
-FULL_PATH = Path(__file__).resolve() 
+
 
 @wp.func
 def add_op(x: float, y: float):
@@ -55,7 +57,7 @@ def tune():
 
     results, env = tune_kernel(
         kernel_name="vec_add",
-        kernel_source=FULL_PATH,
+        kernel_source=__file__,
         problem_size=n,
         arguments=args,
         tune_params=tune_params,

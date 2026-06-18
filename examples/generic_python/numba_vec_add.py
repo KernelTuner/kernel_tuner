@@ -1,10 +1,8 @@
 from numba import cuda
-import torch
-from kernel_tuner import tune_kernel, run_kernel
 import numpy as np
-from pathlib import Path
 
-FULL_PATH = Path(__file__).resolve()
+from kernel_tuner import tune_kernel
+from call_functions import call_numba
 
 
 @cuda.jit
@@ -14,16 +12,6 @@ def f(a, b, c):
 
     if tid < size:
         c[tid] = a[tid] + b[tid]
-
-
-def call_numba(kernel_function, args, kwargs, grid, threads):
-    numba_args = []
-    for arg in args:
-        if isinstance(arg, torch.Tensor):
-            numba_args.append(cuda.as_cuda_array(arg))
-        else:
-            numba_args.append(arg)
-    kernel_function[grid, threads](*args, **kwargs)
 
 
 def tune():
@@ -41,7 +29,7 @@ def tune():
 
     results, env = tune_kernel(
         kernel_name="f",
-        kernel_source=FULL_PATH,
+        kernel_source=__file__,
         problem_size=N,
         arguments=args,
         tune_params=tune_params,

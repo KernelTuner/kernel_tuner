@@ -250,10 +250,10 @@ if __name__ == "__main__":
     M, N, K = 1024, 1024, 1024
 
     run_basic(M, N, K)
-    #tune_basic(M, N, K)
+    tune_basic(M, N, K)
 
-    #run_optimized(M, N, K)
-    #tune_optimized(M, N, K)
+    run_optimized(M, N, K)
+    tune_optimized(M, N, K)
 
 
 

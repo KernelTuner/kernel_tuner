@@ -1,4 +1,3 @@
-import torch
 import numpy as np
 import warp as wp
 
@@ -30,38 +29,6 @@ def gemm(
     C[i, j] = wp.float16(sum)
 
 
-# tile size
-TILE_M = 32
-TILE_N = 32
-TILE_K = 32
-
-# num threads per-tile
-TILE_THREADS = 1024
-
-# GEMM example from https://nvidia.github.io/warp/user_guide/tiles.html 
-@wp.kernel()
-def tile_gemm(
-    A: wp.array2d(dtype=wp.float16), 
-    B: wp.array2d(dtype=wp.float16), 
-    C: wp.array2d(dtype=wp.float16)
-):
-    # output tile index
-    i, j = wp.tid()
-
-    sum = wp.tile_zeros(shape=(TILE_M, TILE_N), dtype=wp.float32)
-
-    K = A.shape[1]
-    count = (K + TILE_K - 1) // TILE_K 
-
-    for k in range(0, count):
-        a = wp.tile_load(A, shape=(TILE_M, TILE_K), offset=(i*TILE_M, k*TILE_K), bounds_check=True)
-        b = wp.tile_load(B, shape=(TILE_K, TILE_N), offset=(k*TILE_K, j*TILE_N), bounds_check=True)
-
-        wp.tile_matmul(a, b, sum)
-
-    wp.tile_store(C, wp.tile_astype(sum, wp.float16), offset=(i*TILE_M, j*TILE_N), bounds_check=True)
-
-
 def run_gemm(M, N, K):
     rng = np.random.default_rng(42)
     A = rng.random((M, K)).astype(np.float16)
@@ -73,28 +40,6 @@ def run_gemm(M, N, K):
     C_wp = wp.array(C)
 
     wp.launch(gemm, dim=(M, N), inputs=[A_wp, B_wp, C_wp])
-
-    np.testing.assert_allclose(C_wp.numpy(), A @ B, rtol=1e-2, atol=M * 2**(-11))
-
-    print("Succes")
-
-
-def run_gemm_tiled(M, N, K):
-    rng = np.random.default_rng(42)
-    A = rng.random((M, K)).astype(np.float16)
-    B = rng.random((K, N)).astype(np.float16)
-    C = np.zeros((M, N), dtype=np.float16)
-
-    A_wp = wp.array(A)
-    B_wp = wp.array(B)
-    C_wp = wp.array(C)
-
-
-    wp.launch_tiled(
-        tile_gemm,
-        dim=((M + TILE_M - 1) // TILE_M, (N + TILE_N - 1) // TILE_N),
-        inputs=[A_wp, B_wp, C_wp],
-        block_dim=TILE_THREADS)
 
     np.testing.assert_allclose(C_wp.numpy(), A @ B, rtol=1e-2, atol=M * 2**(-11))
 
@@ -132,9 +77,7 @@ def tune(M, K, N):
 if __name__ == "__main__":
     M, N, K = 1024, 1024, 1024
     
-    #run_gemm(M, N, K)
-    #run_gemm_tiled(M, N, K)
-    
+    run_gemm(M, N, K)    
     tune(M, N, K)
 
     

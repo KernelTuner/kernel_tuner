@@ -1,11 +1,13 @@
 import tilus
 from tilus import float32, int32
-from tilus.utils import cdiv, benchmark_func
+from tilus.utils import cdiv
 import torch 
-from kernel_tuner import tune_kernel, run_kernel
-from pathlib import Path
 
-FULL_PATH = Path(__file__).resolve()
+from kernel_tuner import tune_kernel, run_kernel
+from call_functions import call_tilus
+
+
+
 
 class VecAddV(tilus.Script):
     def __init__(self, block_size_x=None, num_warps=None):
@@ -38,8 +40,7 @@ class VecAddV(tilus.Script):
         self.store_global(gc, c, offsets=[offset])
 
 
-def call_tilus(kernel_function, args, kwargs):
-    kernel_function(*args, **kwargs) 
+
 
 
 def tune(size):
@@ -57,7 +58,7 @@ def tune(size):
 
     results, env = tune_kernel(
         kernel_name="VecAddV", 
-        kernel_source=FULL_PATH,
+        kernel_source=__file__,
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
@@ -79,7 +80,7 @@ def run(size):
 
     results = run_kernel(
         kernel_name="VecAddV", 
-        kernel_source=FULL_PATH,
+        kernel_source=__file__,
         problem_size=size,
         arguments=args,
         params={"block_size_x": 32},
@@ -92,23 +93,9 @@ def run(size):
     assert torch.allclose(results[-1], c_expect)
 
 
-def tune_with_builtin(size):
-    TunedVecAdd = tilus.autotune("block_size_x", [32, 64, 128, 256, 512, 1024])(VecAddV)
-    vecadd = TunedVecAdd()
-
-    a = torch.randn(size, dtype=torch.float32).cuda()
-    b = torch.randn(size, dtype=torch.float32).cuda()
-    c = torch.empty(size, dtype=torch.float32).cuda()
-    c_expect = a + b
-
-    vecadd(size, a, b, c) # This is where the actual tuning takes place
-    torch.cuda.synchronize()
-
-    torch.testing.assert_close(c_expect, c)
-
 
 if __name__ == "__main__":
     size = 10000000
-    #tune(size)
-    #run(size)
-    tune_with_builtin(size)
+    tune(size)
+    run(size)
+

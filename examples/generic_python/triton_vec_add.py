@@ -2,11 +2,9 @@ import numpy as np
 import torch
 import triton
 import triton.language as tl
-from pathlib import Path
 
 from kernel_tuner import tune_kernel, run_kernel
-
-FULL_PATH = Path(__file__).resolve() 
+from call_functions import call_triton
 
 @triton.jit
 def add_op(x, y):
@@ -30,9 +28,6 @@ def add_kernel(x_ptr,  # *Pointer* to first input vector.
     tl.store(output_ptr + offsets, output, mask=mask)
 
 
-def call_triton(kernel_function, args, kwargs, grid):
-    kernel_function[grid](*args, **kwargs)
-
 
 def tune():
     size = 10000000
@@ -48,7 +43,7 @@ def tune():
     tune_params["block_size_x"] = [2**i for i in range(11)]
 
     
-    result = run_kernel("add_kernel", FULL_PATH, size, args, {"block_size_x": 256}, 
+    result = run_kernel("add_kernel", __file__, size, args, {"block_size_x": 256}, 
                lang="generic_python", call_function=call_triton)   
     assert np.allclose(c_expect.cpu(), result[2])
     
@@ -56,7 +51,7 @@ def tune():
  
     results, env = tune_kernel(
         kernel_name="add_kernel",
-        kernel_source=FULL_PATH,
+        kernel_source=__file__,
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
@@ -64,8 +59,6 @@ def tune():
         answer=[None, None, c_expect.cpu(), None],
         call_function=call_triton,
     )
-
-    print(results)
 
     
     

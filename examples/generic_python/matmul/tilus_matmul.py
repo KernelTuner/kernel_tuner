@@ -257,11 +257,7 @@ def tune_opt(M, N, K):
 
 if __name__ == "__main__":
     M, N, K = 4096, 4096, 4096
-    #M, N, K = 8192, 8192, 8192
-    #run_basic(M, N, K)
-
-    #run_optmized(M, N, K)
-  
+    run_basic(M, N, K)
+    run_optimized(M, N, K)
     tune_basic(M, N, K)
-
-    #tune_opt(M, N, K)
+    tune_opt(M, N, K)
