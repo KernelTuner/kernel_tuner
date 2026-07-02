@@ -5,61 +5,46 @@ import triton.language as tl
 from kernel_tuner import tune_kernel
 from examples.generic_python.call_functions import call_triton
 
+
+
 @triton.jit
 def matmul_basic(
-        a_ptr, b_ptr, c_ptr, # Pointers
-        M, N, K, # Matrix sizes
-        stride_am, stride_ak,  # Strides
-        stride_bk, stride_bn,
-        stride_cm, stride_cn,
-        BLOCK_SIZE_M: tl.constexpr, # Tile sizes
-        BLOCK_SIZE_N: tl.constexpr,
-        BLOCK_SIZE_K: tl.constexpr,
+    A_ptr, B_ptr, C_ptr,
+    M, N, K,
+    BLOCK_SIZE_M: tl.constexpr,
+    BLOCK_SIZE_N: tl.constexpr,
+    BLOCK_SIZE_K: tl.constexpr,
 ):
-    # Each program computes one BLOCK_SIZE_M x BLOCK_SIZE_N tile of C
-    pid_m = tl.program_id(axis=0)
-    pid_n = tl.program_id(axis=1)
+    m = tl.program_id(0)
+    n = tl.program_id(1)
 
-    # Compute row/column indices for the tile
-    offs_am = pid_m * BLOCK_SIZE_M + tl.arange(0, BLOCK_SIZE_M)
-    offs_bn = pid_n * BLOCK_SIZE_N + tl.arange(0, BLOCK_SIZE_N)
-    offs_k = tl.arange(0, BLOCK_SIZE_K)
+    # Base offsets for this tile
+    offs_m = m * BLOCK_SIZE_M + tl.arange(0, BLOCK_SIZE_M)
+    offs_n = n * BLOCK_SIZE_N + tl.arange(0, BLOCK_SIZE_N)
 
-    # Create pointers to A and B tiles
-    a_ptrs = a_ptr + (offs_am[:, None] * stride_am + offs_k[None, :] * stride_ak)
-    b_ptrs = b_ptr + (offs_k[:, None] * stride_bk + offs_bn[None, :] * stride_bn)
+    # Accumulator for C tile
+    acc = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
 
-    # Accumulator
-    accumulator = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
-
-    # Loop over K dimension
+    # Loop over K in chunks
     for k in range(0, tl.cdiv(K, BLOCK_SIZE_K)):
-        a = tl.load(
-            a_ptrs,
-            mask=(offs_am[:, None] < M) & (offs_k[None, :] < K - k * BLOCK_SIZE_K),
-            other=0.0,
-        )
-        
-        b = tl.load(
-            b_ptrs,
-            mask=(offs_k[:, None] < K - k * BLOCK_SIZE_K) & (offs_bn[None, :] < N),
-            other=0.0,
-        )
+        offs_k = k * BLOCK_SIZE_K + tl.arange(0, BLOCK_SIZE_K)
 
-        accumulator = tl.dot(a, b, accumulator)
+        # Load tiles of A and B
+        a_ptrs = A_ptr + offs_m[:, None] * K + offs_k[None, :]   # [BLOCK_M, BLOCK_K]
+        b_ptrs = B_ptr + offs_k[:, None] * N + offs_n[None, :]   # [BLOCK_K, BLOCK_N]
 
-        # advance K
-        a_ptrs += BLOCK_SIZE_K * stride_ak
-        b_ptrs += BLOCK_SIZE_K * stride_bk
+        mask_a = (offs_m[:, None] < M) & (offs_k[None, :] < K)
+        mask_b = (offs_k[:, None] < K) & (offs_n[None, :] < N)
+
+        a = tl.load(a_ptrs, mask=mask_a, other=0.0)
+        b = tl.load(b_ptrs, mask=mask_b, other=0.0)
+
+        acc += tl.dot(a, b)
 
     # Store result
-    c = accumulator.to(tl.float16)
-    offs_cm = pid_m * BLOCK_SIZE_M + tl.arange(0, BLOCK_SIZE_M)
-    offs_cn = pid_n * BLOCK_SIZE_N + tl.arange(0, BLOCK_SIZE_N)
-    c_ptrs = c_ptr + stride_cm * offs_cm[:, None] + stride_cn * offs_cn[None, :]
-    mask = (offs_cm[:, None] < M) & (offs_cn[None, :] < N)
-    tl.store(c_ptrs, c, mask=mask)
-
+    c_ptrs = C_ptr + offs_m[:, None] * N + offs_n[None, :]
+    mask_c = (offs_m[:, None] < M) & (offs_n[None, :] < N)
+    tl.store(c_ptrs, acc, mask=mask_c)
 
 
 
@@ -177,9 +162,6 @@ def run_basic(M, N, K):
     matmul_basic[grid](
         A, B, C,
         M, N, K,
-        A.stride(0), A.stride(1),
-        B.stride(0), B.stride(1),
-        C.stride(0), C.stride(1),
         BLOCK_SIZE_M=BLOCK_SIZE_M,
         BLOCK_SIZE_N=BLOCK_SIZE_N,
         BLOCK_SIZE_K=BLOCK_SIZE_K,
@@ -230,9 +212,6 @@ def tune_basic(M, N, K):
 
     args = [A, B, C,
         M, N, K,
-        A.stride(0), A.stride(1),
-        B.stride(0), B.stride(1),
-        C.stride(0), C.stride(1),
     ]
 
     tune_params = dict()
@@ -249,7 +228,7 @@ def tune_basic(M, N, K):
         arguments=args,
         tune_params=tune_params,
         lang="generic_python",
-        answer=[None, None, C_ref.cpu(), None, None, None, None, None, None, None, None, None],
+        answer=[None, None, C_ref.cpu(), None, None, None],
         atol=M * 2**(-11),
         block_size_names = ["BLOCK_SIZE_M", "BLOCK_SIZE_M"],
         strategy = "bayes_opt",
@@ -306,7 +285,7 @@ def tune_opt(M, N, K):
 if __name__ == "__main__":
     M, N, K = 4096, 4096, 4096
     run_basic(M, N, K)
-    run_opt(M, N, K)
+    #run_opt(M, N, K)
 
     tune_basic(M, N, K)
-    tune_opt(M, N, K)
+    #tune_opt(M, N, K)
