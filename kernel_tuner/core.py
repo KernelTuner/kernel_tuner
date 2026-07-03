@@ -219,7 +219,7 @@ class KernelSource(object):
         """
         for i, f in enumerate(self.kernel_sources):
             if not callable(f):
-                util.check_argument_list(kernel_name, self.get_kernel_string(i), arguments)
+                util.check_argument_list(kernel_name, self.get_kernel_string(i), arguments, lang=self.lang)
             else:
                 logging.debug("Checking of arguments list not supported yet for code generators.")
 
@@ -344,7 +344,7 @@ class DeviceInterface(object):
             self.requires_warmup = False
         else:
             raise NotImplementedError(
-                "Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet"
+                "Sorry, support for languages other than CUDA, OpenCL, HIP, C, Julia, Fortran is not implemented yet"
             )
         self.dev = dev
 
@@ -563,7 +563,7 @@ class DeviceInterface(object):
         result_host = []
         for i, arg in enumerate(instance.arguments):
             if should_sync[i]:
-                if isinstance(arg, (np.ndarray, cp.ndarray)):
+                if isinstance(arg, (np.ndarray, cp.ndarray)) or arg.__class__.__name__ == "VectorValue":
                     result_host.append(np.zeros_like(arg))
                     self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
                 elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
@@ -576,6 +576,7 @@ class DeviceInterface(object):
                 else:
                     # We should sync this argument, but we do not know how to transfer this type of argument
                     # What do we do? Should we throw an error?
+                    warn(f"Argument {i} is of type {type(arg)} and should be synchronized, but is not implemented.")
                     result_host.append(None)
             else:
                 result_host.append(None)
@@ -836,6 +837,12 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     # for each element in the argument list, check if the types match
     for i, arg in enumerate(instance.arguments):
         if answer[i] is not None:  # skip None elements in the answer list
+            # convert Julia VectorValues to numpy arrays for verification
+            if arg.__class__.__name__ == "VectorValue":
+                arg = np.array(arg)
+            if answer[i].__class__.__name__ == "VectorValue":
+                answer[i] = np.array(answer[i])
+
             if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(arg, (np.ndarray, cp.ndarray)):
                 if not np.can_cast(arg.dtype, answer[i].dtype):
                     raise TypeError(

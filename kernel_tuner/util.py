@@ -135,53 +135,61 @@ def check_argument_type(dtype, kernel_argument):
     return False  # unknown dtype. do not throw exception to still allow kernel to run.
 
 
-def check_argument_list(kernel_name, kernel_string, args):
+def check_argument_list(kernel_name, kernel_string, args, lang=None):
     """Raise an exception if kernel arguments do not match host arguments."""
     kernel_arguments = list()
     collected_errors = list()
 
+    # Find all kernel argument lists in the kernel string
     for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
         kernel_start = iterator.end()
         kernel_end = kernel_string.find(")", kernel_start)
         if kernel_start != 0:
             kernel_arguments.append(kernel_string[kernel_start:kernel_end].split(","))
 
+    # Check each set of kernel arguments
     for arguments_set, arguments in enumerate(kernel_arguments):
         collected_errors.append(list())
         if len(arguments) != len(args):
-            collected_errors[arguments_set].append("Kernel and host argument lists do not match in size.")
+            collected_errors[arguments_set].append(
+                f"Kernel ({len(arguments)}) and host argument ({len(args)}) lists do not match in size."
+            )
             continue
 
-        for i, arg in enumerate(args):
-            kernel_argument = arguments[i]
+        # Check each argument in the kernel argument list
+        if lang is None or lang.upper() != "JULIA":
+            for i, arg in enumerate(args):
+                kernel_argument = arguments[i]
 
-            # Handle tunable arguments
-            if isinstance(arg, Tunable):
-                continue
+                # Handle tunable arguments
+                if isinstance(arg, Tunable):
+                    continue
 
-            # Handle numpy arrays and other array types
-            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray)):
-                raise TypeError(
-                    f"Argument at position {i} of type: {type(arg)} should be of type "
-                    "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
+                # Handle numpy arrays and other array types
+                if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray)):
+                    if arg.__class__.__name__ == "VectorValue":
+                        continue  # skip for Julia, types are commonly not specified in the kernel arguments
+                    raise TypeError(
+                        f"Argument at position {i} of type: {type(arg)} should be of type "
+                        "np.ndarray, numpy scalar, HIP Python DeviceArray, Julia VectorValue type"
+                    )
+
+                correct = True
+                if isinstance(arg, np.ndarray):
+                    if "*" not in kernel_argument:
+                        correct = False
+
+                if isinstance(arg, DeviceArray):
+                    str_dtype = str(np.dtype(arg.typestr))
+                else:
+                    str_dtype = str(arg.dtype)
+
+                if correct and check_argument_type(str_dtype, kernel_argument):
+                    continue
+
+                collected_errors[arguments_set].append(
+                    f"Argument at position {i} of dtype: {str_dtype} does not match {kernel_argument}."
                 )
-
-            correct = True
-            if isinstance(arg, np.ndarray):
-                if "*" not in kernel_argument:
-                    correct = False
-
-            if isinstance(arg, DeviceArray):
-                str_dtype = str(np.dtype(arg.typestr))
-            else:
-                str_dtype = str(arg.dtype)
-
-            if correct and check_argument_type(str_dtype, kernel_argument):
-                continue
-
-            collected_errors[arguments_set].append(
-                f"Argument at position {i} of dtype: {str_dtype} does not match {kernel_argument}."
-            )
 
         if not collected_errors[arguments_set]:
             # We assume that if there is a possible list of arguments that matches with the provided one

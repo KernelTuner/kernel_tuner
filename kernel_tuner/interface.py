@@ -596,14 +596,17 @@ def tune_kernel(
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
-    if lang == "Julia":
-        # TODO implement the case where Kernel Tuner is called from Julia but the target language is not Julia
+    if lang is not None and lang.upper() == "JULIA":
+        # TODO implement & test the case where Kernel Tuner is called from Julia but the target language is not Julia
         if isinstance(tune_params, dict) or "DictValue" in tune_params.__class__.__name__:
             raise ValueError(
                 "tune_params should not be a Julia dict, because it does not preserve order. Use a list of pairs instead."
             )
         tune_params = [tuple([k, util.possible_julia_vector_to_list(tp)]) for k, tp in tune_params]
         tune_params = dict(tune_params)
+        answer = [
+            numpy.array(a) if isinstance(a, (list, tuple)) else a for a in util.possible_julia_vector_to_list(answer)
+        ]
     restrictions = util.possible_julia_vector_to_list(restrictions)
     block_size_names = util.possible_julia_vector_to_list(block_size_names)
 
@@ -838,7 +841,7 @@ def run_kernel(
             raise RuntimeError("cannot create kernel instance, too many threads per block")
 
         # see if the kernel arguments have correct type
-        util.check_argument_list(instance.name, instance.kernel_string, arguments)
+        util.check_argument_list(instance.name, instance.kernel_string, arguments, lang=lang)
 
         # compile the kernel
         func = dev.compile_kernel(instance, False)
@@ -873,6 +876,10 @@ def run_kernel(
         else:
             results.append(numpy.zeros_like(arg))
             dev.memcpy_dtoh(results[-1], gpu_args[i])
+
+    # for Julia, convert the results back to Julia arrays
+    # if lang and lang.lower() == "julia":
+    #     results = [util.possible_list_to_julia_vector(r) for r in results]
 
     return results
 
