@@ -51,6 +51,16 @@ backend_map = {
         "capability": None,
         "GPUArrayType": "MtlArray",
     },
+    "CPU": {
+        "pkg": None,
+        "module": "CPU",
+        "module_backend": "CPU",
+        "device_select": lambda d: "nothing",
+        "name": "CPU",
+        "max_threads": "1024", # arbitrary as CPU doesn't have a max threads per block concept
+        "capability": None,
+        "GPUArrayType": "Array",
+    },
 }
 
 
@@ -99,4 +109,6 @@ def detect_julia_gpu_backends():
                 available_backends.append(backend_name)
             except (FileNotFoundError, subprocess.CalledProcessError):
                 pass
+
+    available_backends.append("CPU")  # always add CPU backend last
     return available_backends

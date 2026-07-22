@@ -63,10 +63,13 @@ class JuliaFunctions(GPUBackend):
             backend_name = compiler_options[0].upper()
         else:
             if len(self.available_backends) != 1:
-                raise ValueError(
-                    f"Multiple or no Julia backends detected: {self.available_backends}. "
-                    "Please specify exactly one backend in compiler_options."
-                )
+                if "CPU" in self.available_backends and len(self.available_backends) == 2:
+                    self.available_backends.remove("CPU")
+                else:
+                    raise ValueError(
+                        f"Multiple or no Julia backends detected: {self.available_backends}. "
+                        "Please specify exactly one backend in compiler_options."
+                    )
             backend_name = self.available_backends[0]
 
         # Initialize backend attributes
@@ -101,17 +104,31 @@ class JuliaFunctions(GPUBackend):
         for observer in self.observers:
             observer.register_device(self)
 
-        jl.seval(
-            f"""
-            global dest_tmp, src_tmp  # for memcpy_htod
-            module KernelTunerHelper
-                using {self.backend_mod_name}
-                const kt_julia_backend = {self.backend_mod_instname}()
-                const GPUArrayType = {self.GPUArrayType}
-                include("{str(Path(__file__).parent / "julia_helper.jl")}")
-            end
-            """
-        )
+        # setup Julia module for kernel launch
+        if self.backend_mod_name == "CPU":
+            jl.seval(
+                f"""
+                global dest_tmp, src_tmp  # for memcpy_htod
+                module KernelTunerHelper
+                    using KernelAbstractions
+                    const kt_julia_backend = CPU()
+                    const GPUArrayType = {self.GPUArrayType}
+                    include("{str(Path(__file__).parent / "julia_helper.jl")}")
+                end
+                """
+            )
+        else:
+            jl.seval(
+                f"""
+                global dest_tmp, src_tmp  # for memcpy_htod
+                module KernelTunerHelper
+                    using {self.backend_mod_name}
+                    const kt_julia_backend = {self.backend_mod_instname}()
+                    const GPUArrayType = {self.GPUArrayType}
+                    include("{str(Path(__file__).parent / "julia_helper.jl")}")
+                end
+                """
+            )
 
         self.to_gpuarray = jl.KernelTunerHelper.to_gpuarray
         self.launch_kernel = jl.KernelTunerHelper.launch_kernel
@@ -130,18 +147,23 @@ class JuliaFunctions(GPUBackend):
         if backend_name not in backend_map:
             raise ValueError(f"Unknown backend: {backend_name}")
         info = backend_map[backend_name]
+        backend_pkg = info["pkg"]
 
-        # Ensure the package is installed
-        self.check_package_and_install(info["pkg"])
+        if backend_pkg is not None:
+            # Ensure the package is installed
+            self.check_package_and_install(backend_pkg)
 
-        # # Set debug level if needed
-        # if backend_name == "cuda":
-        #     jl.seval("ENV[\"JULIA_CUDA_DEBUG\"] = \"2\"")
+            # # Set debug level if needed
+            # if backend_name == "cuda":
+            #     jl.seval("ENV[\"JULIA_CUDA_DEBUG\"] = \"2\"")
 
         # Bring module into Python
         self.backend_mod_name = info["module"]
         self.backend_mod_instname = info["module_backend"]
-        jl.seval(f"using KernelAbstractions, {info['pkg']}")
+        # jl.seval(f"using KernelAbstractions, {info['module']}")
+        jl.seval(f"using KernelAbstractions")
+        if backend_pkg is not None:
+            jl.seval(f"using {info['module']}")
         backend_mod = getattr(jl.Main, self.backend_mod_name)
         self.backend_mod = backend_mod
         jl.seval(f"tmp_arr = {info['GPUArrayType']}(Float32.(zeros(2)))")
@@ -151,7 +173,7 @@ class JuliaFunctions(GPUBackend):
 
         # Select device
         try:
-            if int(device) == 0 and not info["pkg"] == "CUDA":
+            if int(device) == 0 and not backend_pkg == "CUDA":
                 device = 1  # Julia uses 1-based indexing, but the CUDA backend uses 0-based so we skip that
             jl.seval(info["device_select"](int(device)))
             self.last_selected_device = device
@@ -182,7 +204,10 @@ class JuliaFunctions(GPUBackend):
             self.max_threads = None
 
         # Get the device and context
-        self.backend_device = self.backend_mod.device()
+        try:
+            self.backend_device = self.backend_mod.device()
+        except Exception:
+            self.backend_device = None
         if backend_name == "CUDA":
             self.contextqueue = self.backend_mod.context
         # elif backend_name == "AMD":
@@ -216,6 +241,10 @@ class JuliaFunctions(GPUBackend):
         elif backend_name == "METAL":
             self.start_evt = self.start_event
             self.end_evt = self.stop_event
+        elif backend_name == "CPU":
+            # CPU, use host-side timing
+            self.start_evt = None
+            self.end_evt = None
         else:
             raise NotImplementedError(f"Backend {backend_name} not supported in Julia backend.")
 
@@ -267,12 +296,19 @@ class JuliaFunctions(GPUBackend):
             self.check_package_and_install(package)
 
         # Wrap in a module to avoid name conflicts
-        module_code = f"""
+        if self.backend_mod_name == "CPU":
+            module_code = f"""
+module KernelTunerUserKernel
+    {kernel_code}
+end
+            """
+        else:
+            module_code = f"""
 module KernelTunerUserKernel
     using {self.backend_mod_name}
     {kernel_code}
 end
-        """
+            """
         try:
             jl.seval(module_code)
             self.current_kernel = jl.seval(f"KernelTunerUserKernel.{kernel_name}")
