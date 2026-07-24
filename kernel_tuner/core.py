@@ -8,25 +8,18 @@ from warnings import warn
 
 import numpy as np
 
-try:
-    import cupy as cp
-except ImportError:
-    cp = np
+def _get_cupy():
+    try:
+        import cupy as _cp
+    except ImportError:
+        return None
+    return _cp
 
 import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
-from kernel_tuner.backends.compiler import CompilerFunctions
-from kernel_tuner.backends.cupy import CupyFunctions
-from kernel_tuner.backends.hip import HipFunctions
-from kernel_tuner.backends.hypertuner import HypertunerFunctions
-from kernel_tuner.backends.julia import JuliaFunctions
-from kernel_tuner.backends.nvcuda import CudaFunctions
-from kernel_tuner.backends.opencl import OpenCLFunctions
-from kernel_tuner.backends.pycuda import PyCudaFunctions
-from kernel_tuner.observers.julia import JuliaJITWarmup
-from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
+from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver, OutputObserver, PrologueObserver
 from kernel_tuner.observers.tegra import TegraObserver
+from kernel_tuner.backends.backend import GPUBackend
 
 try:
     import torch
@@ -37,6 +30,7 @@ try:
     from hip._util.types import DeviceArray
 except ImportError:
     DeviceArray = Exception  # using Exception here as a type that will never be among kernel arguments
+
 
 _KernelInstance = namedtuple(
     "_KernelInstance",
@@ -241,6 +235,36 @@ class KernelSource(object):
             raise ValueError("Could not infer Julia backend from kernel source, provide it as a `compiler_option`")
 
 
+def instantiate_observer(observer, args):
+    """Instantiate or build an observer from a class/factory/instance."""
+
+    if isinstance(observer, BenchmarkObserver):
+        return observer
+    elif callable(observer):
+        # Check again if BenchmarkObserver
+        return instantiate_observer(observer(args), args)
+    else:
+        raise TypeError(f"Invalid observer: {observer!r} does not extend BenchmarkObserver")
+
+
+def _select_default_cuda_backend():
+    """ Select default CUDA backend, looks for which backends are installed. """
+    # First try cuda-python (nvcuda)
+    from kernel_tuner.backends.nvcuda import CudaFunctions, driver
+    if driver:
+        return CudaFunctions
+    # Then try Cupy
+    if _get_cupy():
+        from kernel_tuner.backends.cupy import CupyFunctions
+        return CupyFunctions
+    # Then try PyCUDA
+    from kernel_tuner.backends.pycuda import PyCudaFunctions, pycuda_available
+    if pycuda_available:
+        return PyCudaFunctions
+    # Ran out of options
+    raise RuntimeError("Error: CUDA selected/detected, but missing CUDA dependencies, please run 'pip install cuda-python', or install cupy or pycuda.")
+
+
 class DeviceInterface(object):
     """Class that offers a High-Level Device Interface to the rest of the Kernel Tuner."""
 
@@ -289,64 +313,57 @@ class DeviceInterface(object):
 
         logging.debug("DeviceInterface instantiated, lang=%s", lang)
 
-        if lang.upper() == "CUDA":
-            dev = PyCudaFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+        # Ensure observers is a list
+        observers = observers or []
+
+        # Observers can either be an object that extends BenchmarkObserver or
+        # lambda function that returns such an object.
+        observer_args = dict(device=device, platform=platform, compiler=compiler, lang=lang)
+        observers = [instantiate_observer(ob, observer_args) for ob in observers]
+
+        backend_options = dict(compiler_options=compiler_options, iterations=iterations)
+
+        # first check for explicitly selected backends
+        if lang.upper() == "PYCUDA":
+            from kernel_tuner.backends.pycuda import PyCudaFunctions
+            backend = PyCudaFunctions
         elif lang.upper() == "CUPY":
-            dev = CupyFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            from kernel_tuner.backends.cupy import CupyFunctions
+            backend = CupyFunctions
         elif lang.upper() == "NVCUDA":
-            dev = CudaFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            from kernel_tuner.backends.nvcuda import CudaFunctions
+            backend = CudaFunctions
+        elif lang.upper() == "CUDA":
+            # Select default CUDA backend, based on availability
+            backend = _select_default_cuda_backend()
         elif lang.upper() == "OPENCL":
-            dev = OpenCLFunctions(
-                device,
-                platform,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
-        elif lang.upper() in ["C", "FORTRAN"]:
-            dev = CompilerFunctions(
-                compiler=compiler,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            from kernel_tuner.backends.opencl import OpenCLFunctions
+            backend = OpenCLFunctions
+            backend_options["platform"] = platform
         elif lang.upper() == "HIP":
-            dev = HipFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            from kernel_tuner.backends.hip import HipFunctions
+            backend = HipFunctions
         elif lang.upper() == "JULIA":
-            dev = JuliaFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            from kernel_tuner.backends.julia import JuliaFunctions
+            backend = JuliaFunctions
         elif lang.upper() == "HYPERTUNER":
-            dev = HypertunerFunctions(iterations=iterations, compiler_options=compiler_options)
+            from kernel_tuner.backends.hypertuner import HypertunerFunctions
+            backend = HypertunerFunctions
             self.requires_warmup = False
+        elif lang.upper() in ["C", "FORTRAN"]:
+            from kernel_tuner.backends.compiler import CompilerFunctions
+            backend = CompilerFunctions
+            backend_options["compiler"] = compiler
+            backend_options["observers"] = observers
         else:
             raise NotImplementedError(
                 "Sorry, support for languages other than CUDA, OpenCL, HIP, C, Julia, Fortran is not implemented yet"
             )
-        self.dev = dev
+
+        if issubclass(backend, GPUBackend):
+            backend_options["device"] = device
+            backend_options["observers"] = observers
+        self.dev = backend(**backend_options)
 
         # look for NVMLObserver and TegraObserver in observers, if present, enable special tunable parameters through nvml/tegra
         self.use_nvml = False
@@ -355,8 +372,12 @@ class DeviceInterface(object):
         self.output_observers = []
         self.prologue_observers = []
         if observers:
+            try:
+                from kernel_tuner.observers.nvml import NVMLObserver as _NVMLObserver
+            except ImportError:
+                _NVMLObserver = None
             for obs in observers:
-                if isinstance(obs, NVMLObserver):
+                if _NVMLObserver is not None and isinstance(obs, _NVMLObserver):
                     self.nvml = obs.nvml
                     self.use_nvml = True
                 if isinstance(obs, TegraObserver):
@@ -371,6 +392,7 @@ class DeviceInterface(object):
 
         # for JULIA, add the JIT warmup prologue observer
         if lang.upper() == "JULIA":
+            from kernel_tuner.observers.julia import JuliaJITWarmup
             self.prologue_observers.append(JuliaJITWarmup(self.dev.backend))
             self.prologue_observers.append(JuliaJITWarmup(self.dev.backend))
 
@@ -382,10 +404,9 @@ class DeviceInterface(object):
         self.iterations = iterations
 
         self.lang = lang
-        self.units = dev.units
-        self.name = dev.name
-        self.max_threads = dev.max_threads
-        self.last_instance_params = None
+        self.units = self.dev.units
+        self.name = self.dev.name
+        self.max_threads = self.dev.max_threads
         if not quiet:
             print("Using: " + self.dev.name)
 
@@ -469,8 +490,12 @@ class DeviceInterface(object):
         logging.debug("thread block dimensions x,y,z=%d,%d,%d", *instance.threads)
         logging.debug("grid dimensions x,y,z=%d,%d,%d", *instance.grid)
 
+        # Set execution parameters
         if self.use_nvml and not skip_nvml_setting:
             self.set_nvml_parameters(instance)
+        if "cuda_sm_percentage" in instance.params:
+            # Currently only supported on cuda-python (NVCUDA)
+            self.dev.set_sm_percentage(instance.params["cuda_sm_percentage"])
 
         # Call the observers to register the configuration to be benchmarked
         for obs in self.dev.observers:
@@ -512,11 +537,14 @@ class DeviceInterface(object):
                         print(
                             f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
                         )
-                result[objective] = util.RuntimeFailedConfig()
+                result['__error__'] = util.RuntimeFailedConfig()
             else:
                 logging.debug("benchmark encountered runtime failure: " + str(e))
                 print("Error while benchmarking:", instance.name)
                 raise e
+
+        assert util.check_result_type(result), "The error in a result MUST be an actual error."
+
         return result
 
     def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
@@ -544,8 +572,10 @@ class DeviceInterface(object):
                 answer[i] is not None or "ArrayValue" in str(type(arg)) for i, arg in enumerate(instance.arguments)
             ]
         else:
+            cp = _get_cupy()
+            cupy_ndarray = (cp.ndarray,) if cp is not None else ()
             should_sync = [
-                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) or "ArrayValue" in str(type(arg))
+                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray) + cupy_ndarray) or "ArrayValue" in str(type(arg))
                 for arg in instance.arguments
             ]
 
@@ -563,7 +593,9 @@ class DeviceInterface(object):
         result_host = []
         for i, arg in enumerate(instance.arguments):
             if should_sync[i]:
-                if isinstance(arg, (np.ndarray, cp.ndarray)) or arg.__class__.__name__ == "VectorValue":
+                cp = _get_cupy()
+                cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+                if isinstance(arg, (np.ndarray,) + cupy_ndarray) or arg.__class__.__name__ == "VectorValue":
                     result_host.append(np.zeros_like(arg))
                     self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
                 elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
@@ -616,7 +648,7 @@ class DeviceInterface(object):
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         self.last_instance_params = params
         if isinstance(instance, util.ErrorConfig):
-            result[to.objective] = util.InvalidConfig()
+            result['__error__'] = util.InvalidConfig()
         else:
             # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
             gpu_args = _preprocess_gpu_arguments(gpu_args, params)
@@ -626,7 +658,7 @@ class DeviceInterface(object):
                 start_compilation = time.perf_counter()
                 func = self.compile_kernel(instance, verbose)
                 if not func:
-                    result[to.objective] = util.CompilationFailedConfig()
+                    result['__error__'] = util.CompilationFailedConfig()
                 else:
                     # add shared memory arguments to compiled module
                     if kernel_options.smem_args is not None:
@@ -670,6 +702,8 @@ class DeviceInterface(object):
         result["compile_time"] = last_compilation_time or 0
         result["verification_time"] = last_verification_time or 0
         result["benchmark_time"] = last_benchmark_time or 0
+
+        assert util.check_result_type(result), "The error in a result MUST be an actual error."
 
         return result
 
@@ -754,7 +788,7 @@ class DeviceInterface(object):
         )
 
         # check for templated kernel
-        if kernel_source.lang in ["CUDA", "NVCUDA", "HIP"] and "<" in name and ">" in name:
+        if kernel_source.lang in ["CUDA"] and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         # Preprocess GPU arguments. Require for handling `Tunable` arguments
@@ -843,7 +877,9 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
             if answer[i].__class__.__name__ == "VectorValue":
                 answer[i] = np.array(answer[i])
 
-            if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(arg, (np.ndarray, cp.ndarray)):
+            cp = _get_cupy()
+            cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+            if isinstance(answer[i], (np.ndarray,) + cupy_ndarray) and isinstance(arg, (np.ndarray,) + cupy_ndarray):
                 if not np.can_cast(arg.dtype, answer[i].dtype):
                     raise TypeError(
                         f"Element {i} of the expected results list has a dtype that is not compatible with the dtype of the kernel output: "
@@ -891,7 +927,9 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                     )
             else:
                 # either answer[i] and argument have different types or answer[i] is not a numpy type
-                if not isinstance(answer[i], (np.ndarray, cp.ndarray, torch.Tensor)) or not isinstance(
+                cp = _get_cupy()
+                cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+                if not isinstance(answer[i], (np.ndarray, torch.Tensor) + cupy_ndarray) or not isinstance(
                     answer[i], np.number
                 ):
                     raise TypeError(
@@ -916,7 +954,8 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
         if expected is not None:
             result = _ravel(result_host[i])
             expected = _flatten(expected)
-            if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
+            cp = _get_cupy()
+            if cp is not None and any([isinstance(array, cp.ndarray) for array in [expected, result]]):
                 expected_nan = cp.isnan(expected)
                 output_test = cp.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
             elif isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
@@ -940,7 +979,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                 print(f"Expected ({np.shape(expected)}):")
                 print(expected)
                 # check if there are NaNs in the output or expected, if so, print where they are
-                if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
+                if cp is not None and any([isinstance(array, cp.ndarray) for array in [expected, result]]):
                     if cp.isnan(result).any():
                         print("NaNs in kernel output at indices:", cp.where(cp.isnan(result)))
                     if cp.isnan(expected).any():
@@ -957,7 +996,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                         print("NaNs in expected result at indices:", np.where(np.isnan(expected)))
                 # print only the elements that are different
                 print("Difference at specific elements:")
-                if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
+                if cp is not None and any([isinstance(array, cp.ndarray) for array in [expected, result]]):
                     diff = cp.abs(expected - result)
                     indices = cp.where(diff > atol)
                     print(diff[indices])

@@ -52,7 +52,7 @@ def create_settings(session: Session) -> None:
         # default values
         venvbackend = nox.options.default_venv_backend
         envdir = ""
-        # conversion from old noxenv.txt
+        # conversion from old notenv.txt
         if noxenv_file_path.exists():
             venvbackend = noxenv_file_path.read_text().strip()
             noxenv_file_path.unlink()
@@ -121,9 +121,8 @@ def check_development_environment(session: Session) -> None:
     if installs > 0 or updates > 0:
         # packages = re.findall(r"• Installing .* | • Updating .*", output, flags=re.MULTILINE)
         # assert packages is not None
-        session.warn(
-            f"""
-            Your development environment is out of date ({installs} installs, {updates} updates). 
+        session.warn(f"""
+            Your development environment is out of date ({installs} installs, {updates} updates).
             Update with 'poetry install --sync', using '--with' and '-E' for optional dependencies, extras respectively.
             Note: {removals} packages are not in the specification (i.e. installed manually) and may be removed.
             To preview changes, run 'poetry install --sync --dry-run' (with optional dependencies and extras)."""

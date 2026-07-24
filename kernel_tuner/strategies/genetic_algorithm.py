@@ -43,26 +43,24 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
         # determine fitness of population members
         weighted_population = []
-        for dna in population:
-            try:
-                # if we are not constraint-aware we should check restrictions upon evaluation
-                time = cost_func(dna, check_restrictions=not constraint_aware)
-                num_evaluated += 1
-            except StopCriterionReached as e:
-                if tuning_options.verbose:
-                    print(e)
-                return cost_func.results
-
-            weighted_population.append((dna, time))
+        try:
+            # if we are not constraint-aware we should check restrictions upon evaluation
+            times = cost_func.eval_all(population, check_restrictions=not constraint_aware)
+            num_evaluated += len(population)
+        except StopCriterionReached as e:
+            if tuning_options.verbose:
+                print(e)
+            return cost_func.results
 
         # population is sorted such that better configs have higher chance of reproducing
+        weighted_population = list(zip(population, times))
         weighted_population.sort(key=lambda x: x[1])
 
         # 'best_score' is used only for printing
         if tuning_options.verbose and cost_func.results:
             best_score = get_best_config(
-                cost_func.results, tuning_options.objective, tuning_options.objective_higher_is_better
-            )[tuning_options.objective]
+                cost_func.results, tuning_options.objective[0], tuning_options.objective_higher_is_better
+            )[tuning_options.objective[0]]
 
         if tuning_options.verbose:
             print("Generation %d, best_score %f" % (generation, best_score))
@@ -249,4 +247,3 @@ supported_methods = {
     "uniform": uniform_crossover,
     "disruptive_uniform": disruptive_uniform_crossover,
 }
-

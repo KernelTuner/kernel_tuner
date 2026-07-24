@@ -4,35 +4,7 @@ import json
 
 from jsonschema import validate
 
-from kernel_tuner.util import get_instance_string, looks_like_a_filename, read_file
-
-#specifies for a number of pre-defined objectives whether
-#the objective should be minimized or maximized (boolean value denotes higher is better)
-objective_default_map = {
-    "time": False,
-    "energy": False,
-    "fitness": True,
-    "cost": False,
-    "loss": False,
-    "GFLOP/s": True,
-    "TFLOP/s": True,
-    "GB/s": True,
-    "TB/s": True,
-    "GFLOPS/W": True,
-    "TFLOPS/W": True,
-    "GFLOP/J": True,
-    "TFLOP/J": True
-}
-
-def get_objective_defaults(objective, objective_higher_is_better):
-    """ Uses time as default objective and attempts to lookup objective_higher_is_better for known objectives """
-    objective = objective or "time"
-    if objective_higher_is_better is None:
-        if objective in objective_default_map:
-            objective_higher_is_better = objective_default_map[objective]
-        else:
-            raise ValueError(f"Please specify objective_higher_is_better for objective {objective}")
-    return objective, objective_higher_is_better
+from kernel_tuner.util import get_instance_string, looks_like_a_filename, read_file, get_objective_defaults
 
 schema_v1_0 = {
     "$schema": "https://json-schema.org/draft-07/schema#",

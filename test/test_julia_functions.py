@@ -8,7 +8,6 @@ from kernel_tuner.core import KernelInstance, KernelSource
 
 from .test_runners import env  # noqa: F401
 from .context import skip_if_no_julia
-from juliacall import ValueBase
 
 
 kernel_name = "vector_add!"
@@ -29,6 +28,8 @@ kernel_string = r"""
 @skip_if_no_julia
 def test_ready_argument_list():
     """Ensure Julia backend correctly converts arguments into Julia objects."""
+    from juliacall import ValueBase
+
     size = 1000
     a = np.int32(75)
     b = np.random.randn(size).astype(np.float32)
@@ -65,6 +66,7 @@ def test_tune_kernel(env):
     """Run a minimal Julia kernel tuner example."""
     env[0] = kernel_name
     env[1] = kernel_string
+    env[4] = list(env[4].items()) # convert from a dict to a list of tuples to preserve order
 
     result, _ = tune_kernel(*env, lang="julia", verbose=True)
 
