@@ -141,12 +141,14 @@ def tests(session: Session) -> None:
     install_julia = True
     install_additional_tests = False
     small_disk = False
+    skip_gpu = False
     if session.posargs:
         for arg in session.posargs:
             if arg.lower() == "skip-gpu":
                 install_cuda = False
                 install_hip = False
                 install_opencl = False
+                skip_gpu = True
                 break
             elif arg.lower() == "skip-cuda":
                 install_cuda = False
@@ -326,9 +328,12 @@ def tests(session: Session) -> None:
         # call Julia to precompile packages in the session environment
         session.run("julia", "-e", "using Pkg; Pkg.precompile(); Pkg.instantiate()", external=True)
         # install any additional dependencies used by the tests, as `check_package_and_install` won't work from Nox
-        gpu_backends_string = "".join(
-            f'Pkg.add("{backend_map[backend]["pkg"]}"); ' for backend in detect_julia_gpu_backends()
-        )
+        if not skip_gpu:
+            gpu_backends_string = "".join(
+                f'Pkg.add("{backend_map[backend]["pkg"]}"); ' if backend_map[backend]["pkg"] else "" for backend in detect_julia_gpu_backends()
+            )
+        else:
+            gpu_backends_string = ""
         session.run("julia", "-e", f'using Pkg; Pkg.add("KernelAbstractions"); {gpu_backends_string}', external=True)
 
     # if applicable, install the dependencies for additional tests
