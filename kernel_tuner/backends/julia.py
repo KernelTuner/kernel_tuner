@@ -330,11 +330,17 @@ end
         args_tuple = tuple(gpu_args)
         params = tuple(params.values())  # important: the order of params must match the order in the kernel definition
 
-        # prepare ndrange and workgroupsize
         remove_trailing_ones = lambda tup: tup[
             : len(tup) - next((int(i) for i, x in enumerate(reversed(tup)) if x != 1), len(tup))
         ]
-        ndrange = remove_trailing_ones(grid)
+
+        # Kernel Tuner's grid is number of workgroups; KernelAbstractions' ndrange is number of global work items
+        if len(grid) != len(threads):
+            raise ValueError(f"grid and threads must have equal rank: {grid=}, {threads=}")
+        global_size = tuple(int(g) * int(t) for g, t in zip(grid, threads))
+        ndrange = remove_trailing_ones(global_size)
+
+        # prepare launch parameters
         ndrange = (1,) if len(ndrange) == 0 else ndrange
         workgroupsize = remove_trailing_ones(threads)
         workgroupsize = (1,) if len(workgroupsize) == 0 else workgroupsize

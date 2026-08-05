@@ -632,6 +632,7 @@ def tune_kernel(
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
+    # Convert Julia types
     if lang is not None and lang.upper() == "JULIA":
         # TODO implement & test the case where Kernel Tuner is called from Julia but the target language is not Julia
         if isinstance(tune_params, dict) or "DictValue" in tune_params.__class__.__name__:
@@ -644,6 +645,9 @@ def tune_kernel(
             answer = [
                 numpy.array(a) if isinstance(a, (list, tuple)) else a for a in util.possible_julia_vector_to_list(answer)
             ]
+        grid_div_x = util.possible_julia_vector_to_list(grid_div_x)
+        grid_div_y = util.possible_julia_vector_to_list(grid_div_y)
+        grid_div_z = util.possible_julia_vector_to_list(grid_div_z)
     restrictions = util.possible_julia_vector_to_list(restrictions)
     block_size_names = util.possible_julia_vector_to_list(block_size_names)
 
