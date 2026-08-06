@@ -639,8 +639,7 @@ def tune_kernel(
             raise ValueError(
                 "tune_params should not be a Julia dict, because it does not preserve order. Use a list of pairs instead."
             )
-        tune_params = [tuple([k, util.possible_julia_vector_to_list(tp)]) for k, tp in tune_params]
-        tune_params = dict(tune_params)
+        tune_params = dict([tuple([k, util.possible_julia_vector_to_list(tp)]) for k, tp in tune_params])
         if answer is not None:
             answer = [
                 numpy.array(a) if isinstance(a, (list, tuple)) else a for a in util.possible_julia_vector_to_list(answer)
@@ -648,6 +647,8 @@ def tune_kernel(
         grid_div_x = util.possible_julia_vector_to_list(grid_div_x)
         grid_div_y = util.possible_julia_vector_to_list(grid_div_y)
         grid_div_z = util.possible_julia_vector_to_list(grid_div_z)
+        if strategy_options is not None:
+            strategy_options = dict([tuple([k, util.possible_julia_vector_to_list(o)]) for k, o in strategy_options])
     restrictions = util.possible_julia_vector_to_list(restrictions)
     block_size_names = util.possible_julia_vector_to_list(block_size_names)
 
