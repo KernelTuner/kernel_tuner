@@ -335,7 +335,7 @@ class CompilerFunctions(CompilerBackend):
         """
         pass
 
-    def run_kernel(self, func, c_args, threads, grid, stream=None, params=None):
+    def run_kernel(self, func, c_args, threads, grid, stream=None):
         """Runs the kernel once, returns whatever the kernel returns
 
         :param func: A C function compiled for this specific configuration

@@ -965,7 +965,6 @@ def run_kernel(
 
     # detect language and create the right device function interface
     dev = core.DeviceInterface(kernelsource, iterations=1, **device_options)
-    dev.last_instance_params = params
 
     # Preprocess GPU arguments. Require for handling `Tunable` arguments
     arguments = dev.preprocess_gpu_arguments(arguments, params)

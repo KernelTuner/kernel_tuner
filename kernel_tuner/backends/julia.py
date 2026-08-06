@@ -14,6 +14,7 @@ Notes:
 
 from pathlib import Path
 from warnings import warn
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -28,6 +29,13 @@ try:
     from juliacall import Main as jl
 except ImportError:
     jl = None
+
+
+@dataclass(frozen=True)
+class JuliaKernel:
+    """Immutable Julia kernel representation, particularly useful for caching and parallel tuning."""
+    function: object
+    params: tuple
 
 
 class JuliaFunctions(GPUBackend):
@@ -99,7 +107,7 @@ class JuliaFunctions(GPUBackend):
                 stream=self.stream,
                 start_event=self.start_evt,
                 end_event=self.end_evt,
-            )
+            )   # TODO this single stateful default observer currently prevents parallel tuning
         )
         for observer in self.observers:
             observer.register_device(self)
@@ -311,8 +319,8 @@ end
             """
         try:
             jl.seval(module_code)
-            self.current_kernel = jl.seval(f"KernelTunerUserKernel.{kernel_name}")
-            return self.current_kernel
+            function = jl.seval(f"KernelTunerUserKernel.{kernel_name}")
+            return JuliaKernel(function, tuple(kernel_instance.params.values()))    # important: the order of params must match the order in the kernel definition
         except Exception as e:
             raise SkippableFailure(f"Failed to compile Julia kernel: {e} \n{module_code}")
 
@@ -320,15 +328,14 @@ end
     # Kernel launch and timing
     # -------------------------
 
-    def run_kernel(self, func, gpu_args, threads, grid, stream=None, params=None):
+    def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """Launch a compiled Julia kernel."""
-        if func is None:
-            func = self.current_kernel
-        if func is None:
+        if func is None or not isinstance(func, JuliaKernel):
             raise RuntimeError("No Julia kernel compiled or provided.")
 
         args_tuple = tuple(gpu_args)
-        params = tuple(params.values())  # important: the order of params must match the order in the kernel definition
+        julia_func = func.function
+        params = func.params
 
         remove_trailing_ones = lambda tup: tup[
             : len(tup) - next((int(i) for i, x in enumerate(reversed(tup)) if x != 1), len(tup))
@@ -348,7 +355,7 @@ end
         # run the kernel
         try:
             self.host_time = self.launch_kernel(
-                func,
+                julia_func,
                 args_tuple,
                 params,
                 ndrange,

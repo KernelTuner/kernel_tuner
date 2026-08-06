@@ -415,7 +415,7 @@ class DeviceInterface(object):
         for obs in self.prologue_observers:
             self.dev.synchronize()
             obs.before_start()
-            self.dev.run_kernel(func, gpu_args, threads, grid, params=self.last_instance_params)
+            self.dev.run_kernel(func, gpu_args, threads, grid)
             self.dev.synchronize()
             obs.after_finish()
             result.update(obs.get_results())
@@ -428,7 +428,7 @@ class DeviceInterface(object):
                 obs.before_start()
             self.dev.synchronize()
             self.dev.start_event()
-            self.dev.run_kernel(func, gpu_args, threads, grid, params=self.last_instance_params)
+            self.dev.run_kernel(func, gpu_args, threads, grid)
             self.dev.stop_event()
             for obs in self.benchmark_observers:
                 obs.after_start()
@@ -451,7 +451,7 @@ class DeviceInterface(object):
             obs.before_start()
         self.dev.start_event()
         for _ in range(iterations):
-            self.dev.run_kernel(func, gpu_args, threads, grid, params=self.last_instance_params)
+            self.dev.run_kernel(func, gpu_args, threads, grid)
         self.dev.stop_event()
         for obs in self.continuous_observers:
             obs.after_start()
@@ -646,7 +646,6 @@ class DeviceInterface(object):
         logging.debug("compile_and_benchmark " + instance_string)
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
-        self.last_instance_params = params
         if isinstance(instance, util.ErrorConfig):
             result['__error__'] = util.InvalidConfig()
         else:
@@ -839,7 +838,7 @@ class DeviceInterface(object):
         logging.debug("grid dims (%d, %d, %d)", *instance.grid)
 
         try:
-            self.dev.run_kernel(func, gpu_args, instance.threads, instance.grid, params=self.last_instance_params)
+            self.dev.run_kernel(func, gpu_args, instance.threads, instance.grid)
         except Exception as e:
             if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
                 logging.debug("ignoring runtime failure due to too many resources required")

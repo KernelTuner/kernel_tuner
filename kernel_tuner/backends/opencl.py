@@ -129,7 +129,7 @@ class OpenCLFunctions(GPUBackend):
         """Halts execution until device has finished its tasks."""
         self.queue.finish()
 
-    def run_kernel(self, func, gpu_args, threads, grid, stream=None, params=None):
+    def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """Runs the OpenCL kernel passed as 'func'.
 
         :param func: An OpenCL Kernel
