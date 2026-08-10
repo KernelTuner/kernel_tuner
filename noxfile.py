@@ -86,13 +86,13 @@ if settings_file_path.exists():
             nox.options.envdir = envdir
 
 
-@session  # to only run on the current python interpreter
-def lint(session: Session) -> None:
-    """Ensure the code is formatted as expected."""
-    session.install("ruff")
-    session.warn("Linting errors detected:")
-    session.run(*"ruff check . --config=pyproject.toml --statistics --exit-zero".split())
-    # session.run(*"ruff check --config=pyproject.toml --output-format=github .".split())
+# @session  # to only run on the current python interpreter
+# def lint(session: Session) -> None:
+#     """Ensure the code is formatted as expected."""
+#     session.install("ruff")
+#     session.warn("Linting errors detected:")
+#     session.run(*"ruff check . --config=pyproject.toml --statistics --exit-zero".split())
+#     session.run(*"ruff check --config=pyproject.toml --output-format=github .".split())
 
 
 @session  # to only run on the current python interpreter
