@@ -471,19 +471,19 @@ end
         """Set up stream and event attributes for observers."""
         # Optional: common KernelAbstractions stream abstraction
         try:
-            self.stream = backend_mod.get_default_stream()
+            self.stream = self.backend_mod.get_default_stream()
         except Exception:
             self.stream = None
 
         # Set up stream and event attributes for observers
         if backend_name == "CUDA":
-            self.stream = backend_mod.stream()
-            self.start_evt = backend_mod.CuEvent
-            self.end_evt = backend_mod.CuEvent
+            self.stream = self.backend_mod.stream()
+            self.start_evt = self.backend_mod.CuEvent
+            self.end_evt = self.backend_mod.CuEvent
         elif backend_name == "AMD":
-            self.stream = backend_mod.stream()
-            self.start_evt = backend_mod.HIP.HIPEvent
-            self.end_evt = backend_mod.HIP.HIPEvent
+            self.stream = self.backend_mod.stream()
+            self.start_evt = self.backend_mod.HIP.HIPEvent
+            self.end_evt = self.backend_mod.HIP.HIPEvent
         elif backend_name == "INTEL":
             # OneAPI: no events available
             self.start_evt = None
