@@ -25,4 +25,8 @@
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
+    "sonarlint.connectedMode.project": {
+        "projectKey": "KernelTuner_kernel_tuner",
+        "connectionId": "kerneltuner",
+    }
 }
