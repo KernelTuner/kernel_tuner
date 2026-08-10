@@ -67,22 +67,16 @@ backend_map = {
 def detect_julia_gpu_backends():
     """Detect the Julia backends available."""
     available_backends = []
-    for backend_name in ["CUDA", "AMD", "METAL", "INTEL"]:
-        if backend_name == "CUDA":
-            if julia_backend_available_cuda():
-                available_backends.append(backend_name)
-        elif backend_name == "AMD":
-            if julia_backend_available_amd():
-                available_backends.append(backend_name)
-        elif backend_name == "METAL":
-            if julia_backend_available_metal():
-                available_backends.append(backend_name)
-        elif backend_name == "INTEL":
-            # this can give false positives for other backends too, so skip if we've already detected another backend
-            if len(available_backends) > 0:
-                continue
-            if julia_backend_available_intel():
-                available_backends.append(backend_name)
+    if julia_backend_available_cuda():
+        available_backends.append(backend_name)
+    if julia_backend_available_amd():
+        available_backends.append(backend_name)
+    if julia_backend_available_metal():
+        available_backends.append(backend_name)
+    if len(available_backends) == 0:
+        # this can give false positives for other backends too, so skip if we've already detected another backend
+        if julia_backend_available_intel():
+            available_backends.append(backend_name)
 
     available_backends.append("CPU")  # always add CPU backend last
     return available_backends
