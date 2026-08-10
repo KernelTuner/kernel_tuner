@@ -49,36 +49,10 @@ class JuliaFunctions(GPUBackend):
         if jl is None:
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
 
-        # process compiler options
-        self.raise_errors = False
-        for c in compiler_options or []:
-            if c.lower().startswith("raise_errors="):
-                raise_errors_str = c.split("=", 1)[1].strip().lower()
-                if raise_errors_str in ("true", "1", "yes"):
-                    self.raise_errors = True
-                elif raise_errors_str in ("false", "0", "no"):
-                    self.raise_errors = False
-                else:
-                    raise ValueError(f"Invalid value for raise_errors: {raise_errors_str}. Use true/false.")
-                compiler_options.remove(c)
+        # process passed options and backends
+        self.process_options(compiler_options)
         self.available_backends = detect_julia_gpu_backends()
-        if compiler_options is not None and len(compiler_options) == 1:
-            if compiler_options[0].upper() not in self.available_backends:
-                raise ValueError(
-                    f"Requested Julia backend '{compiler_options[0]}' not available. "
-                    f"Available backends: {self.available_backends}"
-                )
-            backend_name = compiler_options[0].upper()
-        else:
-            if len(self.available_backends) != 1:
-                if "CPU" in self.available_backends and len(self.available_backends) == 2:
-                    self.available_backends.remove("CPU")
-                else:
-                    raise ValueError(
-                        f"Multiple or no Julia backends detected: {self.available_backends}. "
-                        "Please specify exactly one backend in compiler_options."
-                    )
-            backend_name = self.available_backends[0]
+        backend_name = self.verify_backends_with_options(compiler_options)
 
         # Initialize backend attributes
         self.device = device
@@ -98,6 +72,7 @@ class JuliaFunctions(GPUBackend):
         # setup observers
         self.observers = observers or []
         self.observers.append(
+            # TODO this single stateful default observer currently prevents parallel tuning
             JuliaRuntimeObserver(
                 jl.Main.KernelAbstractions,
                 self,
@@ -107,7 +82,7 @@ class JuliaFunctions(GPUBackend):
                 stream=self.stream,
                 start_event=self.start_evt,
                 end_event=self.end_evt,
-            )   # TODO this single stateful default observer currently prevents parallel tuning
+            )
         )
         for observer in self.observers:
             observer.register_device(self)
@@ -497,3 +472,38 @@ end
             self.end_evt = None
         else:
             raise NotImplementedError(f"Backend {backend_name} not supported in Julia backend.")
+
+    def process_compiler_options(self, compiler_options=None):
+        """Process the given compiler options."""
+        self.raise_errors = False
+        for c in compiler_options or []:
+            if c.lower().startswith("raise_errors="):
+                raise_errors_str = c.split("=", 1)[1].strip().lower()
+                if raise_errors_str in ("true", "1", "yes"):
+                    self.raise_errors = True
+                elif raise_errors_str in ("false", "0", "no"):
+                    self.raise_errors = False
+                else:
+                    raise ValueError(f"Invalid value for raise_errors: {raise_errors_str}. Use true/false.")
+                compiler_options.remove(c)
+
+    def verify_backends_with_options(self, compiler_options=None):
+        """Verify that the requested backend is available."""
+        if compiler_options is not None and len(compiler_options) == 1:
+            if compiler_options[0].upper() not in self.available_backends:
+                raise ValueError(
+                    f"Requested Julia backend '{compiler_options[0]}' not available. "
+                    f"Available backends: {self.available_backends}"
+                )
+            backend_name = compiler_options[0].upper()
+        else:
+            if len(self.available_backends) != 1:
+                if "CPU" in self.available_backends and len(self.available_backends) == 2:
+                    self.available_backends.remove("CPU")
+                else:
+                    raise ValueError(
+                        f"Multiple or no Julia backends detected: {self.available_backends}. "
+                        "Please specify exactly one backend in compiler_options."
+                    )
+            backend_name = self.available_backends[0]
+        return backend_name

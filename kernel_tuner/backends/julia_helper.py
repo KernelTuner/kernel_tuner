@@ -105,20 +105,20 @@ def julia_backend_available_metal():
     try:
         output = subprocess.check_output("system_profiler -json SPDisplaysDataType".split())
         json_output = json_loads(output)["SPDisplaysDataType"]
-        for gpu in json_output:
-            if "spdisplays_mtlgpufamilysupport" in gpu:
-                supported = gpu["spdisplays_mtlgpufamilysupport"].lower()
-                if "metal" in supported:
-                    version = regex_search(r".*metal([\d.]+)", supported).group(1)
-                    if float(version) < 3:
-                        warn(
-                            f"Metal backend detected, but {supported} < 3. "
-                            "Metal.jl requires Metal version 3 or higher."
-                        )
-                    else:
-                        return True
     except (FileNotFoundError, subprocess.CalledProcessError, JSONDecodeError):
-        pass
+        return False
+    for gpu in json_output:
+        if "spdisplays_mtlgpufamilysupport" in gpu:
+            supported = gpu["spdisplays_mtlgpufamilysupport"].lower()
+            if "metal" in supported:
+                version = regex_search(r".*metal([\d.]+)", supported).group(1)
+                if float(version) < 3:
+                    warn(
+                        f"Metal backend detected, but {supported} < 3. "
+                        "Metal.jl requires Metal version 3 or higher."
+                    )
+                else:
+                    return True
     return False
 
 
