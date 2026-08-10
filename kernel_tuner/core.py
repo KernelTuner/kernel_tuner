@@ -956,15 +956,10 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
             result = _ravel(result_host[i])
             expected = _flatten(expected)
             cp = _get_cupy()
-            if cp is not None and any([isinstance(array, cp.ndarray) for array in [expected, result]]):
-                expected_nan = cp.isnan(expected)
-                output_test = cp.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
-            elif isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
-                expected_nan = torch.isnan(expected)
-                output_test = torch.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
-            else:
-                expected_nan = np.isnan(expected)
-                output_test = np.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
+            has_cp_array = any([isinstance(array, cp.ndarray) for array in [expected, result]])
+            lib = cp if has_cp_array else torch if isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor) else np
+            expected_nan = lib.isnan(expected)
+            output_test = lib.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
             if expected_nan.any():
                 warn(
                     f"Answer contains {expected_nan.sum()} NaNs. NaN values will now be considered equal in comparison."
@@ -980,35 +975,15 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                 print(f"Expected ({np.shape(expected)}):")
                 print(expected)
                 # check if there are NaNs in the output or expected, if so, print where they are
-                if cp is not None and any([isinstance(array, cp.ndarray) for array in [expected, result]]):
-                    if cp.isnan(result).any():
-                        print("NaNs in kernel output at indices:", cp.where(cp.isnan(result)))
-                    if cp.isnan(expected).any():
-                        print("NaNs in expected result at indices:", cp.where(cp.isnan(expected)))
-                elif isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
-                    if torch.isnan(result).any():
-                        print("NaNs in kernel output at indices:", torch.where(torch.isnan(result)))
-                    if torch.isnan(expected).any():
-                        print("NaNs in expected result at indices:", torch.where(torch.isnan(expected)))
-                else:
-                    if np.isnan(result).any():
-                        print("NaNs in kernel output at indices:", np.where(np.isnan(result)))
-                    if np.isnan(expected).any():
-                        print("NaNs in expected result at indices:", np.where(np.isnan(expected)))
+                if lib.isnan(result).any():
+                    print("NaNs in kernel output at indices:", lib.where(lib.isnan(result)))
+                if lib.isnan(expected).any():
+                    print("NaNs in expected result at indices:", lib.where(lib.isnan(expected)))
                 # print only the elements that are different
                 print("Difference at specific elements:")
-                if cp is not None and any([isinstance(array, cp.ndarray) for array in [expected, result]]):
-                    diff = cp.abs(expected - result)
-                    indices = cp.where(diff > atol)
-                    print(diff[indices])
-                elif isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
-                    diff = torch.abs(expected - result)
-                    indices = torch.where(diff > atol)
-                    print(diff[indices])
-                else:
-                    diff = np.abs(expected - result)
-                    indices = np.where(diff > atol)
-                    print(diff[indices])
+                diff = lib.abs(expected - result)
+                indices = lib.where(diff > atol)
+                print(diff[indices])
             correct = correct and output_test
 
     if not correct:
