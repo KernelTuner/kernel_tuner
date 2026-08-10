@@ -188,6 +188,11 @@ def check_argument_list(kernel_name, kernel_string, args, lang=None):
             )
             continue
 
+        # skip checking for Julia, as types are commonly not specified in the kernel arguments
+        if lang and lang.upper() == "JULIA":
+            collected_errors.pop(arguments_set)
+            continue
+
         # Check each argument in the kernel argument list
         for i, arg in enumerate(args):
             kernel_argument = arguments[i]
