@@ -149,7 +149,6 @@ def tests(session: Session) -> None:
                 install_hip = False
                 install_opencl = False
                 skip_gpu = True
-                break
             elif arg.lower() == "skip-cuda":
                 install_cuda = False
             elif arg.lower() == "skip-hip":
