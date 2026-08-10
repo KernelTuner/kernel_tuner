@@ -956,7 +956,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
             result = _ravel(result_host[i])
             expected = _flatten(expected)
             cp = _get_cupy()
-            has_cp_array = any([isinstance(array, cp.ndarray) for array in [expected, result]])
+            has_cp_array = False if not cp else any([isinstance(array, cp.ndarray) for array in [expected, result]])
             lib = cp if has_cp_array else torch if isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor) else np
             expected_nan = lib.isnan(expected)
             output_test = lib.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
