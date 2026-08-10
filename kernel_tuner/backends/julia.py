@@ -228,34 +228,7 @@ class JuliaFunctions(GPUBackend):
         elif backend_name == "METAL":
             self.contextqueue = self.backend_mod.MTLCommandQueue(self.backend_device)
 
-        # Optional: common KernelAbstractions stream abstraction
-        try:
-            self.stream = backend_mod.get_default_stream()
-        except Exception:
-            self.stream = None
-
-        # Set up stream and event attributes for observers
-        if backend_name == "CUDA":
-            self.stream = backend_mod.stream()
-            self.start_evt = backend_mod.CuEvent
-            self.end_evt = backend_mod.CuEvent
-        elif backend_name == "AMD":
-            self.stream = backend_mod.stream()
-            self.start_evt = backend_mod.HIP.HIPEvent
-            self.end_evt = backend_mod.HIP.HIPEvent
-        elif backend_name == "INTEL":
-            # OneAPI: no events available
-            self.start_evt = None
-            self.end_evt = None
-        elif backend_name == "METAL":
-            self.start_evt = self.start_event
-            self.end_evt = self.stop_event
-        elif backend_name == "CPU":
-            # CPU, use host-side timing
-            self.start_evt = None
-            self.end_evt = None
-        else:
-            raise NotImplementedError(f"Backend {backend_name} not supported in Julia backend.")
+        self.setup_streams(backend_name)
 
     def __del__(self):
         # drop GPUArray references to let Julia GC handle them
@@ -493,3 +466,34 @@ end
         except Exception:
             buf = self.backend_mod.MTLCommandBuffer(self.contextqueue)
         return buf
+
+    def setup_streams(self, backend_name: str):
+        """Set up stream and event attributes for observers."""
+        # Optional: common KernelAbstractions stream abstraction
+        try:
+            self.stream = backend_mod.get_default_stream()
+        except Exception:
+            self.stream = None
+
+        # Set up stream and event attributes for observers
+        if backend_name == "CUDA":
+            self.stream = backend_mod.stream()
+            self.start_evt = backend_mod.CuEvent
+            self.end_evt = backend_mod.CuEvent
+        elif backend_name == "AMD":
+            self.stream = backend_mod.stream()
+            self.start_evt = backend_mod.HIP.HIPEvent
+            self.end_evt = backend_mod.HIP.HIPEvent
+        elif backend_name == "INTEL":
+            # OneAPI: no events available
+            self.start_evt = None
+            self.end_evt = None
+        elif backend_name == "METAL":
+            self.start_evt = self.start_event
+            self.end_evt = self.stop_event
+        elif backend_name == "CPU":
+            # CPU, use host-side timing
+            self.start_evt = None
+            self.end_evt = None
+        else:
+            raise NotImplementedError(f"Backend {backend_name} not supported in Julia backend.")
