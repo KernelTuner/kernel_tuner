@@ -181,7 +181,8 @@ def check_argument_list(kernel_name, kernel_string, args, lang=None):
 
         # check arguments and signature lengths
         if lang and lang.upper() == "JULIA" and len(arguments) > len(args):
-            continue    # for Julia tunable parameters are added to the kernel signature 
+            # for Julia tunable parameters are added to the kernel signature
+            continue
         collected_errors.append(list())
         if len(arguments) != len(args):
             collected_errors[arguments_set].append(
@@ -201,16 +202,16 @@ def check_argument_list(kernel_name, kernel_string, args, lang=None):
                 # Handle numpy arrays and other array types
                 if not isinstance(arg, (np.ndarray, np.generic, torch.Tensor, DeviceArray) + cupy_ndarray):
                     if arg.__class__.__name__ == "VectorValue":
-                        continue  # skip for Julia, types are commonly not specified in the kernel arguments
+                        # skip for Julia, types are commonly not specified in the kernel arguments
+                        continue
                     raise TypeError(
                         f"Argument at position {i} of type: {type(arg)} should be of type "
                         "np.ndarray, numpy scalar, HIP Python DeviceArray, Julia VectorValue type"
                     )
 
                 correct = True
-                if isinstance(arg, np.ndarray):
-                    if "*" not in kernel_argument:
-                        correct = False
+                if isinstance(arg, np.ndarray) and "*" not in kernel_argument:
+                    correct = False
 
                 if isinstance(arg, DeviceArray):
                     str_dtype = str(np.dtype(arg.typestr))
@@ -1018,7 +1019,8 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
                 kernel_prefix += f"constexpr int {k} = {v};\n"
         elif lang.upper() == "JULIA":
             # kernel_prefix += f"const {k} = {v}\n"
-            pass  # in Julia, we can't redefine constants like this, so we skip it and give it as arguments on the kernel launch
+             # in Julia, we can't redefine constants like this, so we skip it and give it as arguments on the kernel launch
+            pass
         else:
             kernel_prefix += f"#define {k} {v}\n"
 

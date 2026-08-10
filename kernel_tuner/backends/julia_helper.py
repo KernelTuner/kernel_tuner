@@ -125,9 +125,10 @@ def julia_backend_available_metal():
 def julia_backend_available_intel():
     """Check if Intel backend is available. May give false positives if other backends are present."""
     try:
+        # not a perfect check but should work in most cases
         subprocess.check_output(
             "ls /dev/dri/by-path/".split()
-        )  # not a perfect check but should work in most cases
+        )
         return True
     except (FileNotFoundError, subprocess.CalledProcessError):
         return False

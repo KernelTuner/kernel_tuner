@@ -219,20 +219,22 @@ class KernelSource(object):
 
     def infer_julia_backend(self):
         """Infer the Julia backend from the kernel source."""
+        backend = None
         if self.lang.upper() != "JULIA":
-            return None
+            return backend
 
         kernel_string = self.get_kernel_string(0)
         if kernel_string.find("using CUDA") != -1:
-            return "cuda"
+            backend = "cuda"
         elif kernel_string.find("using ROCBackend") != -1:
-            return "amd"
+            backend = "amd"
         elif kernel_string.find("using oneAPI") != -1:
-            return "intel"
+            backend = "intel"
         elif kernel_string.find("using Metal") != -1:
-            return "metal"
+            backend = "metal"
         else:
             raise ValueError("Could not infer Julia backend from kernel source, provide it as a `compiler_option`")
+        return backend
 
 
 def instantiate_observer(observer, args):

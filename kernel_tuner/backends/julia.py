@@ -169,7 +169,7 @@ class JuliaFunctions(GPUBackend):
         self.backend_mod_name = info["module"]
         self.backend_mod_instname = info["module_backend"]
         # jl.seval(f"using KernelAbstractions, {info['module']}")
-        jl.seval(f"using KernelAbstractions")
+        jl.seval("using KernelAbstractions")
         if backend_pkg is not None:
             jl.seval(f"using {info['module']}")
         backend_mod = getattr(jl.Main, self.backend_mod_name)
@@ -181,8 +181,9 @@ class JuliaFunctions(GPUBackend):
 
         # Select device
         try:
-            if int(device) == 0 and not backend_pkg == "CUDA":
-                device = 1  # Julia uses 1-based indexing, but the CUDA backend uses 0-based so we skip that
+            if int(device) == 0 and backend_pkg != "CUDA":
+                # Julia uses 1-based indexing, but the CUDA backend uses 0-based so we skip that
+                device = 1
             jl.seval(info["device_select"](int(device)))
             self.last_selected_device = device
         except Exception as e:
@@ -427,12 +428,12 @@ end
     @staticmethod
     def memset(allocation, value, size):
         raise NotImplementedError("memset not yet implemented for Julia backend.")
-        try:
-            jl.allocation_tmp = allocation
-            jl.seval(f"CUDA.fill!(allocation_tmp, {int(value)})")
-            del jl.allocation_tmp
-        except JuliaError as e:
-            raise RuntimeError(f"Julia memset failed: {e}")
+        # try:
+        #     jl.allocation_tmp = allocation
+        #     jl.seval(f"CUDA.fill!(allocation_tmp, {int(value)})")
+        #     del jl.allocation_tmp
+        # except JuliaError as e:
+        #     raise RuntimeError(f"Julia memset failed: {e}")
 
     @staticmethod
     def memcpy_dtoh(dest, src):

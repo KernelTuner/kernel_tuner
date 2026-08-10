@@ -70,9 +70,10 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             if self.name == "metal":
                 ms_observer = float((self.end() - self.t0) * 1000.0)
                 ms_helper = self.kt_backend.host_time
+                # take the minimum of the two measurements to mitigate overhead of command buffer timing
                 ms = min(
                     ms_observer, ms_helper
-                )  # take the minimum of the two measurements to mitigate overhead of command buffer timing
+                )
             elif self.name == "cuda":
                 # the events are recorded in the julia_helper kernel launch code
                 ms = float(self.backend_mod.elapsed(self.start, self.end) * 1000.0)
