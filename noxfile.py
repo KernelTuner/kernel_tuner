@@ -161,6 +161,9 @@ def tests(session: Session) -> None:
                 install_additional_tests = True
             elif arg.lower() == "small-disk":
                 small_disk = True
+            elif arg.lower() == "github-action":
+                # argument used in other sessions
+                pass
             else:
                 raise ValueError(f"Unrecognized argument {arg}")
 
