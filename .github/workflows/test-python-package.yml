@@ -41,7 +41,6 @@ jobs:
             - name: Run tests with Nox
               run: |
                   pip install nox-poetry
-                  nox -- skip-gpu skip-julia github-action
                   nox -- skip-gpu github-action
             # - name: Upload Coverage report to CodeCov
             #   uses: codecov/codecov-action@v3
