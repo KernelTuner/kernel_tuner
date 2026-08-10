@@ -1,5 +1,4 @@
 """This module contains the interface of all kernel_tuner backends."""
-
 from __future__ import print_function
 
 from abc import ABC, abstractmethod
@@ -39,7 +38,7 @@ class Backend(ABC):
         pass
 
     @abstractmethod
-    def run_kernel(self, func, gpu_args, threads, grid, stream, params):
+    def run_kernel(self, func, gpu_args, threads, grid, stream):
         """This method must implement the execution of the kernel on the device."""
         pass
 
