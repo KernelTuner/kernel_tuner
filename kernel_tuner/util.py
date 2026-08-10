@@ -164,8 +164,6 @@ def check_argument_type(dtype, kernel_argument):
 
 def check_argument_list(kernel_name, kernel_string, args, lang=None):
     """Raise an exception if kernel arguments do not match host arguments."""
-    cp = _get_cupy()
-    cupy_ndarray = (cp.ndarray,) if cp is not None else ()
     kernel_arguments = list()
     collected_errors = list()
 
@@ -191,38 +189,12 @@ def check_argument_list(kernel_name, kernel_string, args, lang=None):
             continue
 
         # Check each argument in the kernel argument list
-        if lang is None or lang.upper() != "JULIA":
-            for i, arg in enumerate(args):
-                kernel_argument = arguments[i]
-
-                # Handle tunable arguments
-                if isinstance(arg, Tunable):
-                    continue
-
-                # Handle numpy arrays and other array types
-                if not isinstance(arg, (np.ndarray, np.generic, torch.Tensor, DeviceArray) + cupy_ndarray):
-                    if arg.__class__.__name__ == "VectorValue":
-                        # skip for Julia, types are commonly not specified in the kernel arguments
-                        continue
-                    raise TypeError(
-                        f"Argument at position {i} of type: {type(arg)} should be of type "
-                        "np.ndarray, numpy scalar, HIP Python DeviceArray, Julia VectorValue type"
-                    )
-
-                correct = True
-                if isinstance(arg, np.ndarray) and "*" not in kernel_argument:
-                    correct = False
-
-                if isinstance(arg, DeviceArray):
-                    str_dtype = str(np.dtype(arg.typestr))
-                else:
-                    str_dtype = str(arg.dtype)
-
-                if correct and check_argument_type(str_dtype, kernel_argument):
-                    continue
-
+        for i, arg in enumerate(args):
+            kernel_argument = arguments[i]
+            correct, str_dtype = check_individual_arguments(i, arg, kernel_argument)
+            if not correct:
                 collected_errors[arguments_set].append(
-                    f"Argument at position {i} of dtype: {str_dtype} does not match {kernel_argument}."
+                    f"Argument at position {str(i)} of dtype: {str_dtype} does not match {kernel_argument}."
                 )
 
         if not collected_errors[arguments_set]:
@@ -232,6 +204,40 @@ def check_argument_list(kernel_name, kernel_string, args, lang=None):
 
     for errors in collected_errors:
         warnings.warn(errors[0], UserWarning)
+
+
+def check_individual_arguments(i, arg, kernel_argument):
+    """Check whether the host argument matches the kernel argument."""
+    correct = True
+    cp = _get_cupy()
+    cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+
+    # Handle tunable arguments
+    if isinstance(arg, Tunable):
+        return correct, ""
+
+    # Handle numpy arrays and other array types
+    if not isinstance(arg, (np.ndarray, np.generic, torch.Tensor, DeviceArray) + cupy_ndarray):
+        if arg.__class__.__name__ == "VectorValue":
+            # skip for Julia, types are commonly not specified in the kernel arguments
+            return correct, ""
+        raise TypeError(
+            f"Argument at position {i} of type: {type(arg)} should be of type "
+            "np.ndarray, numpy scalar, HIP Python DeviceArray, Julia VectorValue type"
+        )
+
+    if isinstance(arg, np.ndarray) and "*" not in kernel_argument:
+        correct = False
+
+    if isinstance(arg, DeviceArray):
+        str_dtype = str(np.dtype(arg.typestr))
+    else:
+        str_dtype = str(arg.dtype)
+
+    if correct:
+        return check_argument_type(str_dtype, kernel_argument), str_dtype
+
+    return False, str_dtype
 
 
 class Timer:
@@ -1546,6 +1552,16 @@ def possible_julia_vector_to_list(obj):
         l = [possible_julia_vector_to_list(e) for e in l]
         return l
     return obj
+
+
+def julia_list_of_pairs_to_dict(params):
+    if isinstance(params, dict) or "DictValue" in params.__class__.__name__:
+        raise ValueError(
+            f"params {params} should not be a Julia dict, because it does not preserve order. Use a list of pairs instead."
+        )
+    params = [tuple([k, possible_julia_vector_to_list(tp)]) for k, tp in params]
+    params = dict(params)
+    return params
 
 
 def infer_restrictions_from_cache(cache: dict):

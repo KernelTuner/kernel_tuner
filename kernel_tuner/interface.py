@@ -635,11 +635,7 @@ def tune_kernel(
     # Convert Julia types
     if lang is not None and lang.upper() == "JULIA":
         # TODO implement & test the case where Kernel Tuner is called from Julia but the target language is not Julia
-        if isinstance(tune_params, dict) or "DictValue" in tune_params.__class__.__name__:
-            raise ValueError(
-                "tune_params should not be a Julia dict, because it does not preserve order. Use a list of pairs instead."
-            )
-        tune_params = dict([tuple([k, util.possible_julia_vector_to_list(tp)]) for k, tp in tune_params])
+        tune_params = util.julia_list_of_pairs_to_dict(tune_params)
         if answer is not None:
             answer = [
                 numpy.array(a) if isinstance(a, (list, tuple)) else a for a in util.possible_julia_vector_to_list(answer)
@@ -735,7 +731,6 @@ def tune_kernel(
         strategy = strategy_map["brute_force"]
 
     # select the runner for this job based on input
-    # TODO: we could use the "match case" syntax when removing support for 3.9
     tuning_options.simulated_time = 0
 
     # Get runner from environment if possible
@@ -946,13 +941,8 @@ def run_kernel(
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
-    if lang == "Julia":
-        if isinstance(params, dict) or "DictValue" in params.__class__.__name__:
-            raise ValueError(
-                "tune_params should not be a Julia dict, because it does not preserve order. Use a list of pairs instead."
-            )
-        params = [tuple([k, util.possible_julia_vector_to_list(tp)]) for k, tp in params]
-        params = dict(params)
+    if lang is not None and lang.upper() == "JULIA":
+        params = util.julia_list_of_pairs_to_dict(params)
     block_size_names = util.possible_julia_vector_to_list(block_size_names)
     # ensure there is always at least three names
     util.append_default_block_size_names(block_size_names)
@@ -1016,10 +1006,6 @@ def run_kernel(
         else:
             results.append(numpy.zeros_like(arg))
             dev.memcpy_dtoh(results[-1], gpu_args[i])
-
-    # for Julia, convert the results back to Julia arrays
-    # if lang and lang.lower() == "julia":
-    #     results = [util.possible_list_to_julia_vector(r) for r in results]
 
     return results
 

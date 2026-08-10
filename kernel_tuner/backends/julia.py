@@ -50,7 +50,7 @@ class JuliaFunctions(GPUBackend):
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
 
         # process passed options and backends
-        self.process_options(compiler_options)
+        self.process_compiler_options(compiler_options)
         self.available_backends = detect_julia_gpu_backends()
         backend_name = self.verify_backends_with_options(compiler_options)
 
