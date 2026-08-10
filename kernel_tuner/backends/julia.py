@@ -409,7 +409,7 @@ end
         raise NotImplementedError(
             "Shared memory not yet supported in Julia backend. Submit a feature request if needed."
         )
-        self.smem_size = int(smem_args.get("size", 0))
+        # self.smem_size = int(smem_args.get("size", 0))
 
     def copy_texture_memory_args(self, texmem_args):
         raise NotImplementedError(
