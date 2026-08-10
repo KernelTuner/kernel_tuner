@@ -114,12 +114,15 @@ class JuliaJITWarmup(PrologueObserver):
     """Prologue observer to enforce warmup before every configuration to trigger JIT."""
 
     def __init__(self, backend):
+        """Not implemented, just to trigger JIT."""
         pass
 
     def before_start(self):
+        """Not implemented, just to trigger JIT."""
         pass
 
     def after_finish(self):
+        """Not implemented, just to trigger JIT."""
         pass
 
     def get_results(self):
