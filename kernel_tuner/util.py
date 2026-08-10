@@ -180,7 +180,7 @@ def check_argument_list(kernel_name, kernel_string, args, lang=None):
     for arguments_set, arguments in enumerate(kernel_arguments):
 
         # check arguments and signature lengths
-        if lang.upper() == "JULIA" and len(arguments) > len(args):
+        if lang and lang.upper() == "JULIA" and len(arguments) > len(args):
             continue    # for Julia tunable parameters are added to the kernel signature 
         collected_errors.append(list())
         if len(arguments) != len(args):
