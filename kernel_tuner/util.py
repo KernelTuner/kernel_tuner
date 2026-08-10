@@ -570,7 +570,7 @@ def get_pareto_results(
     objective_higher_is_better: list[bool],
     mark_optima=True
 ):
-    from pymoo.util.nds.find_non_dominated import find_non_dominated
+    from pymoo.util.nds.non_dominated_sorting import find_non_dominated
     assert isinstance(results, list)
     assert isinstance(objectives, list)
 
