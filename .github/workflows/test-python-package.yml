@@ -30,13 +30,13 @@ jobs:
             - name: Setup Poetry
               uses: Gr1N/setup-poetry@v9
             - run: poetry self add poetry-plugin-export
+            - uses: julia-actions/setup-julia@v3
+              with:
+                  version: '1.12'
             - name: Run tests with Nox
               run: |
                   pip install nox-poetry
                   nox -- skip-gpu skip-julia github-action
-            - uses: julia-actions/setup-julia@v3
-              with:
-                  version: '1.12'
             - name: Run Julia tests with Nox
               run: |
                   pip install nox-poetry
