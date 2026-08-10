@@ -40,7 +40,7 @@ jobs:
             - name: Run Julia tests with Nox
               run: |
                   pip install nox-poetry
-                  nox --session "tests(python='3.14')" skip-gpu github-action
+                  nox --session tests-3.14 -- skip-gpu github-action
             # - name: Upload Coverage report to CodeCov
             #   uses: codecov/codecov-action@v3
             #   with:
