@@ -508,12 +508,11 @@ class DeviceInterface(object):
             self.benchmark_prologue(func, gpu_args, instance.threads, instance.grid, result)
             self.benchmark_default(func, gpu_args, instance.threads, instance.grid, result)
 
-            if self.continuous_observers:
-                duration = 1
-                for obs in self.continuous_observers:
-                    obs.results = result
-                    duration = max(duration, obs.continuous_duration)
-
+            duration = 1
+            for obs in self.continuous_observers:
+                obs.results = result
+                duration = max(duration, obs.continuous_duration)
+            if len(self.continuous_observers) > 0:
                 self.benchmark_continuous(func, gpu_args, instance.threads, instance.grid, result, duration)
 
         except Exception as e:
@@ -530,15 +529,14 @@ class DeviceInterface(object):
             ]
             if any([skip_str in str(e) for skip_str in skippable_exceptions]):
                 logging.debug("benchmark fails due to runtime failure / too many resources required")
-                if verbose:
-                    if "Julia" in str(e):
-                        warn(
-                            f"skipping config {util.get_instance_string(instance.params)} reason: Julia kernel launch failed because of:\n{e}"
-                        )
-                    else:
-                        print(
-                            f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
-                        )
+                if "julia" in str(e).lower() and verbose:
+                    warn(
+                        f"skipping config {util.get_instance_string(instance.params)} reason: Julia kernel launch failed because of:\n{e}"
+                    )
+                elif verbose:
+                    print(
+                        f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
+                    )
                 result['__error__'] = util.RuntimeFailedConfig()
             else:
                 logging.debug("benchmark encountered runtime failure: " + str(e))
@@ -592,28 +590,7 @@ class DeviceInterface(object):
             return
 
         # retrieve gpu results to host memory
-        result_host = []
-        for i, arg in enumerate(instance.arguments):
-            if should_sync[i]:
-                cp = _get_cupy()
-                cupy_ndarray = (cp.ndarray,) if cp is not None else ()
-                if isinstance(arg, (np.ndarray,) + cupy_ndarray) or arg.__class__.__name__ == "VectorValue":
-                    result_host.append(np.zeros_like(arg))
-                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
-                elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
-                    if not answer[i].is_cuda:
-                        # if the answer is on the host, copy gpu output to host as well
-                        result_host.append(torch.zeros_like(answer[i]))
-                        self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
-                    else:
-                        result_host.append(gpu_args[i].tensor)
-                else:
-                    # We should sync this argument, but we do not know how to transfer this type of argument
-                    # What do we do? Should we throw an error?
-                    warn(f"Argument {i} is of type {type(arg)} and should be synchronized, but is not implemented.")
-                    result_host.append(None)
-            else:
-                result_host.append(None)
+        result_host = self.retrieve_results_to_host(instance.arguments, should_sync, gpu_args, answer)
 
         # Call the output observers
         for obs in self.output_observers:
@@ -849,6 +826,32 @@ class DeviceInterface(object):
                 logging.debug("encountered unexpected runtime failure: " + str(e))
                 raise e
         return True
+
+    def retrieve_results_to_host(self, arguments: list, should_sync: list[bool], gpu_args, answer: list): 
+        """Retrieve results from device to host memory for all arguments that should be synchronized."""
+        result_host = []
+        for i, arg in enumerate(arguments):
+            if not should_sync[i]:
+                result_host.append(None)
+                continue
+            cp = _get_cupy()
+            cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+            if isinstance(arg, (np.ndarray,) + cupy_ndarray) or arg.__class__.__name__ == "VectorValue":
+                result_host.append(np.zeros_like(arg))
+                self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
+            elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
+                if not answer[i].is_cuda:
+                    # if the answer is on the host, copy gpu output to host as well
+                    result_host.append(torch.zeros_like(answer[i]))
+                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
+                else:
+                    result_host.append(gpu_args[i].tensor)
+            else:
+                # We should sync this argument, but we do not know how to transfer this type of argument
+                # What do we do? Should we throw an error?
+                warn(f"Argument {i} is of type {type(arg)} and should be synchronized, but is not implemented.")
+                result_host.append(None)
+        return result_host
 
 
 def _preprocess_gpu_arguments(old_arguments, params):
