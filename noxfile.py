@@ -144,6 +144,7 @@ def tests(session: Session) -> None:
     install_additional_tests = False
     small_disk = False
     skip_gpu = False
+    github_action = False
     if session.posargs:
         for arg in session.posargs:
             if arg.lower() == "skip-gpu":
@@ -168,12 +169,13 @@ def tests(session: Session) -> None:
             elif arg.lower() == "small-disk":
                 small_disk = True
             elif arg.lower() == "github-action":
-                # argument used in other sessions
-                pass
+                github_action = True
             else:
                 raise ValueError(f"Unrecognized argument {arg}")
     if install_julia == False and julia_use_gpu == True:
         raise ValueError("Cannot use Julia GPU backend if Julia is disabled")
+    if skip_gpu == True and julia_use_gpu == True:
+        print("With both `skip-gpu` and `julia-use-gpu` given, the latter takes precedence. Julia GPU backends will be used if available.")
 
     # check if there are optional dependencies that can not be installed
     if install_hip:
@@ -336,8 +338,13 @@ def tests(session: Session) -> None:
         # sanitize loader env to avoid issues with Julia loading libraries from the wrong environment
         for v in ["DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"]:
             session.env.pop(v, None)
+        # set the Julia version
+        # when changed, also see `require_julia` in Project.toml and the Julia version in the GitHub Actions workflow
+        if github_action:
+            preamble = "import juliapkg; juliapkg.require_julia('1.12')"
+        else:
+            preamble = "import juliapkg; juliapkg.require_julia('1.11, 2')"
         # call JuliaPKG to precompile packages in the session environment
-        preamble = "import juliapkg; juliapkg.require_julia('1.11, 2')"
         session.run(
             "python", "-c", 
             f"{preamble}; juliapkg.resolve()", 
