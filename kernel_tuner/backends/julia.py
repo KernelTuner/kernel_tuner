@@ -427,7 +427,9 @@ end
         except Exception:
             try:
                 warn(f"{package}.jl not found, attempting to install it directly.")
-                jl.seval(f'using Pkg; Pkg.add("{package}")')
+                import juliapkg
+                juliapkg.add(package)
+                juliapkg.resolve()
                 jl.seval(f"import {package}")
             except Exception as e:
                 raise ImportError(

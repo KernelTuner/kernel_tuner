@@ -134,11 +134,13 @@ def check_development_environment(session: Session) -> None:
 def tests(session: Session) -> None:
     """Run the tests for the specified Python versions."""
     session.log(f"Testing on Python {session.python}")
+    env_vars = {}
     # check if optional dependencies have been disabled by user arguments (e.g. `nox -- skip-gpu`, `nox -- skip-cuda`)
     install_cuda = True
     install_hip = True
     install_opencl = True
     install_julia = True
+    julia_use_gpu = True
     install_additional_tests = False
     small_disk = False
     skip_gpu = False
@@ -148,6 +150,7 @@ def tests(session: Session) -> None:
                 install_cuda = False
                 install_hip = False
                 install_opencl = False
+                julia_use_gpu = False
                 skip_gpu = True
             elif arg.lower() == "skip-cuda":
                 install_cuda = False
@@ -157,6 +160,9 @@ def tests(session: Session) -> None:
                 install_opencl = False
             elif arg.lower() == "skip-julia":
                 install_julia = False
+                julia_use_gpu = False
+            elif arg.lower() == "julia-use-gpu":
+                julia_use_gpu = True
             elif arg.lower() == "additional-tests":
                 install_additional_tests = True
             elif arg.lower() == "small-disk":
@@ -166,6 +172,8 @@ def tests(session: Session) -> None:
                 pass
             else:
                 raise ValueError(f"Unrecognized argument {arg}")
+    if install_julia == False and julia_use_gpu == True:
+        raise ValueError("Cannot use Julia GPU backend if Julia is disabled")
 
     # check if there are optional dependencies that can not be installed
     if install_hip:
@@ -323,20 +331,34 @@ def tests(session: Session) -> None:
             session.warn(install_warning)
             raise error
 
+    # if applicable, install julia dependencies in the session environment
     if install_julia:
         # sanitize loader env to avoid issues with Julia loading libraries from the wrong environment
         for v in ["DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"]:
             session.env.pop(v, None)
-        # call Julia to precompile packages in the session environment
-        session.run("julia", "-e", "using Pkg; Pkg.precompile(); Pkg.instantiate()", external=True)
+        # call JuliaPKG to precompile packages in the session environment
+        session.run(
+            "python", "-c", 
+            "import juliapkg; juliapkg.resolve()", 
+        )
         # install any additional dependencies used by the tests, as `check_package_and_install` won't work from Nox
-        if not skip_gpu:
+        if julia_use_gpu:
             gpu_backends_string = "".join(
-                f'Pkg.add("{backend_map[backend]["pkg"]}"); ' if backend_map[backend]["pkg"] else "" for backend in detect_julia_gpu_backends()
+                f'juliapkg.add("{backend_map[backend]["pkg"]}"); ' if backend_map[backend]["pkg"] else "" for backend in detect_julia_gpu_backends()
             )
         else:
             gpu_backends_string = ""
-        session.run("julia", "-e", f'using Pkg; Pkg.add("KernelAbstractions"); {gpu_backends_string}', external=True)
+        session.run(
+            "python", "-c", 
+            f"import juliapkg; juliapkg.add('KernelAbstractions'); {gpu_backends_string} juliapkg.resolve();", 
+        )
+        # retrieve the project path for this isolated session environment and pass it as an environment variable
+        julia_project_path = session.run(
+            "python", "-c", 
+            "import juliapkg; print(juliapkg.project())", 
+            silent=True
+        ).strip()
+        env_vars["PYTHON_JULIAPKG_PROJECT"] = julia_project_path
 
     # if applicable, install the dependencies for additional tests
     if install_additional_tests and install_cuda:
@@ -368,11 +390,11 @@ def tests(session: Session) -> None:
     # for the last Python version session if all optional dependencies are enabled:
     if session.python == python_versions_to_test[-1] and full_install:
         # run pytest on the package to generate the correct coverage report
-        session.run("pytest", external=False)
+        session.run("pytest", external=False, env=env_vars)
     else:
         # for the other Python version sessions:
         # run pytest without coverage reporting
-        session.run("pytest", "--no-cov", external=False)
+        session.run("pytest", "--no-cov", external=False, env=env_vars)
 
     # warn if no coverage report
     if not full_install:
