@@ -233,6 +233,7 @@ def tests(session: Session) -> None:
         julia_envdir = Path(session_envdir) / ".julia"
         if julia_envdir is not None:
             session.env["JULIA_DEPOT_PATH"] = str(Path(julia_envdir).resolve())
+            env_vars["JULIA_DEPOT_PATH"] = str(Path(julia_envdir).resolve())
             # session.env["JULIAUP_DEPOT_PATH"] = session.env["JULIA_DEPOT_PATH"]
             # session.env["PYTHON_JULIACALL_PROJECT"] = str(Path(julia_envdir).resolve())
 
@@ -349,6 +350,14 @@ def tests(session: Session) -> None:
             "python", "-c", 
             f"{preamble}; juliapkg.resolve()", 
         )
+        # retrieve the project path for this isolated session environment and pass it as an environment variable
+        julia_project_path = session.run(
+            "python", "-c", 
+            f"{preamble}; print(juliapkg.project())", 
+            silent=True
+        ).strip()
+        session.env["PYTHON_JULIAPKG_PROJECT"] = julia_project_path
+        env_vars["PYTHON_JULIAPKG_PROJECT"] = julia_project_path
         # install any additional dependencies used by the tests, as `check_package_and_install` won't work from Nox
         if julia_use_gpu:
             gpu_backends_string = "".join(
@@ -358,15 +367,8 @@ def tests(session: Session) -> None:
             gpu_backends_string = ""
         session.run(
             "python", "-c", 
-            f"{preamble}; juliapkg.add('KernelAbstractions'); {gpu_backends_string} juliapkg.resolve();", 
+            f"{preamble}; juliapkg.resolve(); juliapkg.add('KernelAbstractions'); {gpu_backends_string} juliapkg.resolve();", 
         )
-        # retrieve the project path for this isolated session environment and pass it as an environment variable
-        julia_project_path = session.run(
-            "python", "-c", 
-            f"{preamble}; print(juliapkg.project())", 
-            silent=True
-        ).strip()
-        env_vars["PYTHON_JULIAPKG_PROJECT"] = julia_project_path
 
     # if applicable, install the dependencies for additional tests
     if install_additional_tests and install_cuda:
