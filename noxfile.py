@@ -348,7 +348,7 @@ def tests(session: Session) -> None:
         # call JuliaPKG to precompile packages in the session environment
         session.run(
             "python", "-c", 
-            f"{preamble}; juliapkg.resolve(update=true)", 
+            f"{preamble}; juliapkg.resolve(update=True)", 
         )
         # retrieve the project path for this isolated session environment and pass it as an environment variable
         julia_project_path = session.run(
