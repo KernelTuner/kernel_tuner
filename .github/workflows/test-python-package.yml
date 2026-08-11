@@ -41,7 +41,7 @@ jobs:
             - name: Run Julia tests with Nox
               run: |
                   rm -rf .nox
-                  mkdir -p /Users/runner/.julia/registries
+                  [ -d "/Users/runner" ] && mkdir -p /Users/runner/.julia/registries
                   pip install nox-poetry
                   nox --session tests-3.14 -- skip-gpu github-action
             # - name: Upload Coverage report to CodeCov
