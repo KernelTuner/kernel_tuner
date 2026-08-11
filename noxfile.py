@@ -342,7 +342,7 @@ def tests(session: Session) -> None:
         # set the Julia version
         # when changed, also see `require_julia` in Project.toml and the Julia version in the GitHub Actions workflow
         if github_action:
-            preamble = "import juliapkg; juliapkg.require_julia('1.12')"
+            preamble = "import juliapkg; juliapkg.require_julia('1.11')"
         else:
             preamble = "import juliapkg; juliapkg.require_julia('1.11, 2')"
         # call JuliaPKG to precompile packages in the session environment

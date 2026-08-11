@@ -32,7 +32,7 @@ jobs:
             - run: poetry self add poetry-plugin-export
             - uses: julia-actions/setup-julia@v3
               with:
-                  version: '1.12'   # when changed, also see `require_julia` in noxfile.py and the Julia version in Project.toml
+                  version: '1.11'   # when changed, also see `require_julia` in noxfile.py and the Julia version in Project.toml
             - name: Run tests with Nox
               run: |
                   rm -rf .nox
