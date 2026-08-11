@@ -337,9 +337,10 @@ def tests(session: Session) -> None:
         for v in ["DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"]:
             session.env.pop(v, None)
         # call JuliaPKG to precompile packages in the session environment
+        preamble = "import juliapkg; juliapkg.require_julia('1.11, 2')"
         session.run(
             "python", "-c", 
-            "import juliapkg; juliapkg.resolve()", 
+            f"{preamble}; juliapkg.resolve()", 
         )
         # install any additional dependencies used by the tests, as `check_package_and_install` won't work from Nox
         if julia_use_gpu:
@@ -350,12 +351,12 @@ def tests(session: Session) -> None:
             gpu_backends_string = ""
         session.run(
             "python", "-c", 
-            f"import juliapkg; juliapkg.add('KernelAbstractions'); {gpu_backends_string} juliapkg.resolve();", 
+            f"{preamble}; juliapkg.add('KernelAbstractions'); {gpu_backends_string} juliapkg.resolve();", 
         )
         # retrieve the project path for this isolated session environment and pass it as an environment variable
         julia_project_path = session.run(
             "python", "-c", 
-            "import juliapkg; print(juliapkg.project())", 
+            f"{preamble}; print(juliapkg.project())", 
             silent=True
         ).strip()
         env_vars["PYTHON_JULIAPKG_PROJECT"] = julia_project_path
