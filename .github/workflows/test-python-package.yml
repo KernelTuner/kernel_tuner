@@ -35,10 +35,12 @@ jobs:
                   version: '1.12'   # when changed, also see `require_julia` in noxfile.py and the Julia version in Project.toml
             - name: Run tests with Nox
               run: |
+                  rm -rf .nox
                   pip install nox-poetry
                   nox -- skip-gpu skip-julia github-action
             - name: Run Julia tests with Nox
               run: |
+                  rm -rf .nox
                   pip install nox-poetry
                   nox --session tests-3.14 -- skip-gpu github-action
             # - name: Upload Coverage report to CodeCov
