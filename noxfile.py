@@ -359,7 +359,8 @@ def tests(session: Session) -> None:
         # create the .julia/registries directory if it doesn't exist to avoid juliapkg.add() crash
         session.run(
             "bash", "-c",
-            "[ -d '~' ] && mkdir -p ~/.julia/registries"
+            "[ -d ~ ] && mkdir -p ~/.julia/registries",
+            external=True
         )
         session.env["PYTHON_JULIAPKG_PROJECT"] = julia_project_path
         env_vars["PYTHON_JULIAPKG_PROJECT"] = julia_project_path
