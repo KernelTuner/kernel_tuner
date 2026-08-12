@@ -342,9 +342,9 @@ def tests(session: Session) -> None:
         # set the Julia version
         # when changed, also see `require_julia` in Project.toml and the Julia version in the GitHub Actions workflow
         if github_action:
-            preamble = "import juliapkg; juliapkg.require_julia('1.11')"
+            preamble = "import juliapkg; juliapkg.require_julia('1.11')"    # must match the setup-julia action
         else:
-            preamble = "import juliapkg; juliapkg.require_julia('1.11, 2')"
+            preamble = "import juliapkg; juliapkg.require_julia('1.11, 2')" # meaning >= 1.11, < 2.0
         # call JuliaPKG to precompile packages in the session environment
         session.run(
             "python", "-c", 
@@ -356,6 +356,11 @@ def tests(session: Session) -> None:
             f"{preamble}; print(juliapkg.project())", 
             silent=True
         ).strip()
+        # create the .julia/registries directory if it doesn't exist to avoid juliapkg.add() crash
+        session.run(
+            "bash", "-c",
+            "[ -d '~' ] && mkdir -p ~/.julia/registries"
+        )
         session.env["PYTHON_JULIAPKG_PROJECT"] = julia_project_path
         env_vars["PYTHON_JULIAPKG_PROJECT"] = julia_project_path
         # install any additional dependencies used by the tests, as `check_package_and_install` won't work from Nox
