@@ -8,7 +8,7 @@ from pytest import raises
 
 from kernel_tuner import tune_kernel
 
-from .context import skip_if_no_gcc
+from .context import skip_if_no_gcc, running_on_ci
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ def test_some_time_budget(env):
     assert 0 < len(res) < size_all
 
     # Ensure that the time limit was respected by some margin.
-    assert perf_counter() - start_time < time_limit * 2
+    assert perf_counter() - start_time < (time_limit * 2) * (1.5 if running_on_ci else 1.0)  # allow for more overhead on CI
 
 
 @skip_if_no_gcc

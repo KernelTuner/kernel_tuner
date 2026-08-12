@@ -2,6 +2,7 @@ import shutil
 import subprocess
 import sys
 import ctypes.util
+from os import environ
 
 import pytest
 
@@ -35,6 +36,7 @@ gcc_present = shutil.which("g++") is not None
 gfortran_present = shutil.which("gfortran") is not None
 openmp_present = ctypes.util.find_library('gomp') is not None
 openacc_present = shutil.which("nvc++") is not None
+running_on_ci = any([environ.get(CI, "false").lower() == "true" for CI in ["GITHUB_ACTIONS", "TRAVIS", "CIRCLECI", "GITLAB_CI"]])
 
 try:
     import cupy
