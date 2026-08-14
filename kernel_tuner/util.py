@@ -168,9 +168,15 @@ def check_argument_list(kernel_name, kernel_string, args, lang=None):
     collected_errors = list()
 
     # Find all kernel argument lists in the kernel string
+    if lang and lang.upper() == "JULIA":
+        # for Julia, multiple kernels may be specified in one file, and remove the normally included tunable parameters
+        kernel_string = kernel_string.split(kernel_name)[1]
+        kernel_string = kernel_name + kernel_string
+        kernel_string = kernel_string.split("::Val")[0].rstrip()
     for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
         kernel_start = iterator.end()
-        kernel_end = kernel_string.find(")", kernel_start)
+        # for Julia, search until the last ',' as there may be e.g. `@Const(Min)` arguments
+        kernel_end = kernel_string.find(r".*(\,)" if lang and lang.upper() == "JULIA" else ")", kernel_start)
         if kernel_start != 0:
             kernel_arguments.append(kernel_string[kernel_start:kernel_end].split(","))
 
@@ -179,7 +185,7 @@ def check_argument_list(kernel_name, kernel_string, args, lang=None):
 
         # check arguments and signature lengths
         if lang and lang.upper() == "JULIA" and len(arguments) > len(args):
-            # for Julia tunable parameters are added to the kernel signature
+            # for Julia additional parameters may be passed
             continue
         collected_errors.append(list())
         if len(arguments) != len(args):
