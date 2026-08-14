@@ -26,7 +26,7 @@ jobs:
         steps:
             - uses: actions/checkout@v7
             - name: Setup Nox
-              uses: fjwillemsen/setup-nox2@v3.0.0
+              uses: fjwillemsen/setup-nox2@v4
             - name: Setup Poetry
               uses: Gr1N/setup-poetry@v9
             - run: poetry self add poetry-plugin-export
