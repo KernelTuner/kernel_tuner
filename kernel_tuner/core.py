@@ -558,8 +558,10 @@ class DeviceInterface(object):
         # convert juliacall arrays to numpy arrays where necessary
         if answer is not None:
             answer = [None if a is None else np.array(a) for a in util.possible_julia_vector_to_list(answer)]
+        is_julia_array = []
         for i, arg in enumerate(instance.arguments):
-            if isinstance(answer[i], np.ndarray) and "ArrayValue" in str(type(arg)):
+            is_julia_array.append(any([juliatype in str(type(arg)) for juliatype in ["ArrayValue", "VectorValue"]]))
+            if is_julia_array[i] and isinstance(answer[i], np.ndarray):
                 instance.arguments[i] = np.array(arg, dtype=answer[i].dtype)
 
         # if not using custom verify function, check if the length is the same
@@ -569,14 +571,14 @@ class DeviceInterface(object):
 
             # for Julia arrays, we always want to sync
             should_sync = [
-                answer[i] is not None or "ArrayValue" in str(type(arg)) for i, arg in enumerate(instance.arguments)
+                answer[i] is not None or is_julia_array[i] for i, arg in enumerate(instance.arguments)
             ]
         else:
             cp = _get_cupy()
             cupy_ndarray = (cp.ndarray,) if cp is not None else ()
             should_sync = [
-                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray) + cupy_ndarray) or "ArrayValue" in str(type(arg))
-                for arg in instance.arguments
+                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray) + cupy_ndarray) or is_julia_array[i]
+                for i, arg in enumerate(instance.arguments)
             ]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
@@ -836,7 +838,7 @@ class DeviceInterface(object):
                 continue
             cp = _get_cupy()
             cupy_ndarray = (cp.ndarray,) if cp is not None else ()
-            if isinstance(arg, (np.ndarray,) + cupy_ndarray) or arg.__class__.__name__ == "VectorValue":
+            if isinstance(arg, (np.ndarray,) + cupy_ndarray) or any(arg.__class__.__name__ == name for name in ["VectorValue", "ArrayValue"]):
                 result_host.append(np.zeros_like(arg))
                 self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
             elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
@@ -875,10 +877,10 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     # for each element in the argument list, check if the types match
     for i, arg in enumerate(instance.arguments):
         if answer[i] is not None:  # skip None elements in the answer list
-            # convert Julia VectorValues to numpy arrays for verification
-            if arg.__class__.__name__ == "VectorValue":
+            # convert Julia Arrays to numpy arrays for verification
+            if any(arg.__class__.__name__ == name for name in ["VectorValue", "ArrayValue"]):
                 arg = np.array(arg)
-            if answer[i].__class__.__name__ == "VectorValue":
+            if any(answer[i].__class__.__name__ == name for name in ["VectorValue", "ArrayValue"]):
                 answer[i] = np.array(answer[i])
 
             cp = _get_cupy()
