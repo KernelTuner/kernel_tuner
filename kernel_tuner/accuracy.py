@@ -52,8 +52,7 @@ class Tunable(UserDict):
             option = eval(self.param_key, params, params)
 
         if option not in self.data:
-            list = ", ".join(map(str, self.data.keys()))
-            raise KeyError(f"'{option}' is not a valid parameter value, should be one of: {list}")
+            raise KeyError(f"'{option}' is not a valid parameter value, should be one of: {", ".join(map(str, self.data.keys()))}")
 
         # continue recursively until we find a non-Tunable
         el = self.data[option]
