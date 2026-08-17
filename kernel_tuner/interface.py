@@ -43,6 +43,7 @@ from kernel_tuner.util import get_objective_defaults
 from kernel_tuner.runners.sequential import SequentialRunner
 from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.accuracy import Tunable
 
 try:
     import torch
@@ -636,7 +637,7 @@ def tune_kernel(
     if lang is not None and lang.upper() == "JULIA":
         # TODO implement & test the case where Kernel Tuner is called from Julia but the target language is not Julia
         tune_params = util.julia_list_of_pairs_to_dict(tune_params)
-        if answer is not None:
+        if answer is not None and not isinstance(answer, Tunable):
             answer = [
                 numpy.array(a) if isinstance(a, (list, tuple)) else a for a in util.possible_julia_vector_to_list(answer)
             ]
