@@ -24,13 +24,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import logging
 import importlib
+import logging
+import os
 from argparse import ArgumentParser
 from ast import literal_eval
 from copy import deepcopy
 from datetime import datetime
-import os
 from pathlib import Path
 from time import perf_counter
 
@@ -38,12 +38,10 @@ import numpy
 
 import kernel_tuner.core as core
 import kernel_tuner.util as util
-from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
-from kernel_tuner.util import get_objective_defaults
-from kernel_tuner.runners.sequential import SequentialRunner
-from kernel_tuner.runners.simulation import SimulationRunner
-from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.accuracy import Tunable
+from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
+from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.util import get_objective_defaults
 
 try:
     import torch
@@ -79,6 +77,7 @@ _STRATEGY_IMPORTS = {
 }
 
 _STRATEGY_PARALLEL = ["brute_force", "random_sample", "diff_evo", "genetic_algorithm", "pso", "firefly_algorithm"]
+
 
 def _strategy_import_error(strategy_name, module_path, err):
     base_msg = (
@@ -501,14 +500,20 @@ _tuning_options = Options(
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
         ("seed", ("""The random seed.""", "int")),
-        ("parallel", ("Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.", "int|bool")),
+        (
+            "parallel",
+            (
+                "Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.",
+                "int|bool",
+            ),
+        ),
         (
             "observers",
             (
                 """A list of Observers to use during tuning, please see :ref:`observers`.
                 Each entry must be either: an instance of :class:`BenchmarkObserver` or a callable (e.g., lambda) returning a :class:`BenchmarkObserver`. """,
-                "list"
-            )
+                "list",
+            ),
         ),
     ]
 )
@@ -636,10 +641,13 @@ def tune_kernel(
     # Convert Julia types
     if lang is not None and lang.upper() == "JULIA":
         # TODO implement & test the case where Kernel Tuner is called from Julia but the target language is not Julia
+        # convert scalars without explicit types to numpy scalars
+        arguments = [numpy.array(a)[()] if numpy.isscalar(a) else a for a in arguments]
         tune_params = util.julia_list_of_pairs_to_dict(tune_params)
         if answer is not None and not isinstance(answer, Tunable):
             answer = [
-                numpy.array(a) if isinstance(a, (list, tuple)) else a for a in util.possible_julia_vector_to_list(answer)
+                numpy.array(a) if isinstance(a, (list, tuple)) else a
+                for a in util.possible_julia_vector_to_list(answer)
             ]
         grid_div_x = util.possible_julia_vector_to_list(grid_div_x)
         grid_div_y = util.possible_julia_vector_to_list(grid_div_y)
@@ -678,7 +686,7 @@ def tune_kernel(
     util.append_default_block_size_names(block_size_names)
 
     # if Julia, infer the Julia backend from the kernelsource
-    if kernelsource.lang == "JULIA":
+    if kernelsource.lang.upper() == "JULIA":
         if compiler_options is None:
             try:
                 compiler_options = [kernelsource.infer_julia_backend()]
@@ -738,24 +746,27 @@ def tune_kernel(
     if parallel is None:
         parallel = bool(os.environ.get(environment_key_parallel))
 
-
     # Create runner
     if parallel and simulation_mode:
         raise ValueError("Enabling `parallel` and `simulation_mode` together is not supported")
     elif simulation_mode:
         from kernel_tuner.runners.simulation import SimulationRunner
+
         runner = SimulationRunner(kernelsource, kernel_options, device_options, iterations, observers)
     elif parallel:
         # Avoid using multiple workers on strategies not supporting parallelism
         if strategy not in _STRATEGY_PARALLEL:
             parallel = 1
         from kernel_tuner.runners.parallel import ParallelRunner
+
         num_workers = None if parallel is True else parallel
-        runner = ParallelRunner(kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers)
+        runner = ParallelRunner(
+            kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers
+        )
     else:
         from kernel_tuner.runners.sequential import SequentialRunner
-        runner = SequentialRunner(kernelsource, kernel_options, device_options, iterations, observers)
 
+        runner = SequentialRunner(kernelsource, kernel_options, device_options, iterations, observers)
 
     # the user-specified function may or may not have an optional atol argument;
     # we normalize it so that it always accepts atol.
@@ -807,7 +818,6 @@ def tune_kernel(
     # Create the budget
     tuning_options["budget"] = util.TuningBudget(time_limit, max_fevals)
 
-
     # call the strategy to execute the tuning process
     results = strategy.tune(searchspace, runner, tuning_options)
     env = runner.get_environment(tuning_options)
@@ -822,7 +832,7 @@ def tune_kernel(
             objective_higher_is_better = objective_higher_is_better[0]
             best_config = util.get_best_config(results, objective, objective_higher_is_better)
             # add the best configuration to env
-            env['best_config'] = best_config
+            env["best_config"] = best_config
             if not device_options.quiet:
                 units = getattr(runner, "units", None)
                 keys = list(tune_params.keys())
@@ -835,7 +845,7 @@ def tune_kernel(
         else:
             pareto_front = util.get_pareto_results(results, objective, objective_higher_is_better)
             # add the best configuration to env
-            env['best_config'] = pareto_front
+            env["best_config"] = pareto_front
             if not device_options.quiet:
                 units = getattr(runner, "units", None)
                 keys = list(tune_params.keys())
@@ -863,7 +873,7 @@ tune_kernel.__doc__ = _tune_kernel_docstring
 
 def tune_cache(
     cache_path,
-    restrictions = None,
+    restrictions=None,
     **kwargs,
 ):
     cache = util.read_cache(cache_path, open_cache=False)
@@ -944,6 +954,8 @@ def run_kernel(
 
     if lang is not None and lang.upper() == "JULIA":
         params = util.julia_list_of_pairs_to_dict(params)
+        # convert scalars without explicit types to numpy scalars
+        arguments = [numpy.array(a)[()] if numpy.isscalar(a) else a for a in arguments]
     block_size_names = util.possible_julia_vector_to_list(block_size_names)
     # ensure there is always at least three names
     util.append_default_block_size_names(block_size_names)

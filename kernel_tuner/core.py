@@ -8,6 +8,7 @@ from warnings import warn
 
 import numpy as np
 
+
 def _get_cupy():
     try:
         import cupy as _cp
@@ -15,11 +16,12 @@ def _get_cupy():
         return None
     return _cp
 
+
 import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
+from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver, OutputObserver, PrologueObserver
 from kernel_tuner.observers.tegra import TegraObserver
-from kernel_tuner.backends.backend import GPUBackend
 
 try:
     import torch
@@ -239,7 +241,6 @@ class KernelSource(object):
 
 def instantiate_observer(observer, args):
     """Instantiate or build an observer from a class/factory/instance."""
-
     if isinstance(observer, BenchmarkObserver):
         return observer
     elif callable(observer):
@@ -250,21 +251,26 @@ def instantiate_observer(observer, args):
 
 
 def _select_default_cuda_backend():
-    """ Select default CUDA backend, looks for which backends are installed. """
+    """Select default CUDA backend, looks for which backends are installed."""
     # First try cuda-python (nvcuda)
     from kernel_tuner.backends.nvcuda import CudaFunctions, driver
+
     if driver:
         return CudaFunctions
     # Then try Cupy
     if _get_cupy():
         from kernel_tuner.backends.cupy import CupyFunctions
+
         return CupyFunctions
     # Then try PyCUDA
     from kernel_tuner.backends.pycuda import PyCudaFunctions, pycuda_available
+
     if pycuda_available:
         return PyCudaFunctions
     # Ran out of options
-    raise RuntimeError("Error: CUDA selected/detected, but missing CUDA dependencies, please run 'pip install cuda-python', or install cupy or pycuda.")
+    raise RuntimeError(
+        "Error: CUDA selected/detected, but missing CUDA dependencies, please run 'pip install cuda-python', or install cupy or pycuda."
+    )
 
 
 class DeviceInterface(object):
@@ -328,32 +334,40 @@ class DeviceInterface(object):
         # first check for explicitly selected backends
         if lang.upper() == "PYCUDA":
             from kernel_tuner.backends.pycuda import PyCudaFunctions
+
             backend = PyCudaFunctions
         elif lang.upper() == "CUPY":
             from kernel_tuner.backends.cupy import CupyFunctions
+
             backend = CupyFunctions
         elif lang.upper() == "NVCUDA":
             from kernel_tuner.backends.nvcuda import CudaFunctions
+
             backend = CudaFunctions
         elif lang.upper() == "CUDA":
             # Select default CUDA backend, based on availability
             backend = _select_default_cuda_backend()
         elif lang.upper() == "OPENCL":
             from kernel_tuner.backends.opencl import OpenCLFunctions
+
             backend = OpenCLFunctions
             backend_options["platform"] = platform
         elif lang.upper() == "HIP":
             from kernel_tuner.backends.hip import HipFunctions
+
             backend = HipFunctions
         elif lang.upper() == "JULIA":
             from kernel_tuner.backends.julia import JuliaFunctions
+
             backend = JuliaFunctions
         elif lang.upper() == "HYPERTUNER":
             from kernel_tuner.backends.hypertuner import HypertunerFunctions
+
             backend = HypertunerFunctions
             self.requires_warmup = False
         elif lang.upper() in ["C", "FORTRAN"]:
             from kernel_tuner.backends.compiler import CompilerFunctions
+
             backend = CompilerFunctions
             backend_options["compiler"] = compiler
             backend_options["observers"] = observers
@@ -395,6 +409,7 @@ class DeviceInterface(object):
         # for JULIA, add the JIT warmup prologue observer
         if lang.upper() == "JULIA":
             from kernel_tuner.observers.julia import JuliaJITWarmup
+
             self.prologue_observers.append(JuliaJITWarmup(self.dev.backend))
             self.prologue_observers.append(JuliaJITWarmup(self.dev.backend))
 
@@ -537,7 +552,7 @@ class DeviceInterface(object):
                     print(
                         f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
                     )
-                result['__error__'] = util.RuntimeFailedConfig()
+                result["__error__"] = util.RuntimeFailedConfig()
             else:
                 logging.debug("benchmark encountered runtime failure: " + str(e))
                 print("Error while benchmarking:", instance.name)
@@ -558,10 +573,8 @@ class DeviceInterface(object):
         # convert juliacall arrays to numpy arrays where necessary
         if answer is not None:
             answer = [None if a is None else np.array(a) for a in util.possible_julia_vector_to_list(answer)]
-        is_julia_array = []
         for i, arg in enumerate(instance.arguments):
-            is_julia_array.append(any([juliatype in str(type(arg)) for juliatype in ["ArrayValue", "VectorValue"]]))
-            if is_julia_array[i] and isinstance(answer[i], np.ndarray):
+            if util.is_julia_array(arg) and isinstance(answer[i], np.ndarray):
                 instance.arguments[i] = np.array(arg, dtype=answer[i].dtype)
 
         # if not using custom verify function, check if the length is the same
@@ -571,13 +584,14 @@ class DeviceInterface(object):
 
             # for Julia arrays, we always want to sync
             should_sync = [
-                answer[i] is not None or is_julia_array[i] for i, arg in enumerate(instance.arguments)
+                answer[i] is not None or util.is_julia_array(arg) for i, arg in enumerate(instance.arguments)
             ]
         else:
             cp = _get_cupy()
             cupy_ndarray = (cp.ndarray,) if cp is not None else ()
             should_sync = [
-                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray) + cupy_ndarray) or is_julia_array[i]
+                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray) + cupy_ndarray)
+                or util.is_julia_array(arg)
                 for i, arg in enumerate(instance.arguments)
             ]
 
@@ -628,7 +642,7 @@ class DeviceInterface(object):
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
-            result['__error__'] = util.InvalidConfig()
+            result["__error__"] = util.InvalidConfig()
         else:
             # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
             gpu_args = _preprocess_gpu_arguments(gpu_args, params)
@@ -638,7 +652,7 @@ class DeviceInterface(object):
                 start_compilation = time.perf_counter()
                 func = self.compile_kernel(instance, verbose)
                 if not func:
-                    result['__error__'] = util.CompilationFailedConfig()
+                    result["__error__"] = util.CompilationFailedConfig()
                 else:
                     # add shared memory arguments to compiled module
                     if kernel_options.smem_args is not None:
@@ -829,7 +843,7 @@ class DeviceInterface(object):
                 raise e
         return True
 
-    def retrieve_results_to_host(self, arguments: list, should_sync: list[bool], gpu_args, answer: list): 
+    def retrieve_results_to_host(self, arguments: list, should_sync: list[bool], gpu_args, answer: list):
         """Retrieve results from device to host memory for all arguments that should be synchronized."""
         result_host = []
         for i, arg in enumerate(arguments):
@@ -838,7 +852,7 @@ class DeviceInterface(object):
                 continue
             cp = _get_cupy()
             cupy_ndarray = (cp.ndarray,) if cp is not None else ()
-            if isinstance(arg, (np.ndarray,) + cupy_ndarray) or any(arg.__class__.__name__ == name for name in ["VectorValue", "ArrayValue"]):
+            if isinstance(arg, (np.ndarray,) + cupy_ndarray) or util.is_julia_array(arg):
                 result_host.append(np.zeros_like(arg))
                 self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
             elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
@@ -878,9 +892,9 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     for i, arg in enumerate(instance.arguments):
         if answer[i] is not None:  # skip None elements in the answer list
             # convert Julia Arrays to numpy arrays for verification
-            if any(arg.__class__.__name__ == name for name in ["VectorValue", "ArrayValue"]):
+            if util.is_julia_array(arg):
                 arg = np.array(arg)
-            if any(answer[i].__class__.__name__ == name for name in ["VectorValue", "ArrayValue"]):
+            if util.is_julia_array(answer[i]):
                 answer[i] = np.array(answer[i])
 
             cp = _get_cupy()
@@ -962,7 +976,13 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
             expected = _flatten(expected)
             cp = _get_cupy()
             has_cp_array = False if not cp else any([isinstance(array, cp.ndarray) for array in [expected, result]])
-            lib = cp if has_cp_array else torch if isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor) else np
+            lib = (
+                cp
+                if has_cp_array
+                else torch
+                if isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor)
+                else np
+            )
             expected_nan = lib.isnan(expected)
             output_test = lib.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
             if expected_nan.any():
