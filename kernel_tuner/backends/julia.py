@@ -426,7 +426,7 @@ end
             jl.seval(f"import {package}")
         except Exception:
             if not allow_install:
-                warn(f"{package} not found in your Julia environment. Run `using Pkg; Pkg.add("{package}")` to install it.")
+                warn(f"{package} not found in your Julia environment. Run `using Pkg; Pkg.add(\"{package}\")` to install it.")
                 return
             try:
                 warn(f"{package} not found, attempting to install it directly.")
@@ -436,7 +436,7 @@ end
                 jl.seval(f"import {package}")
             except Exception as e:
                 raise ImportError(
-                    f'{package} not found in your Julia environment. Run `using Pkg; Pkg.add("{package}")` to install it.'
+                    f'{package} not found in your Julia environment. Run `using Pkg; Pkg.add(\"{package}\")` to install it.'
                 ) from e
 
     def create_metal_buffer(self):
