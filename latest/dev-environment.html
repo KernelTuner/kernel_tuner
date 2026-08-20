@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Development environment &mdash; Kernel Tuner 1.4.0 documentation</title>
+  <title>Development environment &mdash; Kernel Tuner 1.5.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -13,7 +13,7 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=9172181d"></script>
+        <script src="_static/documentation_options.js?v=e0a75244"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -35,7 +35,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                1.4.0
+                1.5.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -169,7 +169,7 @@ or change dependencies of Kernel Tuner.</strong></p>
 </dl>
 </li>
 <li><dl class="simple">
-<dt>Install the project, dependencies and extras: <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>install<span class="w"> </span>--with<span class="w"> </span>test,docs<span class="w"> </span>-E<span class="w"> </span>cuda<span class="w"> </span>-E<span class="w"> </span>opencl<span class="w"> </span>-E<span class="w"> </span>hip</code>, leaving out <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>cuda</code>, <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>opencl</code> or <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>hip</code> if this does not apply on your system. To go all-out, use <code class="code highlight bash docutils literal highlight-bash">--all-extras</code></dt><dd><ul class="simple">
+<dt>Install the project, dependencies and extras: <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>install<span class="w"> </span>--with<span class="w"> </span>test,docs<span class="w"> </span>-E<span class="w"> </span>cuda<span class="w"> </span>-E<span class="w"> </span>opencl<span class="w"> </span>-E<span class="w"> </span>hip<span class="w"> </span>-E<span class="w"> </span>julia</code>, leaving out <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>cuda</code>, <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>opencl</code> etc. if this does not apply on your system. To go all-out, use <code class="code highlight bash docutils literal highlight-bash">--all-extras</code></dt><dd><ul class="simple">
 <li><p>Depending on the environment, it may be necessary or convenient to install extra packages such as <code class="code highlight bash docutils literal highlight-bash">cupy-cuda11x</code> / <code class="code highlight bash docutils literal highlight-bash">cupy-cuda12x</code>, and <code class="code highlight bash docutils literal highlight-bash">cuda-python</code>. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.</p></li>
 <li><p>Do not forget to make sure the paths are set correctly. If you’re using CUDA, the desired CUDA version should be in <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$PATH</span></code>, <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$LD_LIBARY_PATH</span></code> and <code class="code highlight bash docutils literal highlight-bash"><span class="nv">$CPATH</span></code>.</p></li>
 <li><p>Re-open the shell for changes to take effect.</p></li>
@@ -234,8 +234,9 @@ or change dependencies of Kernel Tuner.</strong></p>
 </dl>
 </li>
 <li><dl class="simple">
-<dt>Install the project, dependencies and extras: <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>install<span class="w"> </span>--with<span class="w"> </span>test,docs<span class="w"> </span>-E<span class="w"> </span>cuda<span class="w"> </span>-E<span class="w"> </span>opencl<span class="w"> </span>-E<span class="w"> </span>hip</code>, leaving out <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>cuda</code>, <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>opencl</code> or <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>hip</code> if this does not apply on your system. To go all-out, use <code class="code highlight bash docutils literal highlight-bash">--all-extras</code>.</dt><dd><ul class="simple">
+<dt>Install the project, dependencies and extras: <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>install<span class="w"> </span>--with<span class="w"> </span>test,docs<span class="w"> </span>-E<span class="w"> </span>cuda<span class="w"> </span>-E<span class="w"> </span>opencl<span class="w"> </span>-E<span class="w"> </span>hip<span class="w"> </span>-E<span class="w"> </span>julia</code>, leaving out <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>cuda</code>, <code class="code highlight bash docutils literal highlight-bash">-E<span class="w"> </span>opencl</code> etc. if this does not apply on your system. To go all-out, use <code class="code highlight bash docutils literal highlight-bash">--all-extras</code>.</dt><dd><ul class="simple">
 <li><p>If you run into “keyring” or other seemingly weird issues, this is a known issue with Poetry on some systems. Do: <code class="code highlight bash docutils literal highlight-bash">pip<span class="w"> </span>install<span class="w"> </span>keyring</code>, <code class="code highlight bash docutils literal highlight-bash">python3<span class="w"> </span>-m<span class="w"> </span>keyring<span class="w"> </span>--disable</code>.</p></li>
+<li><p>Kernel Tuner has a dependency on Python-Constraint, which provides binaries for most systems. On some older systems, these binaries may not be compatible (on Linux usually due to an outdated LDD version, check with <code class="code highlight bash docutils literal highlight-bash">ldd<span class="w"> </span>--version</code>, must be &gt;=2.35). Without binaries, your system will try to build it yourself, so make sure build tools are available (e.g. with <code class="code highlight bash docutils literal highlight-bash">module<span class="w"> </span>load<span class="w"> </span>gcc/13.2.0</code>).</p></li>
 <li><p>Depending on the environment, it may be necessary or convenient to install extra packages such as <code class="code highlight bash docutils literal highlight-bash">cupy-cuda11x</code> / <code class="code highlight bash docutils literal highlight-bash">cupy-cuda12x</code>, and <code class="code highlight bash docutils literal highlight-bash">cuda-python</code>. These are currently not defined as dependencies for kernel-tuner, but can be part of tests.</p></li>
 <li><p>Verify that your development environment has no missing installs or updates with <code class="code highlight bash docutils literal highlight-bash">poetry<span class="w"> </span>install<span class="w"> </span>--sync<span class="w"> </span>--dry-run<span class="w"> </span>--with<span class="w"> </span><span class="nb">test</span></code>.</p></li>
 </ul>
@@ -276,9 +277,10 @@ If you do not have fully compatible hardware or environment, you can use the fol
 <li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-cuda</code> to skip tests involving CUDA.</p></li>
 <li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-hip</code> to skip tests involving HIP.</p></li>
 <li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-opencl</code> to skip tests involving OpenCL.</p></li>
-<li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-gpu</code> to skip all tests on the GPU (the same as <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-cuda<span class="w"> </span>skip-hip<span class="w"> </span>skip-opencl</code>), especially helpful if you don’t have a GPU locally.</p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-julia</code> to skip tests involving Julia.</p></li>
+<li><p><code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-gpu</code> to skip all tests on the GPU (the same as <code class="code highlight bash docutils literal highlight-bash">nox<span class="w"> </span>--<span class="w"> </span>skip-cuda<span class="w"> </span>skip-hip<span class="w"> </span>skip-opencl</code>), especially helpful if you don’t have a GPU in your system.</p></li>
 </ul>
-<p>Contributions you make to the Kernel Tuner should not break any of the tests even if you cannot run them locally!</p>
+<p>Contributions you make to Kernel Tuner should not break any of the tests even if you cannot run them locally!</p>
 <p>Running with <code class="code highlight bash docutils literal highlight-bash">pytest</code> will test against your local Python version and PIP packages.
 In this case, tests that require PyCuda and/or a CUDA capable GPU will be skipped automatically if these are not installed/present.
 The same holds for tests that require PyOpenCL, Cupy, and CUDA.

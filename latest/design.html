@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Design documentation &mdash; Kernel Tuner 1.4.0 documentation</title>
+  <title>Design documentation &mdash; Kernel Tuner 1.5.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -13,7 +13,7 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=9172181d"></script>
+        <script src="_static/documentation_options.js?v=e0a75244"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -36,7 +36,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                1.4.0
+                1.5.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -151,6 +151,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.Timer"><code class="docutils literal notranslate"><span class="pre">Timer</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_argument_list"><code class="docutils literal notranslate"><span class="pre">check_argument_list()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_argument_type"><code class="docutils literal notranslate"><span class="pre">check_argument_type()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_individual_arguments"><code class="docutils literal notranslate"><span class="pre">check_individual_arguments()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_matching_problem_size"><code class="docutils literal notranslate"><span class="pre">check_matching_problem_size()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_restriction"><code class="docutils literal notranslate"><span class="pre">check_restriction()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.check_restrictions"><code class="docutils literal notranslate"><span class="pre">check_restrictions()</span></code></a></li>
@@ -180,9 +181,11 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_temp_filename"><code class="docutils literal notranslate"><span class="pre">get_temp_filename()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_thread_block_dimensions"><code class="docutils literal notranslate"><span class="pre">get_thread_block_dimensions()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.get_total_timings"><code class="docutils literal notranslate"><span class="pre">get_total_timings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.is_julia_array"><code class="docutils literal notranslate"><span class="pre">is_julia_array()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.looks_like_a_filename"><code class="docutils literal notranslate"><span class="pre">looks_like_a_filename()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.normalize_verify_function"><code class="docutils literal notranslate"><span class="pre">normalize_verify_function()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.parse_restrictions"><code class="docutils literal notranslate"><span class="pre">parse_restrictions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.possible_julia_vector_to_list"><code class="docutils literal notranslate"><span class="pre">possible_julia_vector_to_list()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.prepare_kernel_string"><code class="docutils literal notranslate"><span class="pre">prepare_kernel_string()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.print_config"><code class="docutils literal notranslate"><span class="pre">print_config()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.print_config_output"><code class="docutils literal notranslate"><span class="pre">print_config_output()</span></code></a></li>
@@ -1487,7 +1490,7 @@ Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.<
 
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.opencl.OpenCLFunctions.run_kernel">
-<span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.opencl.OpenCLFunctions.run_kernel" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gpu_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.opencl.OpenCLFunctions.run_kernel" title="Link to this definition">¶</a></dt>
 <dd><p>Runs the OpenCL kernel passed as ‘func’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1537,7 +1540,7 @@ of the NDRange.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.compiler.CompilerFunctions.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compiler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.compiler.CompilerFunctions.__init__" title="Link to this definition">¶</a></dt>
-<dd><p>instantiate CFunctions object used for interacting with C code</p>
+<dd><p>Instantiate CFunctions object used for interacting with C code</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>iterations</strong> (<em>int</em>) – Number of iterations used while benchmarking a kernel, 7 by default.</p>
@@ -1548,13 +1551,13 @@ of the NDRange.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.compiler.CompilerFunctions.cleanup_lib">
 <span class="sig-name descname"><span class="pre">cleanup_lib</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.compiler.CompilerFunctions.cleanup_lib" title="Link to this definition">¶</a></dt>
-<dd><p>unload the previously loaded shared library</p>
+<dd><p>Unload the previously loaded shared library</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.compiler.CompilerFunctions.compile">
 <span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_instance</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.compiler.CompilerFunctions.compile" title="Link to this definition">¶</a></dt>
-<dd><p>call the C compiler to compile the kernel, return the function</p>
+<dd><p>Call the C compiler to compile the kernel, return the function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>kernel_instance</strong> (<em>kernel_tuner.core.KernelInstance</em>) – An object representing the specific instance of the tunable kernel
@@ -1600,7 +1603,7 @@ There is no actual copy from device to host happening, but host to host.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.compiler.CompilerFunctions.memset">
 <span class="sig-name descname"><span class="pre">memset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allocation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.compiler.CompilerFunctions.memset" title="Link to this definition">¶</a></dt>
-<dd><p>set the memory in allocation to the value in value</p>
+<dd><p>Set the memory in allocation to the value in value</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1615,7 +1618,7 @@ There is no actual copy from device to host happening, but host to host.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.compiler.CompilerFunctions.ready_argument_list">
 <span class="sig-name descname"><span class="pre">ready_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.compiler.CompilerFunctions.ready_argument_list" title="Link to this definition">¶</a></dt>
-<dd><p>ready argument list to be passed to the C function</p>
+<dd><p>Ready argument list to be passed to the C function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>arguments</strong> (<em>list</em><em>(</em><em>numpy</em><em> or </em><em>cupy objects</em><em>)</em>) – List of arguments to be passed to the C function.
@@ -1640,7 +1643,7 @@ Allowed values are np.ndarray, cupy.ndarray, and/or np.int32, np.float32, and so
 <dl class="py method">
 <dt class="sig sig-object py" id="kernel_tuner.backends.compiler.CompilerFunctions.run_kernel">
 <span class="sig-name descname"><span class="pre">run_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.backends.compiler.CompilerFunctions.run_kernel" title="Link to this definition">¶</a></dt>
-<dd><p>runs the kernel once, returns whatever the kernel returns</p>
+<dd><p>Runs the kernel once, returns whatever the kernel returns</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1964,7 +1967,7 @@ implement default like this:</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.check_argument_list">
-<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_argument_list" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_argument_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lang</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_argument_list" title="Link to this definition">¶</a></dt>
 <dd><p>Raise an exception if kernel arguments do not match host arguments.</p>
 </dd></dl>
 
@@ -1972,6 +1975,12 @@ implement default like this:</p>
 <dt class="sig sig-object py" id="kernel_tuner.util.check_argument_type">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_argument_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_argument</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_argument_type" title="Link to this definition">¶</a></dt>
 <dd><p>Check if the numpy.dtype matches the type used in the code.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.check_individual_arguments">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">check_individual_arguments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_argument</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.check_individual_arguments" title="Link to this definition">¶</a></dt>
+<dd><p>Check whether the host argument matches the kernel argument.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -2186,6 +2195,12 @@ kernel instance, only needed when kernel_source is a generator.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.is_julia_array">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">is_julia_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.is_julia_array" title="Link to this definition">¶</a></dt>
+<dd><p>Check if an object is a Julia array.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.looks_like_a_filename">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">looks_like_a_filename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_source</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.looks_like_a_filename" title="Link to this definition">¶</a></dt>
 <dd><p>Attempt to detect whether source code or a filename was passed.</p>
@@ -2205,6 +2220,12 @@ an atol keyword argument.</p>
 <dt class="sig sig-object py" id="kernel_tuner.util.parse_restrictions">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">parse_restrictions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restrictions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monolithic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Constraint</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.util.parse_restrictions" title="Link to this definition">¶</a></dt>
 <dd><p>Parses restrictions from a list of strings into compilable functions and constraints, or a single compilable function (if monolithic is True). Returns a list of tuples of (strings or constraints) and parameters.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.possible_julia_vector_to_list">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">possible_julia_vector_to_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.possible_julia_vector_to_list" title="Link to this definition">¶</a></dt>
+<dd><p>Convert a Julia vector to a Python list if needed.</p>
 </dd></dl>
 
 <dl class="py function">
