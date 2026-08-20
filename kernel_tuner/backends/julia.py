@@ -24,11 +24,8 @@ from kernel_tuner.util import SkippableFailure
 
 from .julia_helper import backend_map, detect_julia_gpu_backends
 
-try:
-    from juliacall import JuliaError
-    from juliacall import Main as jl
-except ImportError:
-    jl = None
+
+jl = None
 
 
 @dataclass(frozen=True)
@@ -46,6 +43,14 @@ class JuliaFunctions(GPUBackend):
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
         """Initialize Julia backend using JuliaCall."""
+        # lazy import to avoid mixing e.g. CUDA drivers
+        try:
+            from juliacall import JuliaError
+            from juliacall import Main as jl
+            global jl
+            jl = jl
+        except ImportError:
+            jl = None
         if jl is None:
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
 
