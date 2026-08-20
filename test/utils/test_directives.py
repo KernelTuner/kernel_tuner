@@ -1,3 +1,4 @@
+# ruff: noqa
 from kernel_tuner.utils.directives import *
 
 
@@ -283,16 +284,10 @@ def test_extract_directive_signature():
     code = "#pragma tuner start vector_add a(float*:VECTOR_SIZE) b(float*:VECTOR_SIZE) c(float*:VECTOR_SIZE) size(int:VECTOR_SIZE)  \n#pragma acc"
     signatures = extract_directive_signature(code, acc_cxx)
     assert len(signatures) == 1
-    assert (
-        "float vector_add(float * a, float * b, float * c, int size)"
-        in signatures["vector_add"]
-    )
+    assert "float vector_add(float * a, float * b, float * c, int size)" in signatures["vector_add"]
     signatures = extract_directive_signature(code, acc_cxx, "vector_add")
     assert len(signatures) == 1
-    assert (
-        "float vector_add(float * a, float * b, float * c, int size)"
-        in signatures["vector_add"]
-    )
+    assert "float vector_add(float * a, float * b, float * c, int size)" in signatures["vector_add"]
     signatures = extract_directive_signature(code, acc_cxx, "vector_add_ext")
     assert len(signatures) == 0
     code = "!$tuner start vector_add A(float*:VECTOR_SIZE) B(float*:VECTOR_SIZE) C(float*:VECTOR_SIZE) n(int:VECTOR_SIZE)\n!$acc"

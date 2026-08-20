@@ -9,8 +9,8 @@ import uuid
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
-from kernel_tuner.observers.hip import HipRuntimeObserver
 from kernel_tuner.backends.hip.util import hip_check
+from kernel_tuner.observers.hip import HipRuntimeObserver
 
 try:
     from hip import hip, hiprtc

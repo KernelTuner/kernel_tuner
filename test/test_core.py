@@ -96,9 +96,6 @@ def test_check_kernel_output():
     dev.check_kernel_output(func, gpu_args, instance, answer, 1e-6, None, True)
 
 
-
-
-
 def test_default_verify_function_arrays():
 
     answer = [np.zeros(4).astype(np.float32), None, np.ones(5).astype(np.int32)]
@@ -117,7 +114,7 @@ def test_default_verify_function_arrays():
             core._default_verify_function(instance, ans, result_host, 0, False)
             print("_default_verify_function failed to throw an exception")
             assert False
-        except TypeError:
+        except (TypeError, ValueError):
             assert True
 
     for result_host in [result_host, result_host2]:
@@ -140,7 +137,7 @@ def test_default_verify_function_scalar():
             core._default_verify_function(instance, ans, result_host, 0, False)
             print("_default_verify_function failed to throw an exception")
             assert False
-        except TypeError:
+        except (TypeError, ValueError):
             assert True
 
     assert core._default_verify_function(instance, answer, result_host, 0.1, False)

@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [project]
 name = "kernel_tuner"
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "1.4.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+version = "1.5.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
@@ -54,7 +54,7 @@ dependencies = [
     "scipy>=1.14.1",    # Python >=3.13 needs scipy >=1.14
     "packaging",        # required by file_utils
     "jsonschema",
-    "python-constraint2>=2.4.0",
+    "python-constraint2>=2.5.0",
     "xmltodict",
     "pandas>=2.0.0",
     "scikit-learn>=1.0.2",
@@ -99,6 +99,7 @@ cuda = ["cuda-python>=12.6.0", "nvidia-ml-py>=12.535.108", "pynvml>=11.4.1"] # A
 opencl = ["pyopencl"]                                                   # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
 cuda_opencl = ["cuda-python>=12.6.0", "pyopencl"]                            # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 hip = ["hip-python"]
+julia = ["juliapkg>=0.1.23", "juliacall>=0.9.31"]
 tutorial = ["jupyter>=1.0.0", "matplotlib>=3.5.0", "nvidia-ml-py>=12.535.108"]
 
 # ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt --output doc/requirements.txt`
@@ -126,7 +127,7 @@ pytest-cov = "^5.0.0"
 mock = "^5.1.0"
 nox = "^2024.4.15"
 nox-poetry = "^1.0.3"
-ruff = "^0.4.8"
+ruff = "^0.15.0"
 pep440 = "^0.1.2"
 tomli = "^2.0.1"          # held back by Python <= 3.10, can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11 onwards
 scikit-optimize = "0.10.2"
@@ -148,13 +149,13 @@ line-length = 120
 [tool.ruff]
 line-length = 120
 respect-gitignore = true
-exclude = ["doc", "examples"]
+exclude = ["doc", "examples", "test"]
+[tool.ruff.lint]
 select = [
+    "NPY201",   # numpy docstring style
     "E", # pycodestyle
     "F", # pyflakes,
     "D", # pydocstyle,
 ]
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
-[tool.ruff.lint]
-select = ["NPY201"]

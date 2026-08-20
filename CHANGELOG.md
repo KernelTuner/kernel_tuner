@@ -4,6 +4,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [1.5.0] - 2026-08-20
+- Kernel Tuner can now be used from Julia, [see KernelTuner.jl](https://github.com/KernelTuner/KernelTuner.jl)
+- Support for tuning Julia kernels
+- Julia compatibility layer
+
 
 ## [1.4.0] - 2026-06-18
 - Add support for multi-objective optimization using Pymoo

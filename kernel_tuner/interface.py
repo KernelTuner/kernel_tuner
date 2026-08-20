@@ -24,26 +24,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import logging
 import importlib
+import logging
+import os
 from argparse import ArgumentParser
 from ast import literal_eval
+from copy import deepcopy
 from datetime import datetime
-import os
 from pathlib import Path
 from time import perf_counter
-from copy import deepcopy
 
 import numpy
-from constraint import Constraint
 
 import kernel_tuner.core as core
 import kernel_tuner.util as util
+from kernel_tuner.accuracy import Tunable
 from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
-from kernel_tuner.util import get_objective_defaults
-from kernel_tuner.runners.sequential import SequentialRunner
-from kernel_tuner.runners.simulation import SimulationRunner
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.util import get_objective_defaults
 
 try:
     import torch
@@ -79,6 +77,7 @@ _STRATEGY_IMPORTS = {
 }
 
 _STRATEGY_PARALLEL = ["brute_force", "random_sample", "diff_evo", "genetic_algorithm", "pso", "firefly_algorithm"]
+
 
 def _strategy_import_error(strategy_name, module_path, err):
     base_msg = (
@@ -501,14 +500,20 @@ _tuning_options = Options(
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
         ("seed", ("""The random seed.""", "int")),
-        ("parallel", ("Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.", "int|bool")),
+        (
+            "parallel",
+            (
+                "Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.",
+                "int|bool",
+            ),
+        ),
         (
             "observers",
             (
                 """A list of Observers to use during tuning, please see :ref:`observers`.
                 Each entry must be either: an instance of :class:`BenchmarkObserver` or a callable (e.g., lambda) returning a :class:`BenchmarkObserver`. """,
-                "list"
-            )
+                "list",
+            ),
         ),
     ]
 )
@@ -633,6 +638,25 @@ def tune_kernel(
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
+    # Convert Julia types
+    if lang is not None and lang.upper() == "JULIA":
+        # TODO implement & test the case where Kernel Tuner is called from Julia but the target language is not Julia
+        # convert scalars without explicit types to numpy scalars
+        arguments = [numpy.array(a)[()] if numpy.isscalar(a) else a for a in arguments]
+        tune_params = util.julia_list_of_pairs_to_dict(tune_params)
+        if answer is not None and not isinstance(answer, Tunable):
+            answer = [
+                numpy.array(a) if isinstance(a, (list, tuple)) else a
+                for a in util.possible_julia_vector_to_list(answer)
+            ]
+        grid_div_x = util.possible_julia_vector_to_list(grid_div_x)
+        grid_div_y = util.possible_julia_vector_to_list(grid_div_y)
+        grid_div_z = util.possible_julia_vector_to_list(grid_div_z)
+        if strategy_options is not None:
+            strategy_options = dict([tuple([k, util.possible_julia_vector_to_list(o)]) for k, o in strategy_options])
+    restrictions = util.possible_julia_vector_to_list(restrictions)
+    block_size_names = util.possible_julia_vector_to_list(block_size_names)
+
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     if objectives:
@@ -660,6 +684,14 @@ def tune_kernel(
 
     # ensure there is always at least three names
     util.append_default_block_size_names(block_size_names)
+
+    # if Julia, infer the Julia backend from the kernelsource
+    if kernelsource.lang.upper() == "JULIA":
+        if compiler_options is None:
+            try:
+                compiler_options = [kernelsource.infer_julia_backend()]
+            except ValueError:
+                pass
 
     # sort all the options into separate dicts
     opts = locals()
@@ -708,31 +740,33 @@ def tune_kernel(
         strategy = strategy_map["brute_force"]
 
     # select the runner for this job based on input
-    # TODO: we could use the "match case" syntax when removing support for 3.9
     tuning_options.simulated_time = 0
 
     # Get runner from environment if possible
     if parallel is None:
         parallel = bool(os.environ.get(environment_key_parallel))
 
-
     # Create runner
     if parallel and simulation_mode:
         raise ValueError("Enabling `parallel` and `simulation_mode` together is not supported")
     elif simulation_mode:
         from kernel_tuner.runners.simulation import SimulationRunner
+
         runner = SimulationRunner(kernelsource, kernel_options, device_options, iterations, observers)
     elif parallel:
         # Avoid using multiple workers on strategies not supporting parallelism
         if strategy not in _STRATEGY_PARALLEL:
             parallel = 1
         from kernel_tuner.runners.parallel import ParallelRunner
+
         num_workers = None if parallel is True else parallel
-        runner = ParallelRunner(kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers)
+        runner = ParallelRunner(
+            kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers
+        )
     else:
         from kernel_tuner.runners.sequential import SequentialRunner
-        runner = SequentialRunner(kernelsource, kernel_options, device_options, iterations, observers)
 
+        runner = SequentialRunner(kernelsource, kernel_options, device_options, iterations, observers)
 
     # the user-specified function may or may not have an optional atol argument;
     # we normalize it so that it always accepts atol.
@@ -784,7 +818,6 @@ def tune_kernel(
     # Create the budget
     tuning_options["budget"] = util.TuningBudget(time_limit, max_fevals)
 
-
     # call the strategy to execute the tuning process
     results = strategy.tune(searchspace, runner, tuning_options)
     env = runner.get_environment(tuning_options)
@@ -799,7 +832,7 @@ def tune_kernel(
             objective_higher_is_better = objective_higher_is_better[0]
             best_config = util.get_best_config(results, objective, objective_higher_is_better)
             # add the best configuration to env
-            env['best_config'] = best_config
+            env["best_config"] = best_config
             if not device_options.quiet:
                 units = getattr(runner, "units", None)
                 keys = list(tune_params.keys())
@@ -812,7 +845,7 @@ def tune_kernel(
         else:
             pareto_front = util.get_pareto_results(results, objective, objective_higher_is_better)
             # add the best configuration to env
-            env['best_config'] = pareto_front
+            env["best_config"] = pareto_front
             if not device_options.quiet:
                 units = getattr(runner, "units", None)
                 keys = list(tune_params.keys())
@@ -840,7 +873,7 @@ tune_kernel.__doc__ = _tune_kernel_docstring
 
 def tune_cache(
     cache_path,
-    restrictions = None,
+    restrictions=None,
     **kwargs,
 ):
     cache = util.read_cache(cache_path, open_cache=False)
@@ -859,7 +892,8 @@ def tune_cache(
     return tune_kernel(**tune_args, cache=cache_path, restrictions=_restrictions, simulation_mode=True)
 
 
-_run_kernel_docstring = """Compile and run a single kernel
+_run_kernel_docstring = (
+    """Compile and run a single kernel
 
     Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
     However, instead of measuring execution time run_kernel returns the output of the kernel.
@@ -885,10 +919,9 @@ _run_kernel_docstring = """Compile and run a single kernel
     :returns: A list of numpy arrays, similar to the arguments passed to this
         function, containing the output after kernel execution.
     :rtype: list
-""" % _get_docstring(
-    _kernel_options
-) + _get_docstring(
-    _device_options
+"""
+    % _get_docstring(_kernel_options)
+    + _get_docstring(_device_options)
 )
 
 
@@ -919,6 +952,14 @@ def run_kernel(
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
+    if lang is not None and lang.upper() == "JULIA":
+        params = util.julia_list_of_pairs_to_dict(params)
+        # convert scalars without explicit types to numpy scalars
+        arguments = [numpy.array(a)[()] if numpy.isscalar(a) else a for a in arguments]
+    block_size_names = util.possible_julia_vector_to_list(block_size_names)
+    # ensure there is always at least three names
+    util.append_default_block_size_names(block_size_names)
+
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     # sort options into separate dicts
@@ -943,7 +984,7 @@ def run_kernel(
             raise RuntimeError("cannot create kernel instance, too many threads per block")
 
         # see if the kernel arguments have correct type
-        util.check_argument_list(instance.name, instance.kernel_string, arguments)
+        util.check_argument_list(instance.name, instance.kernel_string, arguments, lang=lang)
 
         # compile the kernel
         func = dev.compile_kernel(instance, False)
@@ -1002,8 +1043,8 @@ def tune_kernel_T1(
     output_T4=True,
     iterations=7,
     device=None,
-    strategy: str=None,
-    strategy_options: dict={},
+    strategy: str = None,
+    strategy_options: dict = {},
 ) -> tuple:
     """Call the tune function with a T1 input file.
 
@@ -1013,12 +1054,8 @@ def tune_kernel_T1(
     kernelspec: dict = inputs["KernelSpecification"]
     kernel_name: str = kernelspec["KernelName"]
     kernel_filepath = Path(kernelspec["KernelFile"])
-    kernel_source = (
-        kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent / kernel_filepath
-    )
-    kernel_source = (
-        kernel_source if kernel_source.exists() else Path(input_filepath).parent.parent / kernel_filepath
-    )
+    kernel_source = kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent / kernel_filepath
+    kernel_source = kernel_source if kernel_source.exists() else Path(input_filepath).parent.parent / kernel_filepath
     assert kernel_source.exists(), f"KernelFile '{kernel_source}' does not exist at {kernel_source.resolve()}"
     language: str = kernelspec["Language"]
     problem_size = kernelspec["ProblemSize"]
@@ -1043,10 +1080,12 @@ def tune_kernel_T1(
         # if it is a path, import the strategy from the file
         opt_path: Path = Path(strategy_options["custom_search_method_path"])
         class_name: str = strategy
-        assert opt_path.exists(), f"Custom search method path '{opt_path}' does not exist relative to current working directory {Path.cwd()}"
+        assert opt_path.exists(), (
+            f"Custom search method path '{opt_path}' does not exist relative to current working directory {Path.cwd()}"
+        )
         optimizer_class = import_class_from_file(opt_path, class_name)
         filter_keys = ["custom_search_method_path", "max_fevals", "time_limit", "constraint_aware"]
-        adjusted_strategy_options = {k:v for k, v in strategy_options.items() if k not in filter_keys}
+        adjusted_strategy_options = {k: v for k, v in strategy_options.items() if k not in filter_keys}
         optimizer_instance = optimizer_class(**adjusted_strategy_options)
         strategy = OptAlgWrapper(optimizer_instance)
         if "constraint_aware" not in strategy_options and hasattr(optimizer_instance, "constraint_aware"):

@@ -24,16 +24,26 @@ jobs:
                 os: [ubuntu-latest, macos-latest]
 
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - name: Setup Nox
-              uses: fjwillemsen/setup-nox2@v3.0.0
+              uses: fjwillemsen/setup-nox2@v4
             - name: Setup Poetry
               uses: Gr1N/setup-poetry@v9
             - run: poetry self add poetry-plugin-export
+            - uses: julia-actions/setup-julia@v3
+              with:
+                  version: '1.11'   # when changed, also see `require_julia` in noxfile.py and the Julia version in Project.toml
             - name: Run tests with Nox
               run: |
+                  rm -rf .nox
                   pip install nox-poetry
-                  nox -- skip-gpu github-action
+                  nox -- skip-gpu skip-julia github-action
+            - name: Run Julia tests with Nox
+              run: |
+                  rm -rf .nox
+                  pip install nox-poetry
+                  nox --session tests-3.14 -- skip-gpu github-action
+            #   [ -d "~" ] && mkdir -p ~/.julia/registries
             # - name: Upload Coverage report to CodeCov
             #   uses: codecov/codecov-action@v3
             #   with:

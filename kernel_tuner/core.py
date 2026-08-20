@@ -4,8 +4,10 @@ import logging
 import re
 import time
 from collections import namedtuple
+from warnings import warn
 
 import numpy as np
+
 
 def _get_cupy():
     try:
@@ -14,11 +16,12 @@ def _get_cupy():
         return None
     return _cp
 
+
 import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
+from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver, OutputObserver, PrologueObserver
 from kernel_tuner.observers.tegra import TegraObserver
-from kernel_tuner.backends.backend import GPUBackend
 
 try:
     import torch
@@ -28,7 +31,7 @@ except ImportError:
 try:
     from hip._util.types import DeviceArray
 except ImportError:
-    DeviceArray = Exception # using Exception here as a type that will never be among kernel arguments
+    DeviceArray = Exception  # using Exception here as a type that will never be among kernel arguments
 
 
 _KernelInstance = namedtuple(
@@ -105,15 +108,13 @@ class KernelSource(object):
         """
         logging.debug("get_kernel_string called")
 
-        if hasattr(self, 'lang') and self.lang.upper() == "HYPERTUNER":
+        if hasattr(self, "lang") and self.lang.upper() == "HYPERTUNER":
             return ""
 
         kernel_source = self.kernel_sources[index]
         return util.get_kernel_string(kernel_source, params)
 
-    def prepare_list_of_files(
-        self, kernel_name, params, grid, threads, block_size_names
-    ):
+    def prepare_list_of_files(self, kernel_name, params, grid, threads, block_size_names):
         """Prepare the kernel string along with any additional files.
 
         The first file in the list is allowed to include or read in the others
@@ -201,7 +202,7 @@ class KernelSource(object):
         if suffix is not None:
             return suffix
 
-        _suffixes = {"CUDA": ".cu", "OpenCL": ".cl", "C": ".c"}
+        _suffixes = {"CUDA": ".cu", "OpenCL": ".cl", "C": ".c", "JULIA": ".jl"}
         try:
             return _suffixes[self.lang]
         except KeyError:
@@ -214,14 +215,32 @@ class KernelSource(object):
         """
         for i, f in enumerate(self.kernel_sources):
             if not callable(f):
-                util.check_argument_list(kernel_name, self.get_kernel_string(i), arguments)
+                util.check_argument_list(kernel_name, self.get_kernel_string(i), arguments, lang=self.lang)
             else:
                 logging.debug("Checking of arguments list not supported yet for code generators.")
+
+    def infer_julia_backend(self):
+        """Infer the Julia backend from the kernel source."""
+        backend = None
+        if self.lang.upper() != "JULIA":
+            return backend
+
+        kernel_string = self.get_kernel_string(0)
+        if kernel_string.find("using CUDA") != -1:
+            backend = "cuda"
+        elif kernel_string.find("using ROCBackend") != -1:
+            backend = "amd"
+        elif kernel_string.find("using oneAPI") != -1:
+            backend = "intel"
+        elif kernel_string.find("using Metal") != -1:
+            backend = "metal"
+        else:
+            raise ValueError("Could not infer Julia backend from kernel source, provide it as a `compiler_option`")
+        return backend
 
 
 def instantiate_observer(observer, args):
     """Instantiate or build an observer from a class/factory/instance."""
-
     if isinstance(observer, BenchmarkObserver):
         return observer
     elif callable(observer):
@@ -232,21 +251,26 @@ def instantiate_observer(observer, args):
 
 
 def _select_default_cuda_backend():
-    """ Select default CUDA backend, looks for which backends are installed. """
+    """Select default CUDA backend, looks for which backends are installed."""
     # First try cuda-python (nvcuda)
     from kernel_tuner.backends.nvcuda import CudaFunctions, driver
+
     if driver:
         return CudaFunctions
     # Then try Cupy
     if _get_cupy():
         from kernel_tuner.backends.cupy import CupyFunctions
+
         return CupyFunctions
     # Then try PyCUDA
     from kernel_tuner.backends.pycuda import PyCudaFunctions, pycuda_available
+
     if pycuda_available:
         return PyCudaFunctions
     # Ran out of options
-    raise RuntimeError("Error: CUDA selected/detected, but missing CUDA dependencies, please run 'pip install cuda-python', or install cupy or pycuda.")
+    raise RuntimeError(
+        "Error: CUDA selected/detected, but missing CUDA dependencies, please run 'pip install cuda-python', or install cupy or pycuda."
+    )
 
 
 class DeviceInterface(object):
@@ -310,35 +334,46 @@ class DeviceInterface(object):
         # first check for explicitly selected backends
         if lang.upper() == "PYCUDA":
             from kernel_tuner.backends.pycuda import PyCudaFunctions
+
             backend = PyCudaFunctions
         elif lang.upper() == "CUPY":
             from kernel_tuner.backends.cupy import CupyFunctions
+
             backend = CupyFunctions
         elif lang.upper() == "NVCUDA":
             from kernel_tuner.backends.nvcuda import CudaFunctions
+
             backend = CudaFunctions
         elif lang.upper() == "CUDA":
             # Select default CUDA backend, based on availability
             backend = _select_default_cuda_backend()
         elif lang.upper() == "OPENCL":
             from kernel_tuner.backends.opencl import OpenCLFunctions
+
             backend = OpenCLFunctions
             backend_options["platform"] = platform
         elif lang.upper() == "HIP":
             from kernel_tuner.backends.hip import HipFunctions
+
             backend = HipFunctions
+        elif lang.upper() == "JULIA":
+            from kernel_tuner.backends.julia import JuliaFunctions
+
+            backend = JuliaFunctions
+        elif lang.upper() == "HYPERTUNER":
+            from kernel_tuner.backends.hypertuner import HypertunerFunctions
+
+            backend = HypertunerFunctions
+            self.requires_warmup = False
         elif lang.upper() in ["C", "FORTRAN"]:
             from kernel_tuner.backends.compiler import CompilerFunctions
+
             backend = CompilerFunctions
             backend_options["compiler"] = compiler
             backend_options["observers"] = observers
-        elif lang.upper() == "HYPERTUNER":
-            from kernel_tuner.backends.hypertuner import HypertunerFunctions
-            backend = HypertunerFunctions
-            self.requires_warmup = False
         else:
             raise NotImplementedError(
-                "Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet"
+                "Sorry, support for languages other than CUDA, OpenCL, HIP, C, Julia, Fortran is not implemented yet"
             )
 
         if issubclass(backend, GPUBackend):
@@ -370,6 +405,13 @@ class DeviceInterface(object):
                     self.output_observers.append(obs)
                 if isinstance(obs, PrologueObserver):
                     self.prologue_observers.append(obs)
+
+        # for JULIA, add the JIT warmup prologue observer
+        if lang.upper() == "JULIA":
+            from kernel_tuner.observers.julia import JuliaJITWarmup
+
+            self.prologue_observers.append(JuliaJITWarmup(self.dev.backend))
+            self.prologue_observers.append(JuliaJITWarmup(self.dev.backend))
 
         # Take list of observers from self.dev because Backends tend to add their own observer
         self.benchmark_observers = [
@@ -418,7 +460,6 @@ class DeviceInterface(object):
         for obs in self.benchmark_observers:
             result.update(obs.get_results())
 
-
     def benchmark_continuous(self, func, gpu_args, threads, grid, result, duration):
         """Benchmark continuously for at least 'duration' seconds."""
         iterations = int(np.ceil(duration / (result["time"] / 1000)))
@@ -442,7 +483,6 @@ class DeviceInterface(object):
         for obs in self.continuous_observers:
             result.update(obs.get_results())
 
-
     def set_nvml_parameters(self, instance):
         """Set the NVML parameters. Avoids setting time leaking into benchmark time."""
         if self.use_nvml:
@@ -460,7 +500,6 @@ class DeviceInterface(object):
         if self.use_tegra:
             if "tegra_gr_clock" in instance.params:
                 self.tegra.gr_clock = instance.params["tegra_gr_clock"]
-
 
     def benchmark(self, func, gpu_args, instance, verbose, objective, skip_nvml_setting=False):
         """Benchmark the kernel instance."""
@@ -484,12 +523,11 @@ class DeviceInterface(object):
             self.benchmark_prologue(func, gpu_args, instance.threads, instance.grid, result)
             self.benchmark_default(func, gpu_args, instance.threads, instance.grid, result)
 
-            if self.continuous_observers:
-                duration = 1
-                for obs in self.continuous_observers:
-                    obs.results = result
-                    duration = max(duration, obs.continuous_duration)
-
+            duration = 1
+            for obs in self.continuous_observers:
+                obs.results = result
+                duration = max(duration, obs.continuous_duration)
+            if len(self.continuous_observers) > 0:
                 self.benchmark_continuous(func, gpu_args, instance.threads, instance.grid, result, duration)
 
         except Exception as e:
@@ -501,14 +539,20 @@ class DeviceInterface(object):
                 "too many resources requested for launch",
                 "OUT_OF_RESOURCES",
                 "INVALID_WORK_GROUP_SIZE",
+                "a bounds error was thrown during kernel execution",
+                "Julia kernel launch failed",
             ]
             if any([skip_str in str(e) for skip_str in skippable_exceptions]):
-                logging.debug("benchmark fails due to runtime failure too many resources required")
-                if verbose:
+                logging.debug("benchmark fails due to runtime failure / too many resources required")
+                if "julia" in str(e).lower() and verbose:
+                    warn(
+                        f"skipping config {util.get_instance_string(instance.params)} reason: Julia kernel launch failed because of:\n{e}"
+                    )
+                elif verbose:
                     print(
                         f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
                     )
-                result['__error__'] = util.RuntimeFailedConfig()
+                result["__error__"] = util.RuntimeFailedConfig()
             else:
                 logging.debug("benchmark encountered runtime failure: " + str(e))
                 print("Error while benchmarking:", instance.name)
@@ -518,24 +562,37 @@ class DeviceInterface(object):
 
         return result
 
-    def check_kernel_output(
-        self, func, gpu_args, instance, answer, atol, verify, verbose
-    ):
+    def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """Runs the kernel once and checks the result against answer."""
         logging.debug("check_kernel_output")
+
+        # get the answer for this parameter configuration
+        if isinstance(answer, Tunable):
+            answer = answer.select_for_configuration(instance.params)
+
+        # convert juliacall arrays to numpy arrays where necessary
+        if answer is not None:
+            answer = [None if a is None else np.array(a) for a in util.possible_julia_vector_to_list(answer)]
+        for i, arg in enumerate(instance.arguments):
+            if util.is_julia_array(arg) and isinstance(answer[i], np.ndarray):
+                instance.arguments[i] = np.array(arg, dtype=answer[i].dtype)
 
         # if not using custom verify function, check if the length is the same
         if answer:
             if len(instance.arguments) != len(answer):
                 raise TypeError("The length of argument list and provided results do not match.")
 
-            should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
+            # for Julia arrays, we always want to sync
+            should_sync = [
+                answer[i] is not None or util.is_julia_array(arg) for i, arg in enumerate(instance.arguments)
+            ]
         else:
             cp = _get_cupy()
             cupy_ndarray = (cp.ndarray,) if cp is not None else ()
             should_sync = [
-                isinstance(arg, (np.ndarray, torch.Tensor, DeviceArray) + cupy_ndarray)
-                for arg in instance.arguments
+                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray) + cupy_ndarray)
+                or util.is_julia_array(arg)
+                for i, arg in enumerate(instance.arguments)
             ]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
@@ -549,27 +606,7 @@ class DeviceInterface(object):
             return
 
         # retrieve gpu results to host memory
-        result_host = []
-        for i, arg in enumerate(instance.arguments):
-            if should_sync[i]:
-                cp = _get_cupy()
-                cupy_ndarray = (cp.ndarray,) if cp is not None else ()
-                if isinstance(arg, (np.ndarray,) + cupy_ndarray):
-                    result_host.append(np.zeros_like(arg))
-                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
-                elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
-                    if not answer[i].is_cuda:
-                        # if the answer is on the host, copy gpu output to host as well
-                        result_host.append(torch.zeros_like(answer[i]))
-                        self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
-                    else:
-                        result_host.append(gpu_args[i].tensor)
-                else:
-                    # We should sync this argument, but we do not know how to transfer this type of argument
-                    # What do we do? Should we throw an error?
-                    result_host.append(None)
-            else:
-                result_host.append(None)
+        result_host = self.retrieve_results_to_host(instance.arguments, should_sync, gpu_args, answer)
 
         # Call the output observers
         for obs in self.output_observers:
@@ -605,7 +642,7 @@ class DeviceInterface(object):
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
-            result['__error__'] = util.InvalidConfig()
+            result["__error__"] = util.InvalidConfig()
         else:
             # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
             gpu_args = _preprocess_gpu_arguments(gpu_args, params)
@@ -615,7 +652,7 @@ class DeviceInterface(object):
                 start_compilation = time.perf_counter()
                 func = self.compile_kernel(instance, verbose)
                 if not func:
-                    result['__error__'] = util.CompilationFailedConfig()
+                    result["__error__"] = util.CompilationFailedConfig()
                 else:
                     # add shared memory arguments to compiled module
                     if kernel_options.smem_args is not None:
@@ -683,9 +720,7 @@ class DeviceInterface(object):
             ]
             error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
             if any(re.search(msg, error_message) for msg in shared_mem_error_messages):
-                logging.debug(
-                    "compile_kernel failed due to kernel using too much shared memory"
-                )
+                logging.debug("compile_kernel failed due to kernel using too much shared memory")
                 if verbose:
                     print(
                         f"skipping config {util.get_instance_string(instance.params)} reason: too much shared memory used"
@@ -808,6 +843,32 @@ class DeviceInterface(object):
                 raise e
         return True
 
+    def retrieve_results_to_host(self, arguments: list, should_sync: list[bool], gpu_args, answer: list):
+        """Retrieve results from device to host memory for all arguments that should be synchronized."""
+        result_host = []
+        for i, arg in enumerate(arguments):
+            if not should_sync[i]:
+                result_host.append(None)
+                continue
+            cp = _get_cupy()
+            cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+            if isinstance(arg, (np.ndarray,) + cupy_ndarray) or util.is_julia_array(arg):
+                result_host.append(np.zeros_like(arg))
+                self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
+            elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
+                if not answer[i].is_cuda:
+                    # if the answer is on the host, copy gpu output to host as well
+                    result_host.append(torch.zeros_like(answer[i]))
+                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
+                else:
+                    result_host.append(gpu_args[i].tensor)
+            else:
+                # We should sync this argument, but we do not know how to transfer this type of argument
+                # What do we do? Should we throw an error?
+                warn(f"Argument {i} is of type {type(arg)} and should be synchronized, but is not implemented.")
+                result_host.append(None)
+        return result_host
+
 
 def _preprocess_gpu_arguments(old_arguments, params):
     """Get a flat list of arguments based on the configuration given by `params`."""
@@ -830,11 +891,15 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     # for each element in the argument list, check if the types match
     for i, arg in enumerate(instance.arguments):
         if answer[i] is not None:  # skip None elements in the answer list
+            # convert Julia Arrays to numpy arrays for verification
+            if util.is_julia_array(arg):
+                arg = np.array(arg)
+            if util.is_julia_array(answer[i]):
+                answer[i] = np.array(answer[i])
+
             cp = _get_cupy()
             cupy_ndarray = (cp.ndarray,) if cp is not None else ()
-            if isinstance(answer[i], (np.ndarray,) + cupy_ndarray) and isinstance(
-                arg, (np.ndarray,) + cupy_ndarray
-            ):
+            if isinstance(answer[i], (np.ndarray,) + cupy_ndarray) and isinstance(arg, (np.ndarray,) + cupy_ndarray):
                 if not np.can_cast(arg.dtype, answer[i].dtype):
                     raise TypeError(
                         f"Element {i} of the expected results list has a dtype that is not compatible with the dtype of the kernel output: "
@@ -844,7 +909,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                         + "."
                     )
                 if answer[i].size != arg.size:
-                    raise TypeError(
+                    raise ValueError(
                         f"Element {i} of the expected results list has a size different from "
                         + "the kernel argument: "
                         + str(answer[i].size)
@@ -862,7 +927,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                         + "."
                     )
                 if answer[i].size() != arg.size():
-                    raise TypeError(
+                    raise ValueError(
                         f"Element {i} of the expected results list has a size different from "
                         + "the kernel argument: "
                         + str(answer[i].size)
@@ -888,7 +953,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                     answer[i], np.number
                 ):
                     raise TypeError(
-                        f"Element {i} of expected results list is not a numpy/cupy ndarray, torch Tensor or numpy scalar."
+                        f"Arg or Element {i} of expected results list is {type(arg)} / {type(answer[i])}, not a numpy/cupy ndarray, torch Tensor or numpy scalar."  # noqa: E501
                     )
                 else:
                     raise TypeError(f"Element {i} of expected results list and kernel arguments have different types.")
@@ -910,31 +975,40 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
             result = _ravel(result_host[i])
             expected = _flatten(expected)
             cp = _get_cupy()
-            if cp is not None and any([isinstance(array, cp.ndarray) for array in [expected, result]]):
-                output_test = cp.allclose(expected, result, atol=atol)
-            elif isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor):
-                output_test = torch.allclose(expected, result, atol=atol)
-            else:
-                output_test = np.allclose(expected, result, atol=atol)
+            has_cp_array = False if not cp else any([isinstance(array, cp.ndarray) for array in [expected, result]])
+            lib = (
+                cp
+                if has_cp_array
+                else torch
+                if isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor)
+                else np
+            )
+            expected_nan = lib.isnan(expected)
+            output_test = lib.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
+            if expected_nan.any():
+                warn(
+                    f"Answer contains {expected_nan.sum()} NaNs. NaN values will now be considered equal in comparison."
+                )
 
             if not output_test and verbose:
-                print(
-                    "Error: "
-                    + util.get_config_string(instance.params)
-                    + " detected during correctness check"
-                )
-                print(
-                    "this error occurred when checking value of the %oth kernel argument"
-                    % (i,)
-                )
-                print(
-                    "Printing kernel output and expected result, set verbose=False to suppress this debug print"
-                )
-                np.set_printoptions(edgeitems=50)
-                print("Kernel output:")
+                print("Error: " + util.get_config_string(instance.params) + " detected during correctness check")
+                print("this error occurred when checking value of the %oth kernel argument" % (i,))
+                print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
+                np.set_printoptions(edgeitems=30)
+                print(f"Kernel output ({np.shape(result)}):")
                 print(result)
-                print("Expected:")
+                print(f"Expected ({np.shape(expected)}):")
                 print(expected)
+                # check if there are NaNs in the output or expected, if so, print where they are
+                if lib.isnan(result).any():
+                    print("NaNs in kernel output at indices:", lib.where(lib.isnan(result)))
+                if lib.isnan(expected).any():
+                    print("NaNs in expected result at indices:", lib.where(lib.isnan(expected)))
+                # print only the elements that are different
+                print("Difference at specific elements:")
+                diff = lib.abs(expected - result)
+                indices = lib.where(diff > atol)
+                print(diff[indices])
             correct = correct and output_test
 
     if not correct:
