@@ -134,7 +134,7 @@ class JuliaFunctions(GPUBackend):
 
         if backend_pkg is not None:
             # Ensure the package is installed
-            self.check_package_and_install(backend_pkg)
+            self.check_package_and_install(backend_pkg, allow_install=backend_name != "INTEL")  # avoid Intel false positives
 
             # # Set debug level if needed
             # if backend_name == "cuda":
@@ -250,7 +250,7 @@ class JuliaFunctions(GPUBackend):
                 for part in stripped.split(","):
                     uses.append(part.replace("import ", "").replace("using ", "").strip())
         for package in uses:
-            self.check_package_and_install(package)
+            self.check_package_and_install(package, allow_install=False)
 
         # Wrap in a module to avoid name conflicts
         if self.backend_mod_name == "CPU":
@@ -420,20 +420,23 @@ end
     # Helper functions
     # -------------------------
 
-    def check_package_and_install(self, package):
+    def check_package_and_install(self, package, allow_install=True):
         """Checks if the Julia package is available, and installs it if not."""
         try:
             jl.seval(f"import {package}")
         except Exception:
+            if not allow_install:
+                warn(f"{package} not found in your Julia environment. Run `using Pkg; Pkg.add("{package}")` to install it.")
+                return
             try:
-                warn(f"{package}.jl not found, attempting to install it directly.")
+                warn(f"{package} not found, attempting to install it directly.")
                 import juliapkg
                 juliapkg.add(package)
                 juliapkg.resolve()
                 jl.seval(f"import {package}")
             except Exception as e:
                 raise ImportError(
-                    f'{package}.jl not found in your Julia environment. Run `using Pkg; Pkg.add("{package}")` in Julia.'
+                    f'{package} not found in your Julia environment. Run `using Pkg; Pkg.add("{package}")` to install it.'
                 ) from e
 
     def create_metal_buffer(self):
