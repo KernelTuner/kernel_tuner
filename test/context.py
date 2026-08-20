@@ -3,6 +3,7 @@ import subprocess
 import sys
 import ctypes.util
 from os import environ
+import importlib.util
 
 import pytest
 
@@ -92,8 +93,8 @@ except ImportError:
     pymoo_present = False
 
 try:
-    import juliacall
-    julia_present = True
+    if importlib.util.find_spec("juliacall") is not None:
+        julia_present = True
 except ImportError:
     julia_present = False
 
