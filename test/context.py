@@ -93,8 +93,7 @@ except ImportError:
     pymoo_present = False
 
 try:
-    if importlib.util.find_spec("juliacall") is not None:
-        julia_present = True
+    julia_present = importlib.util.find_spec("juliacall") is not None
 except ImportError:
     julia_present = False
 
