@@ -74,7 +74,7 @@ pycparser==3.0 ; python_version >= "3.10" and python_version < "4" and implement
 pygments==2.21.0 ; python_version >= "3.10" and python_version < "4"
 pymoo==0.6.2 ; python_version >= "3.10" and python_version < "4"
 pyparsing==3.3.2 ; python_version >= "3.10" and python_version < "4"
-pytest==8.4.2 ; python_version >= "3.10" and python_version < "4"
+pytest==9.0.3 ; python_version >= "3.10" and python_version < "4"
 python-constraint2==2.5.0 ; python_version == "3.10"
 python-constraint2==2.7.3 ; python_version >= "3.11" and python_version < "4"
 python-dateutil==2.9.0.post0 ; python_version >= "3.10" and python_version < "4"
