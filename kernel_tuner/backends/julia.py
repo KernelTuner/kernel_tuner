@@ -26,6 +26,7 @@ from .julia_helper import backend_map, detect_julia_gpu_backends
 
 
 jl = None
+JuliaError = None
 
 
 @dataclass(frozen=True)
@@ -47,8 +48,9 @@ class JuliaFunctions(GPUBackend):
         try:
             from juliacall import JuliaError
             from juliacall import Main as jl
-            global jl
+            global jl, JuliaError
             jl = jl
+            JuliaError = JuliaError
         except ImportError:
             jl = None
         if jl is None:
