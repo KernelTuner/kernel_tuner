@@ -198,8 +198,8 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_name</span> <span class="o">=</span> <span class="s2">&quot;convolution_kernel&quot;</span>
-<span class="n">kernel_source</span> <span class="o">=</span> <span class="s2">&quot;convolution_naive.cu&quot;</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_name</span> <span class="o">=</span> <span class="s2">"convolution_kernel"</span>
+<span class="n">kernel_source</span> <span class="o">=</span> <span class="s2">"convolution_naive.cu"</span>
 </pre></div>
 </div>
 </div>
@@ -227,7 +227,7 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 </div>
 </div>
 <p>The final required argument is <strong>params</strong>, which is a dictionary with the user-defined parameters of the kernel. Remember that the user, is you! You can specify anything here and Kernel Tuner will insert a C-preprocessor <code class="docutils literal notranslate"><span class="pre">#define</span></code> statement into the kernel with the value that you specify. For example, if you were to create a dictionary like so:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>params = {&quot;I_like_convolutions&quot;: 42}
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>params = {"I_like_convolutions": 42}
 </pre></div>
 </div>
 <p>Kernel Tuner will insert the following line into our naive convolution kernel:</p>
@@ -243,8 +243,8 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-<span class="n">params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">16</span>
-<span class="n">params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">16</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">"block_size_x"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">16</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">"block_size_y"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">16</span>
 </pre></div>
 </div>
 </div>
@@ -253,11 +253,11 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;image_height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">params</span><span class="p">[</span><span class="s2">&quot;image_width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">params</span><span class="p">[</span><span class="s2">&quot;filter_height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">filter_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">params</span><span class="p">[</span><span class="s2">&quot;filter_width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">filter_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">params</span><span class="p">[</span><span class="s2">&quot;input_width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">border_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params</span><span class="p">[</span><span class="s2">"image_height"</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">"image_width"</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">"filter_height"</span><span class="p">]</span> <span class="o">=</span> <span class="n">filter_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">"filter_width"</span><span class="p">]</span> <span class="o">=</span> <span class="n">filter_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">"input_width"</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">border_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -267,7 +267,7 @@ O(x,y) = \sum\limits_{j=0}^{F_h} \sum\limits_{i=0}^{F_w} I(x+i,y+j)\times F(i,j)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">answer</span> <span class="o">=</span> <span class="n">run_kernel</span><span class="p">(</span><span class="n">kernel_name</span><span class="p">,</span> <span class="n">kernel_source</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Done"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -282,7 +282,7 @@ GPU in a list of Numpy arrays that we have named <strong>answer</strong> in the 
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;../examples/cuda/convolution.cu&quot;</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">filename</span> <span class="o">=</span> <span class="s2">"../examples/cuda/convolution.cu"</span>
 </pre></div>
 </div>
 </div>
@@ -298,8 +298,8 @@ GPU in a list of Numpy arrays that we have named <strong>answer</strong> in the 
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tune_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">"block_size_x"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">"block_size_y"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -327,8 +327,8 @@ device information. This second dictionary can be stored along with the results 
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tune_params</span><span class="p">[</span><span class="s2">"tile_size_x"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s2">"tile_size_y"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -340,8 +340,8 @@ default. However, if we are going to use grid divisor lists we need to specify a
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">]</span>
-<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"block_size_x"</span><span class="p">]</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"block_size_y"</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -350,8 +350,8 @@ default. However, if we are going to use grid divisor lists we need to specify a
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_x&quot;</span><span class="p">]</span>
-<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;block_size_y&quot;</span><span class="p">,</span> <span class="s2">&quot;tile_size_y&quot;</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">grid_div_x</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"block_size_x"</span><span class="p">,</span> <span class="s2">"tile_size_x"</span><span class="p">]</span>
+<span class="n">grid_div_y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"block_size_y"</span><span class="p">,</span> <span class="s2">"tile_size_y"</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -363,7 +363,7 @@ tunable parameters and benchmark results of the kernel configuration.</p>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="n">metrics</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-<span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;GFLOP/s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">((</span><span class="mi">2</span><span class="p">,)</span><span class="o">+</span><span class="n">output_size</span><span class="o">+</span><span class="n">filter_size</span><span class="p">)</span><span class="o">/</span><span class="mf">1e9</span> <span class="o">/</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span><span class="o">/</span><span class="mf">1e3</span><span class="p">)</span>
+<span class="n">metrics</span><span class="p">[</span><span class="s2">"GFLOP/s"</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">((</span><span class="mi">2</span><span class="p">,)</span><span class="o">+</span><span class="n">output_size</span><span class="o">+</span><span class="n">filter_size</span><span class="p">)</span><span class="o">/</span><span class="mf">1e9</span> <span class="o">/</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">"time"</span><span class="p">]</span><span class="o">/</span><span class="mf">1e3</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>

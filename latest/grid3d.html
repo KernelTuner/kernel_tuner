@@ -163,7 +163,7 @@ distributed within the 3D space.</p>
 <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
 <span class="k">for</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="n">center</span><span class="p">:</span>
     <span class="n">cpu_grid</span> <span class="o">+=</span> <span class="n">compute_grid</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span><span class="n">xgrid</span><span class="p">,</span><span class="n">ygrid</span><span class="p">,</span><span class="n">zgrid</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;CPU Execution time </span><span class="si">%f</span><span class="s1"> ms&#39;</span> <span class="o">%</span><span class="p">(</span> <span class="p">(</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">t0</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span><span class="p">)</span> <span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'CPU Execution time </span><span class="si">%f</span><span class="s1"> ms'</span> <span class="o">%</span><span class="p">(</span> <span class="p">(</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">t0</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span><span class="p">)</span> <span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -190,7 +190,7 @@ the top of the kernel code. So for now we don’t have to specify their values.<
 <span class="c1"># several parameters are available</span>
 <span class="c1"># block sizes : bx, by, bz</span>
 <span class="c1"># dimensions  : nx, ny, nz</span>
-<span class="n">kernel_code</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="n">kernel_code</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">#include &lt;math.h&gt;</span>
 
 <span class="s2">// a simple gaussian function</span>
@@ -219,7 +219,7 @@ the top of the kernel code. So for now we don’t have to specify their values.<
 <span class="s2">        out[y * nx * nz + x * nz + z] = f(d);</span>
 <span class="s2">    }</span>
 <span class="s2">}</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 </pre></div>
 </div>
 </div>
@@ -236,12 +236,12 @@ the top of the kernel code. So for now we don’t have to specify their values.<
 
 <span class="c1"># create the dictionary containing the tune parameters</span>
 <span class="n">tune_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;block_size_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;block_size_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;block_size_z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;nx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;ny&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
-<span class="n">tune_params</span><span class="p">[</span><span class="s1">&#39;nz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">'block_size_x'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">'block_size_y'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">'block_size_z'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">'nx'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">'ny'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
+<span class="n">tune_params</span><span class="p">[</span><span class="s1">'nz'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">]</span>
 
 <span class="c1"># define the final grid</span>
 <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">xgrid</span><span class="p">)</span>
@@ -261,7 +261,7 @@ the top of the kernel code. So for now we don’t have to specify their values.<
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># call the kernel tuner</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s1">&#39;AddGrid&#39;</span><span class="p">,</span> <span class="n">kernel_code</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">tune_kernel</span><span class="p">(</span><span class="s1">'AddGrid'</span><span class="p">,</span> <span class="n">kernel_code</span><span class="p">,</span> <span class="n">problem_size</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">tune_params</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -393,19 +393,19 @@ best performing configuration: block_size_x=2, block_size_y=4, block_size_z=32, 
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># change the values of the block sizes in the kernel</span>
 <span class="n">fixed_params</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;block_size_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;block_size_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;block_size_z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;nx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;ny&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
-<span class="n">fixed_params</span><span class="p">[</span><span class="s1">&#39;nz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">'block_size_x'</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">'block_size_y'</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">'block_size_z'</span><span class="p">]</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">'nx'</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">'ny'</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
+<span class="n">fixed_params</span><span class="p">[</span><span class="s1">'nz'</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
 
 <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">fixed_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
     <span class="n">kernel_code</span> <span class="o">=</span> <span class="n">kernel_code</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
 
 <span class="c1"># compile the kernel_code and extract the function</span>
 <span class="n">mod</span> <span class="o">=</span> <span class="n">compiler</span><span class="o">.</span><span class="n">SourceModule</span><span class="p">(</span><span class="n">kernel_code</span><span class="p">)</span>
-<span class="n">addgrid</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s1">&#39;AddGrid&#39;</span><span class="p">)</span>
+<span class="n">addgrid</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">get_function</span><span class="p">(</span><span class="s1">'AddGrid'</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -426,7 +426,7 @@ best performing configuration: block_size_x=2, block_size_y=4, block_size_z=32, 
     <span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span> <span class="o">=</span> <span class="n">xyz</span>
     <span class="n">addgrid</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">z0</span><span class="p">,</span><span class="n">xgpu</span><span class="p">,</span><span class="n">ygpu</span><span class="p">,</span><span class="n">zgpu</span><span class="p">,</span><span class="n">grid_gpu</span><span class="p">,</span><span class="n">block</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">block</span><span class="p">),</span><span class="n">grid</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">grid_dim</span><span class="p">))</span>
 <span class="n">driver</span><span class="o">.</span><span class="n">Context</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Final GPU time : </span><span class="si">%f</span><span class="s1"> ms&#39;</span> <span class="o">%</span><span class="p">((</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">t0</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Final GPU time : </span><span class="si">%f</span><span class="s1"> ms'</span> <span class="o">%</span><span class="p">((</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">t0</span><span class="p">)</span><span class="o">*</span><span class="mi">1000</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>

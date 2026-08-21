@@ -125,7 +125,7 @@ Numpy, and Kernel Tuner to call a CUDA kernel that uses a struct as kernel argum
     <span class="c1"># The format string uses:</span>
     <span class="c1">#   i for integer, P for Pointer, f for float, ? for bool</span>
     <span class="c1"># The 0l at the end ensures padding to the next long (8bytes)</span>
-    <span class="n">packstr</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;iiiiiiiiiiiPPi?fffi?0l&#39;</span><span class="p">,</span>
+    <span class="n">packstr</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">'iiiiiiiiiiiPPi?fffi?0l'</span><span class="p">,</span>
                           <span class="n">nSamples</span><span class="p">,</span> <span class="n">nSamplesIQ</span><span class="p">,</span> <span class="n">nSlowTimeSamples</span><span class="p">,</span>
                           <span class="n">nChannels</span><span class="p">,</span> <span class="n">nTX</span><span class="p">,</span> <span class="n">nRepeats</span><span class="p">,</span> <span class="n">nFastTimeSamples</span><span class="p">,</span>
                           <span class="n">rfSize</span><span class="p">,</span> <span class="n">mNRows</span><span class="p">,</span> <span class="n">mNRowsIQ</span><span class="p">,</span> <span class="n">nActiveChannels</span><span class="p">,</span>

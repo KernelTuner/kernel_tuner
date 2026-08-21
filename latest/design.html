@@ -2284,14 +2284,14 @@ tunable parameter is defined as preprocessor macro instead.</p></li>
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">process_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cachefile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning_options</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.process_cache" title="Link to this definition">¶</a></dt>
 <dd><p>Cache file for storing tuned configurations.</p>
 <p>the cache file is stored using JSON and uses the following format:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="n">device_name</span><span class="p">:</span> <span class="s2">&quot;name of device&quot;</span>
-  <span class="n">kernel_name</span><span class="p">:</span> <span class="s2">&quot;name of kernel&quot;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="n">device_name</span><span class="p">:</span> <span class="s2">"name of device"</span>
+  <span class="n">kernel_name</span><span class="p">:</span> <span class="s2">"name of kernel"</span>
   <span class="n">problem_size</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
   <span class="n">tune_params_keys</span><span class="p">:</span> <span class="nb">list</span>
   <span class="n">tune_params</span><span class="p">:</span>
   <span class="n">cache</span><span class="p">:</span> <span class="p">{</span>
-    <span class="s2">&quot;x1,x2,..xN&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">:</span> <span class="n">x1</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">0.234342</span><span class="p">},</span>
-    <span class="s2">&quot;y1,y2,..yN&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;block_size_x&quot;</span><span class="p">:</span> <span class="n">y1</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">0.134233</span><span class="p">},</span>
+    <span class="s2">"x1,x2,..xN"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"block_size_x"</span><span class="p">:</span> <span class="n">x1</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">0.234342</span><span class="p">},</span>
+    <span class="s2">"y1,y2,..yN"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"block_size_x"</span><span class="p">:</span> <span class="n">y1</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">0.134233</span><span class="p">},</span>
   <span class="p">}</span>
 <span class="p">}</span>
 </pre></div>

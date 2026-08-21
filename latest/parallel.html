@@ -127,7 +127,7 @@ The same mechanism can be used for <strong>remote tuning</strong>, where Kernel 
 <h2>How to use<a class="headerlink" href="#how-to-use" title="Link to this heading">¶</a></h2>
 <p>To enable parallel tuning, pass the <code class="docutils literal notranslate"><span class="pre">parallel</span></code> argument to <code class="docutils literal notranslate"><span class="pre">tune_kernel</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">kernel_tuner</span><span class="o">.</span><span class="n">tune_kernel</span><span class="p">(</span>
-    <span class="s2">&quot;vector_add&quot;</span><span class="p">,</span>
+    <span class="s2">"vector_add"</span><span class="p">,</span>
     <span class="n">kernel_string</span><span class="p">,</span>
     <span class="n">size</span><span class="p">,</span>
     <span class="n">args</span><span class="p">,</span>
@@ -171,7 +171,7 @@ Ray is an open-source framework for distributed computing in Python.</p>
 </div>
 <p>Next, you must set up a Ray cluster.
 Kernel Tuner will internally attempt to connect to an existing cluster by calling:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ray</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ray</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Refer to the Ray documentation for details on how <code class="docutils literal notranslate"><span class="pre">ray.init()</span></code> connects to a local or remote cluster
@@ -193,35 +193,35 @@ This launches a Ray environment, runs your script, and then shuts it down again.
 <span class="nb">set</span><span class="w"> </span>-euo<span class="w"> </span>pipefail
 
 <span class="c1"># Get SLURM variables</span>
-<span class="nv">NODELIST</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">SLURM_STEP_NODELIST</span><span class="k">:-</span><span class="si">${</span><span class="nv">SLURM_JOB_NODELIST</span><span class="k">:-</span><span class="si">}}</span><span class="s2">&quot;</span>
-<span class="nv">NUM_NODES</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">SLURM_STEP_NUM_NODES</span><span class="k">:-</span><span class="si">${</span><span class="nv">SLURM_JOB_NUM_NODES</span><span class="k">:-</span><span class="si">}}</span><span class="s2">&quot;</span>
+<span class="nv">NODELIST</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">SLURM_STEP_NODELIST</span><span class="k">:-</span><span class="si">${</span><span class="nv">SLURM_JOB_NODELIST</span><span class="k">:-</span><span class="si">}}</span><span class="s2">"</span>
+<span class="nv">NUM_NODES</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">SLURM_STEP_NUM_NODES</span><span class="k">:-</span><span class="si">${</span><span class="nv">SLURM_JOB_NUM_NODES</span><span class="k">:-</span><span class="si">}}</span><span class="s2">"</span>
 
-<span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NODELIST</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NUM_NODES</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;ERROR: Not running under Slurm (missing SLURM_* vars).&quot;</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">"</span><span class="nv">$NODELIST</span><span class="s2">"</span><span class="w"> </span><span class="o">||</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">"</span><span class="nv">$NUM_NODES</span><span class="s2">"</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"ERROR: Not running under Slurm (missing SLURM_* vars)."</span>
 <span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
 <span class="k">fi</span>
 
 <span class="c1"># Get head node</span>
-<span class="nv">NODES</span><span class="o">=</span><span class="k">$(</span>scontrol<span class="w"> </span>show<span class="w"> </span>hostnames<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NODELIST</span><span class="s2">&quot;</span><span class="k">)</span>
+<span class="nv">NODES</span><span class="o">=</span><span class="k">$(</span>scontrol<span class="w"> </span>show<span class="w"> </span>hostnames<span class="w"> </span><span class="s2">"</span><span class="nv">$NODELIST</span><span class="s2">"</span><span class="k">)</span>
 <span class="nv">NODES_ARRAY</span><span class="o">=(</span><span class="nv">$NODES</span><span class="o">)</span>
-<span class="nv">RAY_IP</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">NODES_ARRAY</span><span class="p">[0]</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nv">RAY_PORT</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">RAY_PORT</span><span class="k">:-</span><span class="nv">6379</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nv">RAY_ADDRESS</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">RAY_IP</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">RAY_PORT</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nv">RAY_IP</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">NODES_ARRAY</span><span class="p">[0]</span><span class="si">}</span><span class="s2">"</span>
+<span class="nv">RAY_PORT</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">RAY_PORT</span><span class="k">:-</span><span class="nv">6379</span><span class="si">}</span><span class="s2">"</span>
+<span class="nv">RAY_ADDRESS</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">RAY_IP</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">RAY_PORT</span><span class="si">}</span><span class="s2">"</span>
 
 <span class="c1"># Ensure command exists (Ray &gt;= 2.49 per docs)</span>
 <span class="k">if</span><span class="w"> </span>!<span class="w"> </span>ray<span class="w"> </span>symmetric-run<span class="w"> </span>--help<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;ERROR: &#39;ray symmetric-run&#39; not available. Check Ray installation (needs Ray 2.49+).&quot;</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"ERROR: 'ray symmetric-run' not available. Check Ray installation (needs Ray 2.49+)."</span>
 <span class="w">  </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
 <span class="k">fi</span>
 
 <span class="c1"># Launch cluster!</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Ray head node: </span><span class="nv">$RAY_ADDRESS</span><span class="s2">&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Ray head node: </span><span class="nv">$RAY_ADDRESS</span><span class="s2">"</span>
 
 <span class="nb">exec</span><span class="w"> </span>ray<span class="w"> </span>symmetric-run<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--address<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$RAY_ADDRESS</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--min-nodes<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NUM_NODES</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--address<span class="w"> </span><span class="s2">"</span><span class="nv">$RAY_ADDRESS</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--min-nodes<span class="w"> </span><span class="s2">"</span><span class="nv">$NUM_NODES</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span><span class="s2">&quot;</span><span class="nv">$@</span><span class="s2">&quot;</span>
+<span class="w">  </span><span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span>
 </pre></div>
 </div>
 <p>Next, run your Kernel Tuner script using <code class="docutils literal notranslate"><span class="pre">srun</span></code>.
@@ -242,21 +242,21 @@ In the example below, <code class="docutils literal notranslate"><span class="pr
 <span class="c1">#SBATCH --gpus-per-task=1</span>
 <span class="nb">set</span><span class="w"> </span>-euo<span class="w"> </span>pipefail
 
-<span class="nv">HEAD_NODE</span><span class="o">=</span><span class="k">$(</span>scontrol<span class="w"> </span>show<span class="w"> </span>hostnames<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$SLURM_JOB_NODELIST</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n1<span class="k">)</span>
-<span class="nv">HEAD_NODE_IP</span><span class="o">=</span><span class="k">$(</span>srun<span class="w"> </span>-N1<span class="w"> </span>-n1<span class="w"> </span>-w<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HEAD_NODE</span><span class="s2">&quot;</span><span class="w"> </span>bash<span class="w"> </span>-lc<span class="w"> </span><span class="s1">&#39;hostname -I | awk &quot;{print \$1}&quot;&#39;</span><span class="k">)</span>
+<span class="nv">HEAD_NODE</span><span class="o">=</span><span class="k">$(</span>scontrol<span class="w"> </span>show<span class="w"> </span>hostnames<span class="w"> </span><span class="s2">"</span><span class="nv">$SLURM_JOB_NODELIST</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-n1<span class="k">)</span>
+<span class="nv">HEAD_NODE_IP</span><span class="o">=</span><span class="k">$(</span>srun<span class="w"> </span>-N1<span class="w"> </span>-n1<span class="w"> </span>-w<span class="w"> </span><span class="s2">"</span><span class="nv">$HEAD_NODE</span><span class="s2">"</span><span class="w"> </span>bash<span class="w"> </span>-lc<span class="w"> </span><span class="s1">'hostname -I | awk "{print \$1}"'</span><span class="k">)</span>
 <span class="nv">RAY_PORT</span><span class="o">=</span><span class="m">6379</span>
-<span class="nv">RAY_ADDRESS</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HEAD_NODE_IP</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">RAY_PORT</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nv">RAY_ADDRESS</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">HEAD_NODE_IP</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">RAY_PORT</span><span class="si">}</span><span class="s2">"</span>
 
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Launching head node: RAY_ADDRESS=</span><span class="nv">$RAY_ADDRESS</span><span class="s2">&quot;</span>
-srun<span class="w"> </span>--nodes<span class="o">=</span><span class="m">1</span><span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>-w<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HEAD_NODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>ray<span class="w"> </span>start<span class="w"> </span>--head<span class="w"> </span>--node-ip-address<span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HEAD_NODE_IP</span><span class="s2">&quot;</span><span class="w"> </span>--port<span class="o">=</span><span class="s2">&quot;</span><span class="nv">$RAY_PORT</span><span class="s2">&quot;</span><span class="w"> </span>--block<span class="w"> </span><span class="p">&amp;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Launching head node: RAY_ADDRESS=</span><span class="nv">$RAY_ADDRESS</span><span class="s2">"</span>
+srun<span class="w"> </span>--nodes<span class="o">=</span><span class="m">1</span><span class="w"> </span>--ntasks<span class="o">=</span><span class="m">1</span><span class="w"> </span>-w<span class="w"> </span><span class="s2">"</span><span class="nv">$HEAD_NODE</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>ray<span class="w"> </span>start<span class="w"> </span>--head<span class="w"> </span>--node-ip-address<span class="o">=</span><span class="s2">"</span><span class="nv">$HEAD_NODE_IP</span><span class="s2">"</span><span class="w"> </span>--port<span class="o">=</span><span class="s2">"</span><span class="nv">$RAY_PORT</span><span class="s2">"</span><span class="w"> </span>--block<span class="w"> </span><span class="p">&amp;</span>
 sleep<span class="w"> </span><span class="m">5</span>
 
 <span class="nv">NUM_WORKERS</span><span class="o">=</span><span class="k">$((</span><span class="nv">SLURM_JOB_NUM_NODES</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="k">))</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Launching </span><span class="si">${</span><span class="nv">NUM_WORKERS</span><span class="si">}</span><span class="s2"> worker node(s)&quot;</span>
-<span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NUM_WORKERS</span><span class="s2">&quot;</span><span class="w"> </span>-gt<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<span class="w">  </span>srun<span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NUM_WORKERS</span><span class="s2">&quot;</span><span class="w"> </span>--nodes<span class="o">=</span><span class="s2">&quot;</span><span class="nv">$NUM_WORKERS</span><span class="s2">&quot;</span><span class="w"> </span>--ntasks-per-node<span class="o">=</span><span class="m">1</span><span class="w"> </span>--exclude<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HEAD_NODE</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>ray<span class="w"> </span>start<span class="w"> </span>--address<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$RAY_ADDRESS</span><span class="s2">&quot;</span><span class="w"> </span>--block<span class="w"> </span><span class="p">&amp;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Launching </span><span class="si">${</span><span class="nv">NUM_WORKERS</span><span class="si">}</span><span class="s2"> worker node(s)"</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span><span class="s2">"</span><span class="nv">$NUM_WORKERS</span><span class="s2">"</span><span class="w"> </span>-gt<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">  </span>srun<span class="w"> </span>-n<span class="w"> </span><span class="s2">"</span><span class="nv">$NUM_WORKERS</span><span class="s2">"</span><span class="w"> </span>--nodes<span class="o">=</span><span class="s2">"</span><span class="nv">$NUM_WORKERS</span><span class="s2">"</span><span class="w"> </span>--ntasks-per-node<span class="o">=</span><span class="m">1</span><span class="w"> </span>--exclude<span class="w"> </span><span class="s2">"</span><span class="nv">$HEAD_NODE</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>ray<span class="w"> </span>start<span class="w"> </span>--address<span class="w"> </span><span class="s2">"</span><span class="nv">$RAY_ADDRESS</span><span class="s2">"</span><span class="w"> </span>--block<span class="w"> </span><span class="p">&amp;</span>
 <span class="k">fi</span>
 
 <span class="c1"># Keep job alive (or replace with running your workload on the head)</span>
