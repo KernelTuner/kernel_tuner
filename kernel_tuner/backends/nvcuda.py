@@ -9,10 +9,37 @@ from kernel_tuner.observers.nvcuda import CudaRuntimeObserver
 from kernel_tuner.util import SkippableFailure
 from kernel_tuner.utils.nvcuda import cuda_error_check, to_valid_nvrtc_gpu_arch_cc, find_cuda_home, _check
 
+def preload_python_nvrtc():
+    """Preload the libnvrtc.so library into the process memory to avoid conflicts with Julia's artifacts."""
+
+    import ctypes as ct
+    import sysconfig
+
+    # search site-packages for nvidia-cuda-nvrtc wheels
+    site_packages = sysconfig.get_paths()["purelib"]
+    nvidia_path = os.path.join(site_packages, "nvidia", "nvrtc", "lib")
+    
+    # fall back to CUDA_HOME / CUDA_PATH if present
+    cuda_home = os.environ.get("CUDA_HOME") or os.environ.get("CUDA_PATH")
+    cuda_home_lib = os.path.join(cuda_home, "lib64") if cuda_home else None
+
+    # search for libnvrtc.so in the search directories and load it into process memory
+    search_dirs = [nvidia_path, cuda_home_lib]
+    for d in search_dirs:
+        if d and os.path.exists(d):
+            for file in os.listdir(d):
+                if file.startswith("libnvrtc.so"):
+                    full_path = os.path.join(d, file)
+                    # force load into process memory before Julia loads its artifacts
+                    ct.CDLL(full_path, mode=ct.RTLD_GLOBAL)
+                    return True
+    return False
+
 # embedded in try block to be able to generate documentation
 # and run tests without cuda-python installed
 try:
     from cuda.bindings import driver, nvrtc, runtime
+    preload_python_nvrtc()
 except ImportError:
     try:
         # backward compatibility hack for older cuda-python versions
