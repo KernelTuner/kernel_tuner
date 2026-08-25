@@ -1267,13 +1267,13 @@ class Searchspace:
             )
             num_samples = round(self.size / 2)
         if num_samples == self.size:
-            return np.shuffle([range(self.size)])
+            return np.random.permutation(self.size).tolist()
 
         # adjust the number of random samples if necessary
         sampling_factor = max(1, sampling_factor)
         num_random_samples = min(sampling_factor * num_samples, self.size)
         if num_random_samples == self.size or num_random_samples <= 1:
-            return self.get_random_sample(num_random_samples)
+            return self.get_random_sample_indices(num_samples).tolist()
         random_samples_indices = self.get_random_sample_indices(num_random_samples)
 
         # calculate the desired parameter configuration indices, starting at the edges of the parameter indices and halving each time
@@ -1340,7 +1340,7 @@ class Searchspace:
             )
             num_samples = round(self.size / 2)
         if num_samples == self.size:
-            return np.shuffle([range(self.size)])
+            return np.random.permutation(self.size).tolist()
         if self.params_values_indices is None:
             self.__prepare_neighbors_index()
 

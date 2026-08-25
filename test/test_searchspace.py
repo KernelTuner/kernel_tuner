@@ -9,6 +9,7 @@ except ImportError:
     from unittest.mock import patch
 
 import numpy as np
+import pytest
 from constraint import ExactSumConstraint
 
 from kernel_tuner.interface import Options
@@ -562,6 +563,19 @@ def test_get_distributed_random_sample():
     for index in distributed_random_sample_indices:
         assert 0 <= index < searchspace.size
 
+    # check that requesting exactly the searchspace size returns every index exactly once
+    full_sample_indices = searchspace.get_distributed_random_sample_indices(num_samples=searchspace.size)
+    assert len(full_sample_indices) == searchspace.size
+    assert sorted(full_sample_indices) == list(range(searchspace.size))
+
+    # check that requesting more than the searchspace size warns and reduces the sample size
+    with pytest.warns(UserWarning):
+        oversized_sample_indices = searchspace.get_distributed_random_sample_indices(num_samples=searchspace.size + 6)
+    assert len(oversized_sample_indices) == round(searchspace.size / 2)
+    assert len(set(oversized_sample_indices)) == len(oversized_sample_indices)
+    for index in oversized_sample_indices:
+        assert 0 <= index < searchspace.size
+
 def test_get_LHS_sample_indices():
     """Test whether the distributed random sample indices are as expected."""
     # create a searchspace with mixed parameter types
@@ -586,6 +600,19 @@ def test_get_LHS_sample_indices():
     assert len(distributed_random_sample_indices) == num_samples
     assert len(set(distributed_random_sample_indices)) == num_samples
     for index in distributed_random_sample_indices:
+        assert 0 <= index < searchspace.size
+
+    # check that requesting exactly the searchspace size returns every index exactly once
+    full_sample_indices = searchspace.get_LHS_sample_indices(num_samples=searchspace.size)
+    assert len(full_sample_indices) == searchspace.size
+    assert sorted(full_sample_indices) == list(range(searchspace.size))
+
+    # check that requesting more than the searchspace size warns and reduces the sample size
+    with pytest.warns(UserWarning):
+        oversized_sample_indices = searchspace.get_LHS_sample_indices(num_samples=searchspace.size + 6)
+    assert len(oversized_sample_indices) == round(searchspace.size / 2)
+    assert len(set(oversized_sample_indices)) == len(oversized_sample_indices)
+    for index in oversized_sample_indices:
         assert 0 <= index < searchspace.size
 
 def test_small_searchspace():
