@@ -3,6 +3,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
+- Fix `np.shuffle` crash and wrong return type in `Searchspace` distributed random and LHS samplers
 
 ## [1.5.0] - 2026-08-20
 - Kernel Tuner can now be used from Julia, [see KernelTuner.jl](https://github.com/KernelTuner/KernelTuner.jl)
