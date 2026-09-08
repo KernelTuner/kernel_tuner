@@ -1,5 +1,6 @@
 import numpy as np
 
+from kernel_tuner.backends.hip.util import hip_check
 from kernel_tuner.observers.observer import BenchmarkObserver
 
 try:
@@ -14,7 +15,9 @@ class HipRuntimeObserver(BenchmarkObserver):
 
     def __init__(self, dev):
         if not hip or not hiprtc:
-            raise ImportError("Unable to import HIP Python, or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-hip-python.")
+            raise ImportError(
+                "Unable to import HIP Python, or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-hip-python."
+            )
 
         self.dev = dev
         self.stream = dev.stream
@@ -24,7 +27,7 @@ class HipRuntimeObserver(BenchmarkObserver):
 
     def after_finish(self):
         # Time is measured in milliseconds
-        EventElapsedTime = hip.hipEventElapsedTime(self.start, self.end)
+        EventElapsedTime = hip_check(hip.hipEventElapsedTime(self.start, self.end))
         self.times.append(EventElapsedTime)
 
     def get_results(self):

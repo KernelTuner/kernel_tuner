@@ -1,13 +1,13 @@
-""" This module contains the functionality for running and compiling C functions """
+"""This module contains the functionality for running and compiling C functions"""
 
-from collections import namedtuple
-import subprocess
-import platform
-import errno
-import re
-import logging
-import ctypes as C
 import _ctypes
+import ctypes as C
+import errno
+import logging
+import platform
+import re
+import subprocess
+from collections import namedtuple
 
 import numpy as np
 import numpy.ctypeslib
@@ -15,10 +15,9 @@ import numpy.ctypeslib
 from kernel_tuner.backends.backend import CompilerBackend
 from kernel_tuner.observers.compiler import CompilerRuntimeObserver
 from kernel_tuner.util import (
-    get_temp_filename,
     delete_temp_file,
+    get_temp_filename,
     write_file,
-    SkippableFailure,
 )
 
 try:
@@ -34,7 +33,7 @@ except ImportError:
 try:
     from hip._util.types import DeviceArray
 except ImportError:
-    Pointer = Exception # using Exception here as a type that will never be among kernel arguments
+    Pointer = Exception  # using Exception here as a type that will never be among kernel arguments
     DeviceArray = Exception
 
 
@@ -88,13 +87,17 @@ class CompilerFunctions(CompilerBackend):
     """Class that groups the code for running and compiling C functions"""
 
     def __init__(self, iterations=7, compiler_options=None, compiler=None, observers=None):
-        """instantiate CFunctions object used for interacting with C code
+        """Instantiate CFunctions object used for interacting with C code
 
         :param iterations: Number of iterations used while benchmarking a kernel, 7 by default.
         :type iterations: int
         """
+        # allocations contains a clean copy of the memory
+        self.allocations = []
         self.observers = observers or []
         self.observers.append(CompilerRuntimeObserver(self))
+        for obs in self.observers:
+            obs.register_device(self)
 
         self.iterations = iterations
         self.max_threads = 1024
@@ -104,7 +107,6 @@ class CompilerFunctions(CompilerBackend):
         self.lib = None
         self.using_openmp = False
         self.using_openacc = False
-        self.observers = [CompilerRuntimeObserver(self)]
         self.last_result = None
 
         if self.compiler == "g++":
@@ -143,7 +145,7 @@ class CompilerFunctions(CompilerBackend):
         self.name = platform.processor()
 
     def ready_argument_list(self, arguments):
-        """ready argument list to be passed to the C function
+        """Ready argument list to be passed to the C function
 
         :param arguments: List of arguments to be passed to the C function.
             The order should match the argument list on the C function.
@@ -157,34 +159,28 @@ class CompilerFunctions(CompilerBackend):
 
         for i, arg in enumerate(arguments):
             if not (isinstance(arg, (np.ndarray, np.number, DeviceArray)) or is_cupy_array(arg)):
-                raise TypeError(f"Argument is not numpy or cupy ndarray or numpy scalar or HIP Python DeviceArray but a {type(arg)}")
+                raise TypeError(
+                    f"Argument is not numpy or cupy ndarray or numpy scalar or HIP Python DeviceArray but a {type(arg)}"
+                )
             dtype_str = arg.typestr if isinstance(arg, DeviceArray) else str(arg.dtype)
             if isinstance(arg, np.ndarray):
                 if dtype_str in dtype_map.keys():
-                    # In numpy <= 1.15, ndarray.ctypes.data_as does not itself keep a reference
-                    # to its underlying array, so we need to store a reference to arg.copy()
-                    # in the Argument object manually to avoid it being deleted.
-                    # (This changed in numpy > 1.15.)
-                    # data_ctypes = data.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
                     data_ctypes = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
-                    numpy_arg = arg
                 else:
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, np.generic):
                 data_ctypes = dtype_map[dtype_str](arg)
-                numpy_arg = arg
             elif is_cupy_array(arg):
                 data_ctypes = C.c_void_p(arg.data.ptr)
-                numpy_arg = arg
             elif isinstance(arg, DeviceArray):
                 data_ctypes = arg.as_c_void_p()
-                numpy_arg = None
 
-            ctype_args[i] = Argument(numpy=numpy_arg, ctypes=data_ctypes)
+            ctype_args[i] = Argument(numpy=arg, ctypes=data_ctypes)
+            self.allocations.append(Argument(numpy=arg.copy(), ctypes=data_ctypes))
         return ctype_args
 
     def compile(self, kernel_instance):
-        """call the C compiler to compile the kernel, return the function
+        """Call the C compiler to compile the kernel, return the function
 
         :param kernel_instance: An object representing the specific instance of the tunable kernel
             in the parameter space.
@@ -204,16 +200,13 @@ class CompilerFunctions(CompilerBackend):
         compiler_options = ["-fPIC"]
 
         # detect openmp
-        if "#include <omp.h>" in kernel_string or "use omp_lib" in kernel_string:
+        if "#pragma omp" in kernel_string or "!$omp" in kernel_string:
             logging.debug("set using_openmp to true")
             self.using_openmp = True
-            if self.compiler in ["nvc", "nvc++", "nvfortran"]:
-                compiler_options.append("-mp")
-            else:
-                compiler_options.append("-fopenmp")
 
         # detect openacc
         if "#pragma acc" in kernel_string or "!$acc" in kernel_string:
+            logging.debug("set using_openacc to true")
             self.using_openacc = True
 
         # if filename is known, use that one
@@ -288,7 +281,7 @@ class CompilerFunctions(CompilerBackend):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                check=True
+                check=True,
             )
 
             subprocess.run(
@@ -299,7 +292,7 @@ class CompilerFunctions(CompilerBackend):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                check=True
+                check=True,
             )
 
             self.lib = np.ctypeslib.load_library(filename, ".")
@@ -317,29 +310,33 @@ class CompilerFunctions(CompilerBackend):
     def start_event(self):
         """Records the event that marks the start of a measurement
 
-        C backend does not use events"""
+        C backend does not use events
+        """
         pass
 
     def stop_event(self):
         """Records the event that marks the end of a measurement
 
-        C backend does not use events"""
+        C backend does not use events
+        """
         pass
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise
 
-        C backend does not support asynchronous launches"""
+        C backend does not support asynchronous launches
+        """
         return True
 
     def synchronize(self):
         """Halts execution until device has finished its tasks
 
-        C backend does not support asynchronous launches"""
+        C backend does not support asynchronous launches
+        """
         pass
 
     def run_kernel(self, func, c_args, threads, grid, stream=None):
-        """runs the kernel once, returns whatever the kernel returns
+        """Runs the kernel once, returns whatever the kernel returns
 
         :param func: A C function compiled for this specific configuration
         :type func: ctypes._FuncPtr
@@ -373,7 +370,7 @@ class CompilerFunctions(CompilerBackend):
         return time
 
     def memset(self, allocation, value, size):
-        """set the memory in allocation to the value in value
+        """Set the memory in allocation to the value in value
 
         :param allocation: An Argument for some memory allocation unit
         :type allocation: Argument
@@ -390,7 +387,8 @@ class CompilerFunctions(CompilerBackend):
             C.memset(allocation.ctypes, value, size)
 
     def memcpy_dtoh(self, dest, src):
-        """a simple memcpy copying from an Argument to a numpy array
+        """This method implements the semantic of a device to host copy for the Compiler backend.
+        There is no actual copy from device to host happening, but host to host.
 
         :param dest: A numpy or cupy array to store the data
         :type dest: np.ndarray or cupy.ndarray
@@ -404,6 +402,7 @@ class CompilerFunctions(CompilerBackend):
             # This is because DeviceArray manages its own memory and donesn't need
             # explicit copies like numpy arrays do
             return
+        # there is no real copy from device to host, but host to host
         if isinstance(dest, np.ndarray) and is_cupy_array(src.numpy):
             # Implicit conversion to a NumPy array is not allowed.
             value = src.numpy.get()
@@ -413,33 +412,20 @@ class CompilerFunctions(CompilerBackend):
         dest[:] = xp.asarray(value)
 
     def memcpy_htod(self, dest, src):
-        """a simple memcpy copying from a numpy array to an Argument
+        """There is no memcpy_htod implemented for the compiler backend."""
+        pass
 
-        :param dest: An Argument for some memory allocation
-        :type dest: Argument
-
-        :param src: A numpy or cupy array containing the source data
-        :type src: np.ndarray or cupy.ndarray
-        """
-        # If src.numpy is None, it means we're dealing with a HIP Python DeviceArray
-        if dest.numpy is None:
-            # Skip memory copies for HIP Python DeviceArray
-            # This is because DeviceArray manages its own memory and donesn't need
-            # explicit copies like numpy arrays do
-            return
-        if isinstance(dest.numpy, np.ndarray) and is_cupy_array(src):
-            # Implicit conversion to a NumPy array is not allowed.
-            value = src.get()
-        else:
-            value = src
-        xp = get_array_module(dest.numpy)
-        dest.numpy[:] = xp.asarray(value)
+    def refresh_memory(self, _, arguments, should_sync):
+        """Copy the preserved content of the output memory to used arrays."""
+        for i, arg in enumerate(arguments):
+            if should_sync[i]:
+                self.memcpy_dtoh(arg, self.allocations[i])
 
     def cleanup_lib(self):
-        """unload the previously loaded shared library"""
+        """Unload the previously loaded shared library"""
         if self.lib is None:
             return
-        
+
         if not self.using_openmp and not self.using_openacc:
             # this if statement is necessary because shared libraries that use
             # OpenMP will core dump when unloaded, this is a well-known issue with OpenMP

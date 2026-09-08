@@ -5,19 +5,18 @@ import sys
 
 import numpy as np
 
-from kernel_tuner import util
+from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc, scale_from_params
 
 _options = dict(
-    popsize=("Population size", 20),
-    maxiter=("Maximum number of iterations", 150),
+    popsize=("Population size", 50),
+    maxiter=("Maximum number of iterations", 190),
     w=("Inertia weight constant", 0.5),
-    c1=("Cognitive constant", 3.0),
-    c2=("Social constant", 1.5),
-)
-
+    c1=("Cognitive constant", 3.5),
+    c2=("Social constant", 1.0),
+    constraint_aware=("constraint-aware optimization (True/False)", True))
 
 def tune(searchspace: Searchspace, runner, tuning_options):
 
@@ -25,9 +24,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     cost_func = CostFunc(searchspace, tuning_options, runner, scaling=True)
 
     # using this instead of get_bounds because scaling is used
-    bounds, _, eps = cost_func.get_bounds_x0_eps()
+    bounds, x0, eps = cost_func.get_bounds_x0_eps()
 
-    num_particles, maxiter, w, c1, c2 = common.get_options(tuning_options.strategy_options, _options)
+    num_particles, maxiter, w, c1, c2, constraint_aware = common.get_options(tuning_options.strategy_options, _options)
     num_particles = min(round(searchspace.size / 2), num_particles)
 
     best_score_global = sys.float_info.max
@@ -39,33 +38,39 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         swarm.append(Particle(bounds))
 
     # ensure particles start from legal points
-    population = list(list(p) for p in searchspace.get_random_sample(num_particles))
-    for i, particle in enumerate(swarm):
-        particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
+    if constraint_aware:
+        population = list(list(p) for p in searchspace.get_random_sample(num_particles))
+        for i, particle in enumerate(swarm):
+            particle.position = scale_from_params(population[i], searchspace.tune_params, eps)
+
+    # include user provided starting point
+    swarm[0].position = x0
 
     # start optimization
     for i in range(maxiter):
         if tuning_options.verbose:
             print("start iteration ", i, "best time global", best_score_global)
 
+        try:
+            scores = cost_func.eval_all([p.position for p in swarm])
+        except StopCriterionReached as e:
+            if tuning_options.verbose:
+                print(e)
+            return cost_func.results
+
         # evaluate particle positions
-        for j in range(num_particles):
-            try:
-                swarm[j].evaluate(cost_func)
-            except util.StopCriterionReached as e:
-                if tuning_options.verbose:
-                    print(e)
-                return cost_func.results
+        for p, score in zip(swarm, scores):
+            p.set_score(score)
 
             # update global best if needed
-            if swarm[j].score <= best_score_global:
-                best_position_global = swarm[j].position
-                best_score_global = swarm[j].score
+            if score <= best_score_global:
+                best_position_global = p.position
+                best_score_global = score
 
         # update particle velocities and positions
-        for j in range(0, num_particles):
-            swarm[j].update_velocity(best_position_global, w, c1, c2)
-            swarm[j].update_position(bounds)
+        for p in swarm:
+            p.update_velocity(best_position_global, w, c1, c2)
+            p.update_position(bounds)
 
     if tuning_options.verbose:
         print("Final result:")
@@ -89,7 +94,10 @@ class Particle:
         self.score = sys.float_info.max
 
     def evaluate(self, cost_func):
-        self.score = cost_func(self.position)
+        self.set_score(cost_func(self.position))
+
+    def set_score(self, score):
+        self.score = score
         # update best_pos if needed
         if self.score < self.best_score:
             self.best_pos = self.position

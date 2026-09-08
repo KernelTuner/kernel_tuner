@@ -1,6 +1,9 @@
 import shutil
 import subprocess
 import sys
+import ctypes.util
+from os import environ
+import importlib.util
 
 import pytest
 
@@ -32,21 +35,21 @@ except Exception:
 
 gcc_present = shutil.which("g++") is not None
 gfortran_present = shutil.which("gfortran") is not None
-openmp_present = "libgomp" in subprocess.getoutput(["ldconfig -p | grep libgomp"])
+openmp_present = ctypes.util.find_library('gomp') is not None
 openacc_present = shutil.which("nvc++") is not None
+running_on_ci = any([environ.get(CI, "false").lower() == "true" for CI in ["GITHUB_ACTIONS", "TRAVIS", "CIRCLECI", "GITLAB_CI"]])
 
 try:
     import cupy
 
-    cupy.cuda.Device(
-        0
-    ).attributes  # triggers exception if there are no CUDA-capable devices
+    cupy.cuda.Device(0).attributes  # triggers exception if there are no CUDA-capable devices
     cupy_present = True
 except Exception:
     cupy_present = False
 
 try:
     import cuda
+
     print(cuda)
     cuda_present = True
 except Exception:
@@ -54,13 +57,16 @@ except Exception:
 
 try:
     from hip import hip
+
+    hip.hipDriverGetVersion()
     hip_present = True
-except ImportError:
+except (ImportError, RuntimeError):
     hip_present = False
 
 try:
     import botorch
     import torch
+
     bayes_opt_botorch_present = True
 except ImportError:
     bayes_opt_botorch_present = False
@@ -68,39 +74,56 @@ except ImportError:
 try:
     import gpytorch
     import torch
+
     bayes_opt_gpytorch_present = True
 except ImportError:
     bayes_opt_gpytorch_present = False
 
 try:
+    import pyatf
+
+    pyatf_present = True
+except ImportError:
+    pyatf_present = False
+
+try:
+    import pymoo
+    pymoo_present = True
+except ImportError:
+    pymoo_present = False
+
+try:
+    julia_present = importlib.util.find_spec("juliacall") is not None
+except ImportError:
+    julia_present = False
+
+try:
     from autotuning_methodology.report_experiments import get_strategy_scores
+
     methodology_present = True
 except ImportError:
     methodology_present = False
 
-skip_if_no_pycuda = pytest.mark.skipif(
-    not pycuda_present, reason="PyCuda not installed or no CUDA device detected"
-)
+skip_if_no_pycuda = pytest.mark.skipif(not pycuda_present, reason="PyCuda not installed or no CUDA device detected")
 skip_if_no_pynvml = pytest.mark.skipif(not pynvml_present, reason="NVML not installed")
-skip_if_no_cupy = pytest.mark.skipif(
-    not cupy_present, reason="CuPy not installed or no CUDA device detected"
-)
-skip_if_no_cuda = pytest.mark.skipif(
-    not cuda_present, reason="NVIDIA CUDA not installed"
-)
-skip_if_no_opencl = pytest.mark.skipif(
-    not opencl_present, reason="PyOpenCL not installed or no OpenCL device detected"
-)
+skip_if_no_cupy = pytest.mark.skipif(not cupy_present, reason="CuPy not installed or no CUDA device detected")
+skip_if_no_cuda = pytest.mark.skipif(not cuda_present, reason="NVIDIA CUDA not installed")
+skip_if_no_opencl = pytest.mark.skipif(not opencl_present, reason="PyOpenCL not installed or no OpenCL device detected")
 skip_if_no_gcc = pytest.mark.skipif(not gcc_present, reason="No gcc on PATH")
-skip_if_no_gfortran = pytest.mark.skipif(
-    not gfortran_present, reason="No gfortran on PATH"
-)
+skip_if_no_gfortran = pytest.mark.skipif(not gfortran_present, reason="No gfortran on PATH")
+skip_if_no_julia = pytest.mark.skipif(not shutil.which("julia") or not julia_present, reason="No Julia on PATH or juliacall not installed")
 skip_if_no_openmp = pytest.mark.skipif(not openmp_present, reason="No OpenMP found")
 skip_if_no_openacc = pytest.mark.skipif(not openacc_present, reason="No nvc++ on PATH")
-skip_if_no_bayesopt_gpytorch = pytest.mark.skipif(not bayes_opt_gpytorch_present, reason="Torch and GPyTorch not installed")
-skip_if_no_bayesopt_botorch = pytest.mark.skipif(not bayes_opt_botorch_present, reason="Torch and BOTorch not installed")
-skip_if_no_pyhip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")
+skip_if_no_bayesopt_gpytorch = pytest.mark.skipif(
+    not bayes_opt_gpytorch_present, reason="Torch and GPyTorch not installed"
+)
+skip_if_no_bayesopt_botorch = pytest.mark.skipif(
+    not bayes_opt_botorch_present, reason="Torch and BOTorch not installed"
+)
+skip_if_no_hip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")
+skip_if_no_pyatf = pytest.mark.skipif(not pyatf_present, reason="PyATF not installed")
 skip_if_no_methodology = pytest.mark.skipif(not methodology_present, reason="Autotuning Methodology not found")
+skip_if_no_pymoo = pytest.mark.skipif(not pymoo_present, reason="No PyMOO found")
 
 
 def skip_backend(backend: str):
@@ -120,3 +143,5 @@ def skip_backend(backend: str):
         pytest.skip("No nvc++ on PATH")
     elif backend.upper() == "HIP" and not hip_present:
         pytest.skip("HIP Python not installed")
+    elif backend.upper() == "JULIA" and not shutil.which("julia"):
+        pytest.skip("No Julia on PATH")

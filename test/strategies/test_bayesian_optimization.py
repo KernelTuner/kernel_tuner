@@ -19,6 +19,8 @@ tune_params["z"] = [7]
 strategy_options = dict(popsize=0, max_fevals=10)
 tuning_options = Options(dict(restrictions=[], tune_params=tune_params, strategy_options=strategy_options))
 tuning_options["scaling"] = True
+tuning_options["objective"] = "time"
+tuning_options["objective_higher_is_better"] = False
 tuning_options["snap"] = True
 max_threads = 1024
 searchspace = Searchspace(tune_params, [], max_threads)
@@ -37,7 +39,7 @@ normalized_parameter_space = bayes_opt.normalize_parameter_space(parameter_space
 pruned_parameter_space, removed_tune_params = bayes_opt.prune_parameter_space(normalized_parameter_space, tuning_options, tune_params, original_to_normalized)
 
 # initialize BO
-BO = BayesianOptimization(pruned_parameter_space, removed_tune_params, tuning_options, original_to_normalized, normalized_to_original, cost_func)
+BO = BayesianOptimization(pruned_parameter_space, searchspace, removed_tune_params, tuning_options, original_to_normalized, normalized_to_original, cost_func)
 predictions, _, std = BO.predict_list(BO.unvisited_cache)
 
 

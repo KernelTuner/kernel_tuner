@@ -4,11 +4,11 @@ import time
 import numpy as np
 import pytest
 
-from kernel_tuner import core, tune_kernel, util
+from kernel_tuner import core, tune_kernel, tune_cache, util
 from kernel_tuner.interface import Options, _device_options, _kernel_options, _tuning_options
 from kernel_tuner.runners.sequential import SequentialRunner
 
-from .context import skip_if_no_pycuda
+from .context import skip_if_no_cuda
 
 cache_filename = os.path.dirname(
     os.path.realpath(__file__)) + "/test_cache_file.json"
@@ -38,7 +38,7 @@ def env():
     return ["vector_add", kernel_string, size, args, tune_params]
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_sequential_runner_alt_block_size_names(env):
 
     kernel_string = """__global__ void vector_add(float *c, float *a, float *b, int n) {
@@ -71,7 +71,7 @@ def test_sequential_runner_alt_block_size_names(env):
     assert len(result) == len(tune_params["block_dim_x"])
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_smem_args(env):
     result, _ = tune_kernel(*env,
                             smem_args=dict(size="block_size_x*4"),
@@ -86,7 +86,7 @@ def test_smem_args(env):
     assert len(result) == len(tune_params["block_size_x"])
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_build_cache(env):
     if not os.path.isfile(cache_filename):
         result, _ = tune_kernel(*env,
@@ -130,24 +130,46 @@ def test_simulation_runner(env):
     assert max_time - recorded_time_including_simulation < 10
 
 
-def test_diff_evo(env):
+def test_tune_cache(env):
+    results, env = tune_cache(cache_filename)
+    assert len(results) > 10
+
+
+def test_constraint_aware_GA(env):
+    options = dict(method="uniform",
+                   constraint_aware=True,
+                   popsize=5,
+                   maxiter=2,
+                   mutation_chance=10,
+                   max_fevals=10)
     result, _ = tune_kernel(*env,
-                            strategy="diff_evo",
-                            strategy_options=dict(popsize=5),
+                            strategy="genetic_algorithm",
+                            strategy_options=options,
                             verbose=True,
                             cache=cache_filename,
                             simulation_mode=True)
     assert len(result) > 0
 
 
-@skip_if_no_pycuda
+def test_restrictions(env):
+    restrictions = [lambda p: p["block_size_x"] <= 512, "block_size_x > 128"]
+
+    result, _ = tune_kernel(*env,
+                            verbose=True,
+                            restrictions=restrictions,
+                            cache=cache_filename,
+                            simulation_mode=True)
+    assert len(result) == 6
+
+
+@skip_if_no_cuda
 def test_time_keeping(env):
     kernel_name, kernel_string, size, args, tune_params = env
     answer = [args[1] + args[2], None, None, None]
 
     options = dict(method="uniform",
-                   popsize=10,
-                   maxiter=1,
+                   popsize=5,
+                   maxiter=50,
                    mutation_chance=1,
                    max_fevals=10)
     start = time.perf_counter()
@@ -206,7 +228,7 @@ def test_random_sample(env):
         assert v['time'] > 0.0 and v['time'] < 1.0
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_interface_handles_compile_failures(env):
     kernel_name, kernel_string, size, args, tune_params = env
 
@@ -240,10 +262,10 @@ def test_interface_handles_compile_failures(env):
     failed_config = [
         record for record in results if record["block_size_x"] == 256
     ][0]
-    assert isinstance(failed_config["time"], util.CompilationFailedConfig)
+    assert isinstance(failed_config["__error__"], util.CompilationFailedConfig)
 
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 def test_runner(env):
 
     kernel_name, kernel_source, problem_size, arguments, tune_params = env
@@ -269,7 +291,9 @@ def test_runner(env):
                               for k in _tuning_options.keys()])
     device_options = Options([(k, opts.get(k, None))
                               for k in _device_options.keys()])
+    tuning_options.budget = util.TuningBudget()
     tuning_options.cachefile = None
+    tuning_options.unique_results = {}
 
     # create runner
     runner = SequentialRunner(kernelsource,

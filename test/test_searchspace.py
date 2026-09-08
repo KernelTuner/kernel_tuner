@@ -9,6 +9,7 @@ except ImportError:
     from unittest.mock import patch
 
 import numpy as np
+import pytest
 from constraint import ExactSumConstraint
 
 from kernel_tuner.interface import Options
@@ -181,22 +182,6 @@ def test_param_index_lookup():
     assert simple_searchspace.get_param_indices(last) == (3, 1, 1)
 
 
-def test_get_tensorspace():
-    """Test the generation of a tensor space."""
-    tensorspace = simple_searchspace.get_tensorspace()
-    assert tensorspace.shape == simple_searchspace.get_list_numpy().shape
-
-
-def test_conversion_tensor_param_config():
-    """Test the conversion from a parameter configuration to a tensor and tensor to parameter configuration."""
-    for config in simple_searchspace_single.list:
-        tensor = simple_searchspace_single.param_config_to_tensor(config)
-        config_2 = simple_searchspace_single.tensor_to_param_config(tensor)
-        assert config == config_2
-        assert tensor.equal(simple_searchspace_single.param_config_to_tensor(config_2))
-        assert len(tensor) == len(config) - 1
-
-
 def test_random_sample():
     """Test whether the random sample indices exists and are unique, and if it throws an error for too many samples."""
     random_sample_indices = searchspace.get_random_sample_indices(100)
@@ -262,7 +247,25 @@ def test_neighbors_hamming():
         (3, 4, 'string_1'),
     ]
 
+    # test the neighbors
     __test_neighbors(test_config, expected_neighbors, "Hamming")
+
+    # test the random neighbor function
+    neighbors = simple_searchspace.get_neighbors(test_config, "Hamming")
+    for i in range(10):
+        random_neighbor = simple_searchspace.get_random_neighbor(test_config, "Hamming")
+        assert random_neighbor in neighbors
+        assert random_neighbor != test_config
+
+
+def test_neighbors_hammingadjacent():
+    """Test whether the Hamming-adjacent neighbors are as expected."""
+    test_config = tuple([1, 4, "string_1"])
+    expected_neighbors = [
+        (1.5, 4, 'string_1'),
+    ]
+
+    __test_neighbors(test_config, expected_neighbors, "Hamming-adjacent")
 
 
 def test_neighbors_strictlyadjacent():
@@ -275,7 +278,15 @@ def test_neighbors_strictlyadjacent():
         (1.5, 5.5, 'string_2'),
     ]
 
+    # test the neighbors
     __test_neighbors(test_config, expected_neighbors, "strictly-adjacent")
+
+    # test the random neighbor function
+    neighbors = simple_searchspace.get_neighbors(test_config, "strictly-adjacent")
+    for i in range(10):
+        random_neighbor = simple_searchspace.get_random_neighbor(test_config, "strictly-adjacent")
+        assert random_neighbor in neighbors
+        assert random_neighbor != test_config
 
 
 def test_neighbors_adjacent():
@@ -288,17 +299,51 @@ def test_neighbors_adjacent():
         (1.5, 5.5, 'string_2'),
     ]
 
+    # test the neighbors
     __test_neighbors(test_config, expected_neighbors, "adjacent")
+
+    # test the random neighbor function
+    neighbors = simple_searchspace.get_neighbors(test_config, "adjacent")
+    for i in range(10):
+        random_neighbor = simple_searchspace.get_random_neighbor(test_config, "adjacent")
+        assert random_neighbor in neighbors
+        assert random_neighbor != test_config
+
+def test_neighbors_closest_param_indices():
+    """Test whether the closest parameter indices neighbors are as expected."""
+    test_config = tuple([1.5, 4, "string_1"])
+    expected_neighbors = [
+        (1.5, 5.5, 'string_1'), 
+        (1.5, 4, 'string_2')
+    ]
+
+    # test the neighbors
+    __test_neighbors(test_config, expected_neighbors, "closest-param-indices")
+
+    # test the random neighbor function
+    neighbors = simple_searchspace.get_neighbors(test_config, "closest-param-indices")
+    for i in range(10):
+        random_neighbor = simple_searchspace.get_random_neighbor(test_config, "closest-param-indices")
+        assert random_neighbor in neighbors
+        assert random_neighbor != test_config
 
 
 def test_neighbors_fictious():
     """Test whether the neighbors are as expected for a fictious parameter configuration (i.e. not existing in the search space due to restrictions)."""
     test_config = tuple([1.5, 4, "string_1"])
+
     expected_neighbors_hamming = [
         (1.5, 4, 'string_2'),
         (1.5, 5.5, 'string_1'),
         (3, 4, 'string_1'),
     ]
+
+    expected_neighbors_hammingadjacent = [
+        (1.5, 4, 'string_2'),
+        (1.5, 5.5, 'string_1'),
+        (3, 4, 'string_1'),
+    ]
+
     expected_neighbors_strictlyadjacent = [
         (1.5, 5.5, 'string_2'),
         (1.5, 5.5, 'string_1'),
@@ -314,6 +359,7 @@ def test_neighbors_fictious():
     ]
 
     __test_neighbors_direct(test_config, expected_neighbors_hamming, "Hamming")
+    __test_neighbors_direct(test_config, expected_neighbors_hammingadjacent, "Hamming-adjacent")
     __test_neighbors_direct(test_config, expected_neighbors_strictlyadjacent, "strictly-adjacent")
     __test_neighbors_direct(test_config, expected_neighbors_adjacent, "adjacent")
 
@@ -334,6 +380,34 @@ def test_neighbors_cached():
         assert simple_searchspace_duplicate.are_neighbors_indices_cached(test_config)
         neighbors_2 = simple_searchspace_duplicate.get_neighbors(test_config)
         assert neighbors == neighbors_2
+
+
+def test_neighbors_cached_mixed_methods():
+    """Test whether retrieving a set of neighbors with one method after another yields the correct neighbors."""
+    simple_searchspace_duplicate = Searchspace(
+        simple_tuning_options.tune_params,
+        simple_tuning_options.restrictions,
+        max_threads,
+    )
+
+    test_configs = simple_searchspace_duplicate.get_random_sample(5)
+    for test_config in test_configs:
+        assert not simple_searchspace_duplicate.are_neighbors_indices_cached(test_config, "Hamming")
+        neighbors_hamming = simple_searchspace_duplicate.get_neighbors(test_config, "Hamming")
+        assert simple_searchspace_duplicate.are_neighbors_indices_cached(test_config, "Hamming")
+
+        # now switch to a different method
+        neighbors_strictlyadjacent = simple_searchspace_duplicate.get_neighbors(test_config, "strictly-adjacent")
+        neighbors_strictlyadjacent_no_cache = simple_searchspace_duplicate.get_neighbors_no_cache(test_config, "strictly-adjacent")
+
+        neighbors_adjacent = simple_searchspace_duplicate.get_neighbors(test_config, "adjacent")
+        neighbors_adjacent_no_cache = simple_searchspace_duplicate.get_neighbors_no_cache(test_config, "adjacent")
+
+        # check that the neighbors are as expected
+        assert neighbors_strictlyadjacent == neighbors_strictlyadjacent_no_cache
+        assert neighbors_adjacent == neighbors_adjacent_no_cache
+        assert neighbors_hamming != neighbors_strictlyadjacent
+        assert neighbors_hamming != neighbors_adjacent
 
 
 def test_param_neighbors():
@@ -406,6 +480,140 @@ def test_order_param_configs():
         assert expected_param_config in ordered_neighbors
     assert len(ordered_neighbors) == len(expected_order)
 
+def test_true_tunable_params():
+    """Test whether the true tunable parameters are correctly identified."""
+    # create a searchspace with mixed parameter types
+    mixed_tune_params = dict()
+    mixed_tune_params["int_param"] = [1, 2, 3]
+    mixed_tune_params["float_param"] = [3.0, 4.0, 5.0]
+    mixed_restrict = ["int_param >= 3"]
+
+    # create the searchspace object
+    searchspace = Searchspace(mixed_tune_params, mixed_restrict, max_threads)
+
+    # check the size
+    assert searchspace.size == 3
+
+    # check that the true tunable parameters are correctly identified
+    true_tunable_params = searchspace.get_true_tunable_params()
+    assert len(true_tunable_params) == 1
+    assert "float_param" in true_tunable_params
+    assert true_tunable_params["float_param"] == mixed_tune_params["float_param"]
+
+
+def test_mixed_param_types():
+    """Test whether the searchspace can handle mixed parameter types."""
+    # create a searchspace with mixed parameter types
+    mixed_tune_params = dict()
+    mixed_tune_params["int_param"] = [1, 2, 3]
+    mixed_tune_params["float_param"] = [1.0, 2.0, 3.0, -4.4]
+    mixed_tune_params["str_param"] = ["Alpha", "Bravo", "Charlie"]
+    mixed_tune_params["bool_param"] = [True, False]
+    mixed_restrict = ["int_param + float_param > 3", "bool_param == False"]
+
+    # create the searchspace object
+    searchspace = Searchspace(mixed_tune_params, mixed_restrict, max_threads)
+
+    # check the size
+    assert searchspace.size == 18 == len(searchspace.list) == len(searchspace.get_list_dict().keys())
+
+    # check whether param indices are correctly identified
+    assert searchspace.get_param_indices(tuple([1, 1.0, "Alpha", True])) == (0, 0, 0, 0)
+    assert searchspace.get_param_indices(tuple([2, 2.0, "Bravo", False])) == (1, 1, 1, 1)
+
+    # check whether the mapping of params to param indices and back works
+    for param_config in searchspace.list:
+        param_indices = searchspace.get_param_indices(param_config)
+        assert searchspace.get_param_config_from_param_indices(param_indices) == param_config
+
+    # check the parameter types
+    assert all(v1 == v2 for v1, v2 in zip(searchspace.tune_param_is_numeric_mask, [True, True, False, False]))
+
+    # check whether numeric params work as expected
+    for param_config_numeric, param_config in zip(searchspace.get_list_numpy_numeric(), searchspace.list):
+        assert searchspace.get_param_config_from_numeric(param_config_numeric) == param_config
+
+    # check whether the true index bounds are as expected
+    assert all(v1 == v2 for v1, v2 in zip(searchspace.get_param_indices_lower_bounds(), (0, 0, 0, 1)))
+    assert all(v1 == v2 for v1, v2 in zip(searchspace.get_param_indices_upper_bounds(), (2, 2, 2, 1)))
+
+def test_get_distributed_random_sample():
+    """Test whether the distributed random sample indices are as expected."""
+    # create a searchspace with mixed parameter types
+    mixed_tune_params = dict()
+    mixed_tune_params["int_param"] = [1, 2, 3]
+    mixed_tune_params["float_param"] = [1.0, 2.0, 3.0]
+    mixed_tune_params["str_param"] = ["Alpha", "Bravo", "Charlie"]
+    mixed_tune_params["bool_param"] = [True, False]
+    mixed_restrict = ["int_param + float_param > 2", "bool_param == False"]
+
+    # create the searchspace object
+    searchspace = Searchspace(mixed_tune_params, mixed_restrict, max_threads)
+
+    # check the size
+    assert searchspace.size == 24
+
+    # get the distributed random sample indices
+    num_samples = 10
+    distributed_random_sample_indices = searchspace.get_distributed_random_sample_indices(num_samples=num_samples, sampling_factor=2)
+
+    # check that the indices are unique and within bounds
+    assert len(distributed_random_sample_indices) == num_samples
+    assert len(set(distributed_random_sample_indices)) == num_samples
+    for index in distributed_random_sample_indices:
+        assert 0 <= index < searchspace.size
+
+    # check that requesting exactly the searchspace size returns every index exactly once
+    full_sample_indices = searchspace.get_distributed_random_sample_indices(num_samples=searchspace.size)
+    assert len(full_sample_indices) == searchspace.size
+    assert sorted(full_sample_indices) == list(range(searchspace.size))
+
+    # check that requesting more than the searchspace size warns and reduces the sample size
+    with pytest.warns(UserWarning):
+        oversized_sample_indices = searchspace.get_distributed_random_sample_indices(num_samples=searchspace.size + 6)
+    assert len(oversized_sample_indices) == round(searchspace.size / 2)
+    assert len(set(oversized_sample_indices)) == len(oversized_sample_indices)
+    for index in oversized_sample_indices:
+        assert 0 <= index < searchspace.size
+
+def test_get_LHS_sample_indices():
+    """Test whether the distributed random sample indices are as expected."""
+    # create a searchspace with mixed parameter types
+    mixed_tune_params = dict()
+    mixed_tune_params["int_param"] = [1, 2, 3]
+    mixed_tune_params["float_param"] = [1.0, 2.0, 3.0]
+    mixed_tune_params["str_param"] = ["Alpha", "Bravo", "Charlie"]
+    mixed_tune_params["bool_param"] = [True, False]
+    mixed_restrict = ["int_param + float_param > 2", "bool_param == False"]
+
+    # create the searchspace object
+    searchspace = Searchspace(mixed_tune_params, mixed_restrict, max_threads)
+
+    # check the size
+    assert searchspace.size == 24
+
+    # get the distributed random sample indices
+    num_samples = 10
+    distributed_random_sample_indices = searchspace.get_LHS_sample_indices(num_samples=num_samples)
+
+    # check that the indices are unique and within bounds
+    assert len(distributed_random_sample_indices) == num_samples
+    assert len(set(distributed_random_sample_indices)) == num_samples
+    for index in distributed_random_sample_indices:
+        assert 0 <= index < searchspace.size
+
+    # check that requesting exactly the searchspace size returns every index exactly once
+    full_sample_indices = searchspace.get_LHS_sample_indices(num_samples=searchspace.size)
+    assert len(full_sample_indices) == searchspace.size
+    assert sorted(full_sample_indices) == list(range(searchspace.size))
+
+    # check that requesting more than the searchspace size warns and reduces the sample size
+    with pytest.warns(UserWarning):
+        oversized_sample_indices = searchspace.get_LHS_sample_indices(num_samples=searchspace.size + 6)
+    assert len(oversized_sample_indices) == round(searchspace.size / 2)
+    assert len(set(oversized_sample_indices)) == len(oversized_sample_indices)
+    for index in oversized_sample_indices:
+        assert 0 <= index < searchspace.size
 
 def test_small_searchspace():
     """Test a small real-world searchspace and the usage of the `max_threads` parameter."""
@@ -461,3 +669,37 @@ def test_full_searchspace(compare_against_bruteforce=False):
         compare_two_searchspace_objects(searchspace, searchspace_bruteforce)
     else:
         assert searchspace.size == len(searchspace.list) == 349853
+
+def test_restriction_backwards_compatibility():
+    """Test whether the backwards compatibility code for restrictions (list of strings) works as expected."""
+    # create a searchspace with mixed parameter types
+    max_threads = 1024
+    tune_params = dict()
+    tune_params["N_PER_BLOCK"] = [32, 64, 128, 256, 512, 1024]
+    tune_params["M_PER_BLOCK"] = [32, 64, 128, 256, 512, 1024]
+    tune_params["block_size_y"] = [1, 2, 4, 8, 16, 32]
+    tune_params["block_size_z"] = [1, 2, 4, 8, 16, 32]
+
+    # old style monolithic restriction function
+    def restrict(p):
+        n_global_per_warp = int(p["N_PER_BLOCK"] // p["block_size_y"])
+        m_global_per_warp = int(p["M_PER_BLOCK"] // p["block_size_z"])
+        if n_global_per_warp == 0 or m_global_per_warp == 0:
+            return False
+
+    searchspace_callable = Searchspace(tune_params, restrict, max_threads)
+
+    def restrict_args(N_PER_BLOCK, M_PER_BLOCK, block_size_y, block_size_z):
+        n_global_per_warp = int(N_PER_BLOCK // block_size_y)
+        m_global_per_warp = int(M_PER_BLOCK // block_size_z)
+        if n_global_per_warp == 0 or m_global_per_warp == 0:
+            return False
+
+    # args-style restriction
+    searchspace_str = Searchspace(tune_params, restrict_args, max_threads)
+
+    # check the size
+    assert searchspace_str.size == searchspace_callable.size
+
+    # check that both searchspaces are identical in outcome
+    compare_two_searchspace_objects(searchspace_str, searchspace_callable)

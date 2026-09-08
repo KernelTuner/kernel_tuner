@@ -4,32 +4,7 @@ import json
 
 from jsonschema import validate
 
-from kernel_tuner import util
-
-#specifies for a number of pre-defined objectives whether
-#the objective should be minimized or maximized (boolean value denotes higher is better)
-objective_default_map = {
-    "time": False,
-    "energy": False,
-    "GFLOP/s": True,
-    "TFLOP/s": True,
-    "GB/s": True,
-    "TB/s": True,
-    "GFLOPS/W": True,
-    "TFLOPS/W": True,
-    "GFLOP/J": True,
-    "TFLOP/J": True
-}
-
-def get_objective_defaults(objective, objective_higher_is_better):
-    """ Uses time as default objective and attempts to lookup objective_higher_is_better for known objectives """
-    objective = objective or "time"
-    if objective_higher_is_better is None:
-        if objective in objective_default_map:
-            objective_higher_is_better = objective_default_map[objective]
-        else:
-            raise ValueError(f"Please specify objective_higher_is_better for objective {objective}")
-    return objective, objective_higher_is_better
+from kernel_tuner.util import get_instance_string, looks_like_a_filename, read_file, get_objective_defaults
 
 schema_v1_0 = {
     "$schema": "https://json-schema.org/draft-07/schema#",
@@ -205,8 +180,8 @@ def store_results(results_filename, kernel_name, kernel_string, tune_params, pro
         meta["version_number"] = "1.0"
         meta["kernel_name"] = kernel_name
         if kernel_string and not callable(kernel_string) and not isinstance(kernel_string, list):
-            if util.looks_like_a_filename(kernel_string):
-                meta["kernel_string"] = util.read_file(kernel_string)
+            if looks_like_a_filename(kernel_string):
+                meta["kernel_string"] = read_file(kernel_string)
             else:
                 meta["kernel_string"] = kernel_string
         meta["objective"] = objective
@@ -337,7 +312,7 @@ def _select_best_common_config(results, objective, objective_higher_is_better):
     for config in results:
         params = config["tunable_parameters"]
 
-        config_str = util.get_instance_string(params)
+        config_str = get_instance_string(params)
         #count occurances
         results_table[config_str] = results_table.get(config_str,0) + 1
         #add to performance

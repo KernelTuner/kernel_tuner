@@ -46,6 +46,12 @@ cache files, serving a value from the cache for the first time in the run also c
 Only unique function evaluations are counted, so the second time a parameter configuration is selected by the strategy it is served from the 
 cache, but not counted as a unique function evaluation.
 
+All optimization algorithms, except for brute_force, random_sample, and bayes_opt, allow the user to specify an initial guess or 
+starting point for the optimization, called ``x0``. This can be passed to the strategy using the ``strategy_options=`` dictionary with ``"x0"`` as key and
+a list of values for each parameter in tune_params to note the starting point. For example, for a kernel that has parameters ``block_size_x`` (64, 128, 256)
+and ``tile_size_x`` (1,2,3), one could pass ``strategy_options=dict(x0=[128,2])`` to ``tune_kernel()`` to make sure the strategy starts from
+the configuration with ``block_size_x=128, tile_size_x=2``. The order in the ``x0`` list should match the order in the tunable parameters dictionary.
+
 Below all the strategies are listed with their strategy-specific options that can be passed in a dictionary to the ``strategy_options=`` argument
 of ``tune_kernel()``.
 

@@ -24,74 +24,94 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import importlib
 import logging
+import os
 from argparse import ArgumentParser
 from ast import literal_eval
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from time import perf_counter
 
 import numpy
-from constraint import Constraint
 
 import kernel_tuner.core as core
 import kernel_tuner.util as util
-from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results
-from kernel_tuner.integration import get_objective_defaults
-from kernel_tuner.runners.sequential import SequentialRunner
-from kernel_tuner.runners.simulation import SimulationRunner
-from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.accuracy import Tunable
+from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
+_opt_GPyTorch_lean,from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.util import get_objective_defaults
 
 try:
     import torch
 except ImportError:
     torch = util.TorchPlaceHolder()
 
-from kernel_tuner.strategies import (
-    basinhopping,
-    bayes_opt,
-    bayes_opt_alt_BOTorch,
-    bayes_opt_BOTorch,
-    bayes_opt_GPyTorch,
-    bayes_opt_GPyTorch_lean,
-    bayes_opt_old,
-    brute_force,
-    diff_evo,
-    dual_annealing,
-    firefly_algorithm,
-    genetic_algorithm,
-    greedy_ils,
-    greedy_mls,
-    minimize,
-    mls,
-    ordered_greedy_mls,
-    pso,
-    random_sample,
-    simulated_annealing,
-)
+from kernel_tuner.strategies.wrapper import OptAlgWrapper
 
-strategy_map = {
-    "brute_force": brute_force,
-    "random_sample": random_sample,
-    "minimize": minimize,
-    "basinhopping": basinhopping,
-    "diff_evo": diff_evo,
-    "genetic_algorithm": genetic_algorithm,
-    "greedy_mls": greedy_mls,
-    "ordered_greedy_mls": ordered_greedy_mls,
-    "greedy_ils": greedy_ils,
-    "dual_annealing": dual_annealing,
-    "mls": mls,
-    "pso": pso,
-    "simulated_annealing": simulated_annealing,
-    "firefly_algorithm": firefly_algorithm,
-    "bayes_opt": bayes_opt,
+environment_key_parallel = "KERNEL_TUNER_PARALLEL"
+
+_STRATEGY_IMPORTS = {
+    "brute_force": "kernel_tuner.strategies.brute_force",
+    "random_sample": "kernel_tuner.strategies.random_sample",
+    "minimize": "kernel_tuner.strategies.minimize",
+    "basinhopping": "kernel_tuner.strategies.basinhopping",
+    "diff_evo": "kernel_tuner.strategies.diff_evo",
+    "genetic_algorithm": "kernel_tuner.strategies.genetic_algorithm",
+    "greedy_mls": "kernel_tuner.strategies.greedy_mls",
+    "ordered_greedy_mls": "kernel_tuner.strategies.ordered_greedy_mls",
+    "greedy_ils": "kernel_tuner.strategies.greedy_ils",
+    "dual_annealing": "kernel_tuner.strategies.dual_annealing",
+    "mls": "kernel_tuner.strategies.mls",
+    "pso": "kernel_tuner.strategies.pso",
+    "simulated_annealing": "kernel_tuner.strategies.simulated_annealing",
+    "skopt": "kernel_tuner.strategies.skopt",
+    "firefly_algorithm": "kernel_tuner.strategies.firefly_algorithm",
+    "bayes_opt": "kernel_tuner.strategies.bayes_opt",
+    "pyatf_strategies": "kernel_tuner.strategies.pyatf_strategies",
+    "hybrid_vndx": "kernel_tuner.strategies.gen_hybrid_vndx",
+    "adaptive_tabu_greywolf": "kernel_tuner.strategies.gen_adaptive_tabu_greywolf",
+    "nsga2": "kernel_tuner.strategies.pymoo_minimize",
+    "nsga3": "kernel_tuner.strategies.pymoo_minimize",
     "bayes_opt_old": bayes_opt_old,
     "bayes_opt_GPyTorch": bayes_opt_GPyTorch,
     "bayes_opt_GPyTorch_lean": bayes_opt_GPyTorch_lean,
-    "bayes_opt_BOTorch": bayes_opt_BOTorch,
-    "bayes_opt_BOTorch_alt": bayes_opt_alt_BOTorch,
 }
+
+_STRATEGY_PARALLEL = ["brute_force", "random_sample", "diff_evo", "genetic_algorithm", "pso", "firefly_algorithm"]
+
+
+def _strategy_import_error(strategy_name, module_path, err):
+    base_msg = (
+        f"Failed to import strategy '{strategy_name}' from '{module_path}'. "
+        "This strategy may require optional dependencies that are not installed."
+    )
+    return ImportError(f"{base_msg} Original error: {err}")
+
+
+class _LazyStrategyModule:
+    def __init__(self, name, module_path):
+        self._name = name
+        self._module_path = module_path
+        self._module = None
+
+    def _load(self):
+        if self._module is None:
+            try:
+                self._module = importlib.import_module(self._module_path)
+            except ImportError as err:
+                raise _strategy_import_error(self._name, self._module_path, err)
+        return self._module
+
+    def __getattr__(self, attr):
+        return getattr(self._load(), attr)
+
+    def __repr__(self):
+        return f"<lazy strategy module '{self._name}'>"
+
+
+strategy_map = {name: _LazyStrategyModule(name, path) for name, path in _STRATEGY_IMPORTS.items()}
 
 
 class Options(dict):
@@ -137,8 +157,8 @@ _kernel_options = Options(
             (
                 """Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
-        the language using this argument, currently supported: "CUDA", "Cupy",
-        "OpenCL", "HIP", or "C".""",
+        the language using this argument, currently supported: "CUDA", "CuPy",
+        "nvcuda", "OpenCL", "HIP", or "C".""",
                 "string",
             ),
         ),
@@ -400,6 +420,9 @@ _tuning_options = Options(
             * "pso" particle swarm optimization
             * "random_sample" takes a random sample of the search space
             * "simulated_annealing" simulated annealing strategy
+            * "skopt" uses the minimization methods from `skopt`
+            * "HybridVNDX" a hybrid variable neighborhood descent strategy
+            * "AdaptiveTabuGreyWolf" an adaptive tabu-guided grey wolf optimization strategy
 
         Strategy-specific parameters and options are explained under strategy_options.
 
@@ -441,7 +464,7 @@ _tuning_options = Options(
                 """Optimization objective to sort results on, consisting of a string
             that also occurs in results as a metric or observed quantity, default 'time'.
             Please see :ref:`objectives`.""",
-                "string",
+                "str | list[str]",
             ),
         ),
         (
@@ -449,7 +472,7 @@ _tuning_options = Options(
             (
                 """boolean that specifies whether the objective should
             be maximized (True) or minimized (False), default False.""",
-                "bool",
+                "bool | list[bool]",
             ),
         ),
         (
@@ -479,7 +502,22 @@ _tuning_options = Options(
         ),
         ("metrics", ("specifies user-defined metrics, please see :ref:`metrics`.", "dict")),
         ("simulation_mode", ("Simulate an auto-tuning search from an existing cachefile", "bool")),
-        ("observers", ("""A list of Observers to use during tuning, please see :ref:`observers`.""", "list")),
+        ("seed", ("""The random seed.""", "int")),
+        (
+            "parallel",
+            (
+                "Set to `True` or an integer to enable parallel tuning. If set to an integer, this will be the number of parallel workers.",
+                "int|bool",
+            ),
+        ),
+        (
+            "observers",
+            (
+                """A list of Observers to use during tuning, please see :ref:`observers`.
+                Each entry must be either: an instance of :class:`BenchmarkObserver` or a callable (e.g., lambda) returning a :class:`BenchmarkObserver`. """,
+                "list",
+            ),
+        ),
     ]
 )
 
@@ -541,7 +579,7 @@ def _get_docstring(opts):
 
 
 _tune_kernel_docstring = (
-    """ Tune a CUDA kernel given a set of tunable parameters
+    """ Tune a GPU kernel given a set of tunable parameters
 
 %s
 
@@ -589,10 +627,13 @@ def tune_kernel(
     strategy_options=None,
     cache=None,
     metrics=None,
-    simulation_mode=False,
+    simulation_mode=None,
+    parallel=None,
     observers=None,
     objective=None,
     objective_higher_is_better=None,
+    objectives=None,
+    seed=None,
 ):
     start_overhead_time = perf_counter()
     if log:
@@ -600,80 +641,135 @@ def tune_kernel(
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
+    # Convert Julia types
+    if lang is not None and lang.upper() == "JULIA":
+        # TODO implement & test the case where Kernel Tuner is called from Julia but the target language is not Julia
+        # convert scalars without explicit types to numpy scalars
+        arguments = [numpy.array(a)[()] if numpy.isscalar(a) else a for a in arguments]
+        tune_params = util.julia_list_of_pairs_to_dict(tune_params)
+        if answer is not None and not isinstance(answer, Tunable):
+            answer = [
+                numpy.array(a) if isinstance(a, (list, tuple)) else a
+                for a in util.possible_julia_vector_to_list(answer)
+            ]
+        grid_div_x = util.possible_julia_vector_to_list(grid_div_x)
+        grid_div_y = util.possible_julia_vector_to_list(grid_div_y)
+        grid_div_z = util.possible_julia_vector_to_list(grid_div_z)
+        if strategy_options is not None:
+            strategy_options = dict([tuple([k, util.possible_julia_vector_to_list(o)]) for k, o in strategy_options])
+    restrictions = util.possible_julia_vector_to_list(restrictions)
+    block_size_names = util.possible_julia_vector_to_list(block_size_names)
+
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
-    # default objective if none is specified
-    objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
+    if objectives:
+        if isinstance(objectives, dict):
+            objective = list(objectives.keys())
+            objective_higher_is_better = list(objectives.values())
+        else:
+            raise ValueError("objectives should be a dict of (objective, higher_is_better) pairs")
+    else:
+        objective, objective_higher_is_better = get_objective_defaults(objective, objective_higher_is_better)
+        if isinstance(objective, str):
+            objective = [objective]
+        if isinstance(objective_higher_is_better, bool):
+            objective_higher_is_better = [objective_higher_is_better]
+
+    assert isinstance(objective, list)
+    assert isinstance(objective_higher_is_better, list)
+    assert len(objective) == len(objective_higher_is_better)
 
     # check for forbidden names in tune parameters
     util.check_tune_params_list(tune_params, observers, simulation_mode=simulation_mode)
 
-    # check whether block_size_names are used as expected
-    util.check_block_size_params_names_list(block_size_names, tune_params)
+    # check whether block_size_names are used
+    block_size_names = util.check_block_size_params_names_list(block_size_names, tune_params)
 
     # ensure there is always at least three names
     util.append_default_block_size_names(block_size_names)
 
-    # if the restrictions are not constraints or a callable, the restrictions are strings, so parse them to functions (increases restrictions check performance significantly)
-    if (
-        restrictions is not None
-        and not callable(restrictions)
-        and not any(isinstance(r, Constraint) for r in restrictions)
-    ):
-        restrictions = util.compile_restrictions(restrictions, tune_params)
+    # if Julia, infer the Julia backend from the kernelsource
+    if kernelsource.lang.upper() == "JULIA":
+        if compiler_options is None:
+            try:
+                compiler_options = [kernelsource.infer_julia_backend()]
+            except ValueError:
+                pass
 
     # sort all the options into separate dicts
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     tuning_options = Options([(k, opts[k]) for k in _tuning_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
-    tuning_options["unique_results"] = {}
-    if strategy_options and "max_fevals" in strategy_options:
-        tuning_options["max_fevals"] = strategy_options["max_fevals"]
-    if strategy_options and "time_limit" in strategy_options:
-        tuning_options["time_limit"] = strategy_options["time_limit"]
 
+    # copy some values from strategy_options
+    searchspace_construction_options = {}
+    max_fevals = None
+    time_limit = None
+
+    if strategy_options:
+        if "max_fevals" in strategy_options:
+            max_fevals = strategy_options["max_fevals"]
+            tuning_options["max_fevals"] = max_fevals  # TODO: Is this used?
+        if "time_limit" in strategy_options:
+            time_limit = strategy_options["time_limit"]
+            tuning_options["time_limit"] = time_limit  # TODO: Is this used?
+        if "searchspace_construction_options" in strategy_options:
+            searchspace_construction_options = strategy_options["searchspace_construction_options"]
+
+    # log the user inputs
     logging.debug("tune_kernel called")
     logging.debug("kernel_options: %s", util.get_config_string(kernel_options))
     logging.debug("tuning_options: %s", util.get_config_string(tuning_options))
     logging.debug("device_options: %s", util.get_config_string(device_options))
 
+    # check whether the selected strategy and options are valid
+    strategy_string = strategy
     if strategy:
         if strategy in strategy_map:
             strategy = strategy_map[strategy]
         else:
-            raise ValueError(f"Unkown strategy {strategy}, must be one of: {', '.join(list(strategy_map.keys()))}")
+            # check for user-defined strategy
+            if hasattr(strategy, "tune") and callable(strategy.tune):
+                # user-defined strategy
+                pass
+            else:
+                raise ValueError(f"Unkown strategy {strategy}, must be one of: {', '.join(list(strategy_map.keys()))}")
 
-        # make strategy_options into an Options object
-        if tuning_options.strategy_options:
-            if not isinstance(strategy_options, Options):
-                tuning_options.strategy_options = Options(strategy_options)
-
-            # select strategy based on user options
-            if "fraction" in tuning_options.strategy_options and not tuning_options.strategy == "random_sample":
-                raise ValueError(
-                    'It is not possible to use fraction in combination with strategies other than "random_sample". '
-                    'Please set strategy="random_sample", when using "fraction" in strategy_options'
-                )
-
-            # check if method is supported by the selected strategy
-            if "method" in tuning_options.strategy_options:
-                method = tuning_options.strategy_options.method
-                if method not in strategy.supported_methods:
-                    raise ValueError("Method %s is not supported for strategy %s" % (method, tuning_options.strategy))
-
-        # if no strategy_options dict has been passed, create empty dictionary
-        else:
-            tuning_options.strategy_options = Options({})
-
+        # ensure strategy_options is an Options object
+        tuning_options.strategy_options = Options(strategy_options or {})
     # if no strategy selected
     else:
-        strategy = brute_force
+        strategy = strategy_map["brute_force"]
 
     # select the runner for this job based on input
-    selected_runner = SimulationRunner if simulation_mode else SequentialRunner
     tuning_options.simulated_time = 0
-    runner = selected_runner(kernelsource, kernel_options, device_options, iterations, observers)
+
+    # Get runner from environment if possible
+    if parallel is None:
+        parallel = bool(os.environ.get(environment_key_parallel))
+
+    # Create runner
+    if parallel and simulation_mode:
+        raise ValueError("Enabling `parallel` and `simulation_mode` together is not supported")
+    elif simulation_mode:
+        from kernel_tuner.runners.simulation import SimulationRunner
+
+        runner = SimulationRunner(kernelsource, kernel_options, device_options, iterations, observers)
+    elif parallel:
+        # Avoid using multiple workers on strategies not supporting parallelism
+        if strategy not in _STRATEGY_PARALLEL:
+            parallel = 1
+        from kernel_tuner.runners.parallel import ParallelRunner
+
+        num_workers = None if parallel is True else parallel
+        runner = ParallelRunner(
+            kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers
+        )
+    else:
+        from kernel_tuner.runners.sequential import SequentialRunner
+
+        runner = SequentialRunner(kernelsource, kernel_options, device_options, iterations, observers)
 
     # the user-specified function may or may not have an optional atol argument;
     # we normalize it so that it always accepts atol.
@@ -689,32 +785,80 @@ def tune_kernel(
     # process cache
     if cache:
         cache = preprocess_cache(cache)
-        util.process_cache(cache, kernel_options, tuning_options, runner)
+        tuning_options.cachefile = cache
+        tuning_options.cache = util.process_cache(cache, kernel_options, tuning_options, runner)
     else:
-        tuning_options.cache = {}
         tuning_options.cachefile = None
+        tuning_options.cache = {}
 
     # create search space
-    searchspace = Searchspace(tune_params, restrictions, runner.dev.max_threads)
+    tuning_options.restrictions_unmodified = deepcopy(restrictions)
+    device_info = runner.get_device_info()
+    searchspace = Searchspace(tune_params, restrictions, device_info.max_threads, **searchspace_construction_options)
+
     restrictions = searchspace._modified_restrictions
     tuning_options.restrictions = restrictions
+
     if verbose:
         print(f"Searchspace has {searchspace.size} configurations after restrictions.")
 
+    # register the times and raise an exception if the budget is exceeded
+    startup_time = perf_counter() - start_overhead_time
+
+    if time_limit is not None:
+        if startup_time > time_limit:
+            raise RuntimeError(
+                f"The startup time of the tuning process ({startup_time} seconds) has exceeded the time limit ({time_limit} seconds). "
+                "Please increase the time limit or decrease the size of the search space."
+            )
+
+        time_limit -= startup_time
+
+    if max_fevals is None or max_fevals > searchspace.size:
+        logging.info(f"evaluation limit has been adjusted from {max_fevals} to {searchspace.size} (search space size)")
+        max_fevals = searchspace.size
+
+    # Create the budget
+    tuning_options["budget"] = util.TuningBudget(time_limit, max_fevals)
+
     # call the strategy to execute the tuning process
-    tuning_options["start_time"] = perf_counter()
     results = strategy.tune(searchspace, runner, tuning_options)
     env = runner.get_environment(tuning_options)
 
+    # Shut down the runner
+    runner.shutdown()
+
     # finished iterating over search space
     if results:  # checks if results is not empty
-        best_config = util.get_best_config(results, objective, objective_higher_is_better)
-        # add the best configuration to env
-        env["best_config"] = best_config
-        if not device_options.quiet:
-            units = getattr(runner, "units", None)
-            print("best performing configuration:")
-            util.print_config_output(tune_params, best_config, device_options.quiet, metrics, units)
+        if len(objective) == 1:
+            objective = objective[0]
+            objective_higher_is_better = objective_higher_is_better[0]
+            best_config = util.get_best_config(results, objective, objective_higher_is_better)
+            # add the best configuration to env
+            env["best_config"] = best_config
+            if not device_options.quiet:
+                units = getattr(runner, "units", None)
+                keys = list(tune_params.keys())
+                keys += [objective]
+                if metrics:
+                    keys += list(metrics.keys())
+                if not quiet:
+                    print(f"\nBEST PERFORMING CONFIGURATION FOR OBJECTIVE {objective}:")
+                    print(util.get_config_string(best_config, keys, units))
+        else:
+            pareto_front = util.get_pareto_results(results, objective, objective_higher_is_better)
+            # add the best configuration to env
+            env["best_config"] = pareto_front
+            if not device_options.quiet:
+                units = getattr(runner, "units", None)
+                keys = list(tune_params.keys())
+                keys += list(objective)
+                if metrics:
+                    keys += list(metrics.keys())
+                if not quiet:
+                    print(f"\nBEST PERFORMING CONFIGURATIONS FOR OBJECTIVES: {objective}:")
+                    for best_config in pareto_front:
+                        print(util.get_config_string(best_config, keys, units))
     elif not device_options.quiet:
         print("no results to report")
 
@@ -729,7 +873,30 @@ def tune_kernel(
 
 tune_kernel.__doc__ = _tune_kernel_docstring
 
-_run_kernel_docstring = """Compile and run a single kernel
+
+def tune_cache(
+    cache_path,
+    restrictions=None,
+    **kwargs,
+):
+    cache = util.read_cache(cache_path, open_cache=False)
+    tune_args = util.infer_args_from_cache(cache)
+    _restrictions = [util.infer_restrictions_from_cache(cache)]
+
+    # Add the user provided restrictions
+    if restrictions:
+        if isinstance(restrictions, list):
+            _restrictions.extend(restrictions)
+        else:
+            raise ValueError("The restrictions must be a list()")
+
+    tune_args.update(kwargs)
+
+    return tune_kernel(**tune_args, cache=cache_path, restrictions=_restrictions, simulation_mode=True)
+
+
+_run_kernel_docstring = (
+    """Compile and run a single kernel
 
     Compiles and runs a single kernel once, given a specific instance of the kernels tuning parameters.
     However, instead of measuring execution time run_kernel returns the output of the kernel.
@@ -755,10 +922,9 @@ _run_kernel_docstring = """Compile and run a single kernel
     :returns: A list of numpy arrays, similar to the arguments passed to this
         function, containing the output after kernel execution.
     :rtype: list
-""" % _get_docstring(
-    _kernel_options
-) + _get_docstring(
-    _device_options
+"""
+    % _get_docstring(_kernel_options)
+    + _get_docstring(_device_options)
 )
 
 
@@ -789,6 +955,14 @@ def run_kernel(
 
     kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
 
+    if lang is not None and lang.upper() == "JULIA":
+        params = util.julia_list_of_pairs_to_dict(params)
+        # convert scalars without explicit types to numpy scalars
+        arguments = [numpy.array(a)[()] if numpy.isscalar(a) else a for a in arguments]
+    block_size_names = util.possible_julia_vector_to_list(block_size_names)
+    # ensure there is always at least three names
+    util.append_default_block_size_names(block_size_names)
+
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 
     # sort options into separate dicts
@@ -813,7 +987,7 @@ def run_kernel(
             raise RuntimeError("cannot create kernel instance, too many threads per block")
 
         # see if the kernel arguments have correct type
-        util.check_argument_list(instance.name, instance.kernel_string, arguments)
+        util.check_argument_list(instance.name, instance.kernel_string, arguments, lang=lang)
 
         # compile the kernel
         func = dev.compile_kernel(instance, False)
@@ -871,31 +1045,55 @@ def tune_kernel_T1(
     simulation_mode=False,
     output_T4=True,
     iterations=7,
-    strategy_options=None,
-):
-    """Call the tune function with a T1 input file."""
+    device=None,
+    strategy: str = None,
+    strategy_options: dict = {},
+) -> tuple:
+    """Call the tune function with a T1 input file.
+
+    The device, strategy and strategy_options can be overridden by passing a strategy name and options, otherwise the input file specification is used.
+    """
     inputs = get_input_file(input_filepath)
     kernelspec: dict = inputs["KernelSpecification"]
     kernel_name: str = kernelspec["KernelName"]
     kernel_filepath = Path(kernelspec["KernelFile"])
-    kernel_source = (
-        kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent.parent / kernel_filepath
-    )
+    kernel_source = kernel_filepath if kernel_filepath.exists() else Path(input_filepath).parent / kernel_filepath
+    kernel_source = kernel_source if kernel_source.exists() else Path(input_filepath).parent.parent / kernel_filepath
     assert kernel_source.exists(), f"KernelFile '{kernel_source}' does not exist at {kernel_source.resolve()}"
     language: str = kernelspec["Language"]
     problem_size = kernelspec["ProblemSize"]
-    device = kernelspec["Device"]["Name"]
-    strategy = inputs["Search"]["Name"]
-    if "Attributes" in inputs["Search"]:
-        strategy_options = {}
-        for attribute in inputs["Search"]["Attributes"]:
-            strategy_options[attribute["Name"]] = attribute["Value"]
+    if device is None:
+        device = kernelspec["Device"]["Name"]
+    if strategy is None:
+        strategy = inputs["Search"]["Name"]
+        if "Attributes" in inputs["Search"]:
+            for attribute in inputs["Search"]["Attributes"]:
+                strategy_options[attribute["Name"]] = attribute["Value"]
     if "Budget" in inputs:
         budget = inputs["Budget"][0]
-        assert budget["Type"] == "ConfigurationCount"
-        if strategy_options is None:
-            strategy_options = {}
-        strategy_options["max_fevals"] = budget["BudgetValue"]
+        if budget["Type"] == "ConfigurationCount":
+            strategy_options["max_fevals"] = budget["BudgetValue"]
+        elif budget["Type"] == "TuningDuration":
+            strategy_options["time_limit"] = budget["BudgetValue"]  # both are in seconds
+        else:
+            raise NotImplementedError(f"Budget type in {budget} is not supported")
+
+    # check if the strategy is a path
+    if "custom_search_method_path" in strategy_options:
+        # if it is a path, import the strategy from the file
+        opt_path: Path = Path(strategy_options["custom_search_method_path"])
+        class_name: str = strategy
+        assert opt_path.exists(), (
+            f"Custom search method path '{opt_path}' does not exist relative to current working directory {Path.cwd()}"
+        )
+        optimizer_class = import_class_from_file(opt_path, class_name)
+        filter_keys = ["custom_search_method_path", "max_fevals", "time_limit", "constraint_aware"]
+        adjusted_strategy_options = {k: v for k, v in strategy_options.items() if k not in filter_keys}
+        optimizer_instance = optimizer_class(**adjusted_strategy_options)
+        strategy = OptAlgWrapper(optimizer_instance)
+        if "constraint_aware" not in strategy_options and hasattr(optimizer_instance, "constraint_aware"):
+            # if the optimizer has a constraint_aware attribute, set it in the strategy options
+            strategy_options["constraint_aware"] = optimizer_instance.constraint_aware
 
     # set the cache path
     if cache_filepath is None and "SimulationInput" in kernelspec:
@@ -962,6 +1160,8 @@ def tune_kernel_T1(
         elif arg["MemoryType"] == "Scalar":
             if arg["Type"] == "float":
                 argument = numpy.float32(arg["FillValue"])
+            elif arg["Type"] == "int32":
+                argument = numpy.int32(arg["FillValue"])
             else:
                 raise NotImplementedError()
         if argument is not None:
@@ -972,7 +1172,6 @@ def tune_kernel_T1(
             raise NotImplementedError(f"Conversion for this type of argument has not yet been implemented: {arg}")
 
     # tune with the converted inputs
-    # TODO get_t4_results calls once available in T1
     results, env = tune_kernel(
         kernel_name,
         kernel_source,

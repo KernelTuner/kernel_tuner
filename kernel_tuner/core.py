@@ -4,25 +4,23 @@ import logging
 import re
 import time
 from collections import namedtuple
+from warnings import warn
 
 import numpy as np
 
-try:
-    import cupy as cp
-except ImportError:
-    cp = np
+
+def _get_cupy():
+    try:
+        import cupy as _cp
+    except ImportError:
+        return None
+    return _cp
+
 
 import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
-from kernel_tuner.backends.compiler import CompilerFunctions
-from kernel_tuner.backends.cupy import CupyFunctions
-from kernel_tuner.backends.hip import HipFunctions
-from kernel_tuner.backends.hypertuner import HypertunerFunctions
-from kernel_tuner.backends.nvcuda import CudaFunctions
-from kernel_tuner.backends.opencl import OpenCLFunctions
-from kernel_tuner.backends.pycuda import PyCudaFunctions
-from kernel_tuner.observers.nvml import NVMLObserver
-from kernel_tuner.observers.observer import ContinuousObserver, OutputObserver, PrologueObserver
+from kernel_tuner.backends.backend import GPUBackend
+from kernel_tuner.observers.observer import BenchmarkObserver, ContinuousObserver, OutputObserver, PrologueObserver
 from kernel_tuner.observers.tegra import TegraObserver
 
 try:
@@ -33,7 +31,8 @@ except ImportError:
 try:
     from hip._util.types import DeviceArray
 except ImportError:
-    DeviceArray = Exception # using Exception here as a type that will never be among kernel arguments
+    DeviceArray = Exception  # using Exception here as a type that will never be among kernel arguments
+
 
 _KernelInstance = namedtuple(
     "_KernelInstance",
@@ -85,9 +84,7 @@ class KernelSource(object):
         self.defines = defines
         if lang is None:
             if callable(self.kernel_sources[0]):
-                raise TypeError(
-                    "Please specify language when using a code generator function"
-                )
+                raise TypeError("Please specify language when using a code generator function")
             kernel_string = self.get_kernel_string(0)
             lang = util.detect_language(kernel_string)
 
@@ -111,22 +108,20 @@ class KernelSource(object):
         """
         logging.debug("get_kernel_string called")
 
-        if hasattr(self, 'lang') and self.lang.upper() == "HYPERTUNER":
+        if hasattr(self, "lang") and self.lang.upper() == "HYPERTUNER":
             return ""
 
         kernel_source = self.kernel_sources[index]
         return util.get_kernel_string(kernel_source, params)
 
-    def prepare_list_of_files(
-        self, kernel_name, params, grid, threads, block_size_names
-    ):
+    def prepare_list_of_files(self, kernel_name, params, grid, threads, block_size_names):
         """Prepare the kernel string along with any additional files.
 
         The first file in the list is allowed to include or read in the others
         The files beyond the first are considered additional files that may also contain tunable parameters
 
         For each file beyond the first this function creates a temporary file with
-        preprocessors statements inserted. Occurences of the original filenames in the
+        preprocessors statements inserted. Occurrences of the original filenames in the
         first file are replaced with their temporary counterparts.
 
         :param kernel_name: A string specifying the kernel name.
@@ -158,9 +153,7 @@ class KernelSource(object):
 
         for i, f in enumerate(self.kernel_sources):
             if i > 0 and not util.looks_like_a_filename(f):
-                raise ValueError(
-                    "When passing multiple kernel sources, the secondary entries must be filenames"
-                )
+                raise ValueError("When passing multiple kernel sources, the secondary entries must be filenames")
 
             ks = self.get_kernel_string(i, params)
             # add preprocessor statements
@@ -187,16 +180,14 @@ class KernelSource(object):
             temp_file = util.get_temp_filename(suffix="." + f.split(".")[-1])
             temp_files[f] = temp_file
             util.write_file(temp_file, ks)
-            # replace occurences of the additional file's name in the first kernel_string with the name of the temp file
+            # replace occurrences of the additional file's name in the first kernel_string with the name of the temp file
             kernel_string = kernel_string.replace(f, temp_file)
 
         return name, kernel_string, temp_files
 
     def get_user_suffix(self, index=0):
         """Get the suffix of the kernel filename, if the user specified one. Return None otherwise."""
-        if util.looks_like_a_filename(self.kernel_sources[index]) and (
-            "." in self.kernel_sources[index]
-        ):
+        if util.looks_like_a_filename(self.kernel_sources[index]) and ("." in self.kernel_sources[index]):
             return "." + self.kernel_sources[index].split(".")[-1]
         return None
 
@@ -211,7 +202,7 @@ class KernelSource(object):
         if suffix is not None:
             return suffix
 
-        _suffixes = {"CUDA": ".cu", "OpenCL": ".cl", "C": ".c"}
+        _suffixes = {"CUDA": ".cu", "OpenCL": ".cl", "C": ".c", "JULIA": ".jl"}
         try:
             return _suffixes[self.lang]
         except KeyError:
@@ -224,13 +215,62 @@ class KernelSource(object):
         """
         for i, f in enumerate(self.kernel_sources):
             if not callable(f):
-                util.check_argument_list(
-                    kernel_name, self.get_kernel_string(i), arguments
-                )
+                util.check_argument_list(kernel_name, self.get_kernel_string(i), arguments, lang=self.lang)
             else:
-                logging.debug(
-                    "Checking of arguments list not supported yet for code generators."
-                )
+                logging.debug("Checking of arguments list not supported yet for code generators.")
+
+    def infer_julia_backend(self):
+        """Infer the Julia backend from the kernel source."""
+        backend = None
+        if self.lang.upper() != "JULIA":
+            return backend
+
+        kernel_string = self.get_kernel_string(0)
+        if kernel_string.find("using CUDA") != -1:
+            backend = "cuda"
+        elif kernel_string.find("using ROCBackend") != -1:
+            backend = "amd"
+        elif kernel_string.find("using oneAPI") != -1:
+            backend = "intel"
+        elif kernel_string.find("using Metal") != -1:
+            backend = "metal"
+        else:
+            raise ValueError("Could not infer Julia backend from kernel source, provide it as a `compiler_option`")
+        return backend
+
+
+def instantiate_observer(observer, args):
+    """Instantiate or build an observer from a class/factory/instance."""
+    if isinstance(observer, BenchmarkObserver):
+        return observer
+    elif callable(observer):
+        # Check again if BenchmarkObserver
+        return instantiate_observer(observer(args), args)
+    else:
+        raise TypeError(f"Invalid observer: {observer!r} does not extend BenchmarkObserver")
+
+
+def _select_default_cuda_backend():
+    """Select default CUDA backend, looks for which backends are installed."""
+    # First try cuda-python (nvcuda)
+    from kernel_tuner.backends.nvcuda import CudaFunctions, driver
+
+    if driver:
+        return CudaFunctions
+    # Then try Cupy
+    if _get_cupy():
+        from kernel_tuner.backends.cupy import CupyFunctions
+
+        return CupyFunctions
+    # Then try PyCUDA
+    from kernel_tuner.backends.pycuda import PyCudaFunctions, pycuda_available
+
+    if pycuda_available:
+        return PyCudaFunctions
+    # Ran out of options
+    raise RuntimeError(
+        "Error: CUDA selected/detected, but missing CUDA dependencies, please run 'pip install cuda-python', or install cupy or pycuda."
+    )
 
 
 class DeviceInterface(object):
@@ -281,54 +321,65 @@ class DeviceInterface(object):
 
         logging.debug("DeviceInterface instantiated, lang=%s", lang)
 
-        if lang.upper() == "CUDA":
-            dev = PyCudaFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+        # Ensure observers is a list
+        observers = observers or []
+
+        # Observers can either be an object that extends BenchmarkObserver or
+        # lambda function that returns such an object.
+        observer_args = dict(device=device, platform=platform, compiler=compiler, lang=lang)
+        observers = [instantiate_observer(ob, observer_args) for ob in observers]
+
+        backend_options = dict(compiler_options=compiler_options, iterations=iterations)
+
+        # first check for explicitly selected backends
+        if lang.upper() == "PYCUDA":
+            from kernel_tuner.backends.pycuda import PyCudaFunctions
+
+            backend = PyCudaFunctions
         elif lang.upper() == "CUPY":
-            dev = CupyFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            from kernel_tuner.backends.cupy import CupyFunctions
+
+            backend = CupyFunctions
         elif lang.upper() == "NVCUDA":
-            dev = CudaFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            from kernel_tuner.backends.nvcuda import CudaFunctions
+
+            backend = CudaFunctions
+        elif lang.upper() == "CUDA":
+            # Select default CUDA backend, based on availability
+            backend = _select_default_cuda_backend()
         elif lang.upper() == "OPENCL":
-            dev = OpenCLFunctions(
-                device,
-                platform,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
-        elif lang.upper() in ["C", "FORTRAN"]:
-            dev = CompilerFunctions(
-                compiler=compiler,
-                compiler_options=compiler_options,
-                iterations=iterations,
-            )
+            from kernel_tuner.backends.opencl import OpenCLFunctions
+
+            backend = OpenCLFunctions
+            backend_options["platform"] = platform
         elif lang.upper() == "HIP":
-            dev = HipFunctions(
-                device,
-                compiler_options=compiler_options,
-                iterations=iterations,
-                observers=observers,
-            )
+            from kernel_tuner.backends.hip import HipFunctions
+
+            backend = HipFunctions
+        elif lang.upper() == "JULIA":
+            from kernel_tuner.backends.julia import JuliaFunctions
+
+            backend = JuliaFunctions
         elif lang.upper() == "HYPERTUNER":
-            dev = HypertunerFunctions(iterations=iterations)
+            from kernel_tuner.backends.hypertuner import HypertunerFunctions
+
+            backend = HypertunerFunctions
             self.requires_warmup = False
+        elif lang.upper() in ["C", "FORTRAN"]:
+            from kernel_tuner.backends.compiler import CompilerFunctions
+
+            backend = CompilerFunctions
+            backend_options["compiler"] = compiler
+            backend_options["observers"] = observers
         else:
-            raise ValueError("Sorry, support for languages other than CUDA, OpenCL, HIP, C, and Fortran is not implemented yet")
-        self.dev = dev
+            raise NotImplementedError(
+                "Sorry, support for languages other than CUDA, OpenCL, HIP, C, Julia, Fortran is not implemented yet"
+            )
+
+        if issubclass(backend, GPUBackend):
+            backend_options["device"] = device
+            backend_options["observers"] = observers
+        self.dev = backend(**backend_options)
 
         # look for NVMLObserver and TegraObserver in observers, if present, enable special tunable parameters through nvml/tegra
         self.use_nvml = False
@@ -337,8 +388,12 @@ class DeviceInterface(object):
         self.output_observers = []
         self.prologue_observers = []
         if observers:
+            try:
+                from kernel_tuner.observers.nvml import NVMLObserver as _NVMLObserver
+            except ImportError:
+                _NVMLObserver = None
             for obs in observers:
-                if isinstance(obs, NVMLObserver):
+                if _NVMLObserver is not None and isinstance(obs, _NVMLObserver):
                     self.nvml = obs.nvml
                     self.use_nvml = True
                 if isinstance(obs, TegraObserver):
@@ -351,6 +406,13 @@ class DeviceInterface(object):
                 if isinstance(obs, PrologueObserver):
                     self.prologue_observers.append(obs)
 
+        # for JULIA, add the JIT warmup prologue observer
+        if lang.upper() == "JULIA":
+            from kernel_tuner.observers.julia import JuliaJITWarmup
+
+            self.prologue_observers.append(JuliaJITWarmup(self.dev.backend))
+            self.prologue_observers.append(JuliaJITWarmup(self.dev.backend))
+
         # Take list of observers from self.dev because Backends tend to add their own observer
         self.benchmark_observers = [
             obs for obs in self.dev.observers if not isinstance(obs, (ContinuousObserver, PrologueObserver))
@@ -359,9 +421,9 @@ class DeviceInterface(object):
         self.iterations = iterations
 
         self.lang = lang
-        self.units = dev.units
-        self.name = dev.name
-        self.max_threads = dev.max_threads
+        self.units = self.dev.units
+        self.name = self.dev.name
+        self.max_threads = self.dev.max_threads
         if not quiet:
             print("Using: " + self.dev.name)
 
@@ -398,7 +460,6 @@ class DeviceInterface(object):
         for obs in self.benchmark_observers:
             result.update(obs.get_results())
 
-
     def benchmark_continuous(self, func, gpu_args, threads, grid, result, duration):
         """Benchmark continuously for at least 'duration' seconds."""
         iterations = int(np.ceil(duration / (result["time"] / 1000)))
@@ -422,7 +483,6 @@ class DeviceInterface(object):
         for obs in self.continuous_observers:
             result.update(obs.get_results())
 
-
     def set_nvml_parameters(self, instance):
         """Set the NVML parameters. Avoids setting time leaking into benchmark time."""
         if self.use_nvml:
@@ -441,15 +501,18 @@ class DeviceInterface(object):
             if "tegra_gr_clock" in instance.params:
                 self.tegra.gr_clock = instance.params["tegra_gr_clock"]
 
-
     def benchmark(self, func, gpu_args, instance, verbose, objective, skip_nvml_setting=False):
         """Benchmark the kernel instance."""
         logging.debug("benchmark " + instance.name)
         logging.debug("thread block dimensions x,y,z=%d,%d,%d", *instance.threads)
         logging.debug("grid dimensions x,y,z=%d,%d,%d", *instance.grid)
 
+        # Set execution parameters
         if self.use_nvml and not skip_nvml_setting:
             self.set_nvml_parameters(instance)
+        if "cuda_sm_percentage" in instance.params:
+            # Currently only supported on cuda-python (NVCUDA)
+            self.dev.set_sm_percentage(instance.params["cuda_sm_percentage"])
 
         # Call the observers to register the configuration to be benchmarked
         for obs in self.dev.observers:
@@ -460,15 +523,12 @@ class DeviceInterface(object):
             self.benchmark_prologue(func, gpu_args, instance.threads, instance.grid, result)
             self.benchmark_default(func, gpu_args, instance.threads, instance.grid, result)
 
-            if self.continuous_observers:
-                duration = 1
-                for obs in self.continuous_observers:
-                    obs.results = result
-                    duration = max(duration, obs.continuous_duration)
-
-                self.benchmark_continuous(
-                    func, gpu_args, instance.threads, instance.grid, result, duration
-                )
+            duration = 1
+            for obs in self.continuous_observers:
+                obs.results = result
+                duration = max(duration, obs.continuous_duration)
+            if len(self.continuous_observers) > 0:
+                self.benchmark_continuous(func, gpu_args, instance.threads, instance.grid, result, duration)
 
         except Exception as e:
             # some launches may fail because too many registers are required
@@ -479,68 +539,74 @@ class DeviceInterface(object):
                 "too many resources requested for launch",
                 "OUT_OF_RESOURCES",
                 "INVALID_WORK_GROUP_SIZE",
+                "a bounds error was thrown during kernel execution",
+                "Julia kernel launch failed",
             ]
             if any([skip_str in str(e) for skip_str in skippable_exceptions]):
-                logging.debug(
-                    "benchmark fails due to runtime failure too many resources required"
-                )
-                if verbose:
+                logging.debug("benchmark fails due to runtime failure / too many resources required")
+                if "julia" in str(e).lower() and verbose:
+                    warn(
+                        f"skipping config {util.get_instance_string(instance.params)} reason: Julia kernel launch failed because of:\n{e}"
+                    )
+                elif verbose:
                     print(
                         f"skipping config {util.get_instance_string(instance.params)} reason: too many resources requested for launch"
                     )
-                result[objective] = util.RuntimeFailedConfig()
+                result["__error__"] = util.RuntimeFailedConfig()
             else:
                 logging.debug("benchmark encountered runtime failure: " + str(e))
                 print("Error while benchmarking:", instance.name)
                 raise e
+
+        assert util.check_result_type(result), "The error in a result MUST be an actual error."
+
         return result
 
-    def check_kernel_output(
-        self, func, gpu_args, instance, answer, atol, verify, verbose
-    ):
+    def check_kernel_output(self, func, gpu_args, instance, answer, atol, verify, verbose):
         """Runs the kernel once and checks the result against answer."""
         logging.debug("check_kernel_output")
 
-        #if not using custom verify function, check if the length is the same
+        # get the answer for this parameter configuration
+        if isinstance(answer, Tunable):
+            answer = answer.select_for_configuration(instance.params)
+
+        # convert juliacall arrays to numpy arrays where necessary
+        if answer is not None:
+            answer = [None if a is None else np.array(a) for a in util.possible_julia_vector_to_list(answer)]
+        for i, arg in enumerate(instance.arguments):
+            if util.is_julia_array(arg) and isinstance(answer[i], np.ndarray):
+                instance.arguments[i] = np.array(arg, dtype=answer[i].dtype)
+
+        # if not using custom verify function, check if the length is the same
         if answer:
             if len(instance.arguments) != len(answer):
                 raise TypeError("The length of argument list and provided results do not match.")
 
-            should_sync = [answer[i] is not None for i, arg in enumerate(instance.arguments)]
+            # for Julia arrays, we always want to sync
+            should_sync = [
+                answer[i] is not None or util.is_julia_array(arg) for i, arg in enumerate(instance.arguments)
+            ]
         else:
-            should_sync = [isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray)) for arg in instance.arguments]
+            cp = _get_cupy()
+            cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+            should_sync = [
+                isinstance(arg, (np.ndarray, cp.ndarray, torch.Tensor, DeviceArray) + cupy_ndarray)
+                or util.is_julia_array(arg)
+                for i, arg in enumerate(instance.arguments)
+            ]
 
         # re-copy original contents of output arguments to GPU memory, to overwrite any changes
         # by earlier kernel runs
-        for i, arg in enumerate(instance.arguments):
-            if should_sync[i]:
-                self.dev.memcpy_htod(gpu_args[i], arg)
+        self.dev.refresh_memory(gpu_args, instance.arguments, should_sync)
 
         # run the kernel
         check = self.run_kernel(func, gpu_args, instance)
         if not check:
-            return  # runtime failure occured that should be ignored, skip correctness check
+            # runtime failure occurred that should be ignored, skip correctness check
+            return
 
         # retrieve gpu results to host memory
-        result_host = []
-        for i, arg in enumerate(instance.arguments):
-            if should_sync[i]:
-                if isinstance(arg, (np.ndarray, cp.ndarray)):
-                    result_host.append(np.zeros_like(arg))
-                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
-                elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
-                    if not answer[i].is_cuda:
-                        #if the answer is on the host, copy gpu output to host as well
-                        result_host.append(torch.zeros_like(answer[i]))
-                        self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
-                    else:
-                        result_host.append(gpu_args[i].tensor)
-                else:
-                    # We should sync this argument, but we do not know how to transfer this type of argument
-                    # What do we do? Should we throw an error?
-                    result_host.append(None)
-            else:
-                result_host.append(None)
+        result_host = self.retrieve_results_to_host(instance.arguments, should_sync, gpu_args, answer)
 
         # Call the output observers
         for obs in self.output_observers:
@@ -558,10 +624,7 @@ class DeviceInterface(object):
             correct = True
 
         if not correct:
-            raise RuntimeError(
-                "Kernel result verification failed for: "
-                + util.get_config_string(instance.params)
-            )
+            raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
 
     def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, to):
         # reset previous timers
@@ -575,11 +638,11 @@ class DeviceInterface(object):
         # Compile and benchmark a kernel instance based on kernel strings and parameters
         instance_string = util.get_instance_string(params)
 
-        logging.debug('compile_and_benchmark ' + instance_string)
+        logging.debug("compile_and_benchmark " + instance_string)
 
         instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
-            result[to.objective] = util.InvalidConfig()
+            result["__error__"] = util.InvalidConfig()
         else:
             # Preprocess the argument list. This is required to deal with `MixedPrecisionArray`s
             gpu_args = _preprocess_gpu_arguments(gpu_args, params)
@@ -589,13 +652,11 @@ class DeviceInterface(object):
                 start_compilation = time.perf_counter()
                 func = self.compile_kernel(instance, verbose)
                 if not func:
-                    result[to.objective] = util.CompilationFailedConfig()
+                    result["__error__"] = util.CompilationFailedConfig()
                 else:
                     # add shared memory arguments to compiled module
                     if kernel_options.smem_args is not None:
-                        self.dev.copy_shared_memory_args(
-                            util.get_smem_args(kernel_options.smem_args, params)
-                        )
+                        self.dev.copy_shared_memory_args(util.get_smem_args(kernel_options.smem_args, params))
                     # add constant memory arguments to compiled module
                     if kernel_options.cmem_args is not None:
                         self.dev.copy_constant_memory_args(kernel_options.cmem_args)
@@ -609,12 +670,8 @@ class DeviceInterface(object):
                 # test kernel for correctness
                 if func and (to.answer or to.verify or self.output_observers):
                     start_verification = time.perf_counter()
-                    self.check_kernel_output(
-                        func, gpu_args, instance, to.answer, to.atol, to.verify, verbose
-                    )
-                    last_verification_time = 1000 * (
-                        time.perf_counter() - start_verification
-                    )
+                    self.check_kernel_output(func, gpu_args, instance, to.answer, to.atol, to.verify, verbose)
+                    last_verification_time = 1000 * (time.perf_counter() - start_verification)
 
                 # benchmark
                 if func:
@@ -630,18 +687,17 @@ class DeviceInterface(object):
             except Exception as e:
                 # dump kernel sources to temp file
                 temp_filenames = instance.prepare_temp_files_for_error_msg()
-                print(
-                    "Error while compiling or benchmarking, see source files: "
-                    + " ".join(temp_filenames)
-                )
+                print("Error while compiling or benchmarking, see source files: " + " ".join(temp_filenames))
                 raise e
 
-            # clean up any temporary files, if no error occured
+            # clean up any temporary files, if no error occurred
             instance.delete_temp_files()
 
         result["compile_time"] = last_compilation_time or 0
         result["verification_time"] = last_verification_time or 0
         result["benchmark_time"] = last_benchmark_time or 0
+
+        assert util.check_result_type(result), "The error in a result MUST be an actual error."
 
         return result
 
@@ -664,9 +720,7 @@ class DeviceInterface(object):
             ]
             error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
             if any(re.search(msg, error_message) for msg in shared_mem_error_messages):
-                logging.debug(
-                    "compile_kernel failed due to kernel using too much shared memory"
-                )
+                logging.debug("compile_kernel failed due to kernel using too much shared memory")
                 if verbose:
                     print(
                         f"skipping config {util.get_instance_string(instance.params)} reason: too much shared memory used"
@@ -715,9 +769,7 @@ class DeviceInterface(object):
         )
         if np.prod(threads) > self.dev.max_threads:
             if verbose:
-                print(
-                    f"skipping config {util.get_instance_string(params)} reason: too many threads per block"
-                )
+                print(f"skipping config {util.get_instance_string(params)} reason: too many threads per block")
             return util.InvalidConfig()
 
         # obtain the kernel_string and prepare additional files, if any
@@ -730,13 +782,13 @@ class DeviceInterface(object):
         )
 
         # check for templated kernel
-        if kernel_source.lang in ["CUDA", "NVCUDA", "HIP"] and "<" in name and ">" in name:
+        if kernel_source.lang in ["CUDA"] and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         # Preprocess GPU arguments. Require for handling `Tunable` arguments
         arguments = _preprocess_gpu_arguments(kernel_options.arguments, params)
 
-        #collect everything we know about this instance and return it
+        # collect everything we know about this instance and return it
         return KernelInstance(name, kernel_source, kernel_string, temp_files, threads, grid, params, arguments)
 
     def get_environment(self):
@@ -783,17 +835,39 @@ class DeviceInterface(object):
         try:
             self.dev.run_kernel(func, gpu_args, instance.threads, instance.grid)
         except Exception as e:
-            if "too many resources requested for launch" in str(
-                e
-            ) or "OUT_OF_RESOURCES" in str(e):
-                logging.debug(
-                    "ignoring runtime failure due to too many resources required"
-                )
+            if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
+                logging.debug("ignoring runtime failure due to too many resources required")
                 return False
             else:
                 logging.debug("encountered unexpected runtime failure: " + str(e))
                 raise e
         return True
+
+    def retrieve_results_to_host(self, arguments: list, should_sync: list[bool], gpu_args, answer: list):
+        """Retrieve results from device to host memory for all arguments that should be synchronized."""
+        result_host = []
+        for i, arg in enumerate(arguments):
+            if not should_sync[i]:
+                result_host.append(None)
+                continue
+            cp = _get_cupy()
+            cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+            if isinstance(arg, (np.ndarray,) + cupy_ndarray) or util.is_julia_array(arg):
+                result_host.append(np.zeros_like(arg))
+                self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
+            elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
+                if not answer[i].is_cuda:
+                    # if the answer is on the host, copy gpu output to host as well
+                    result_host.append(torch.zeros_like(answer[i]))
+                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
+                else:
+                    result_host.append(gpu_args[i].tensor)
+            else:
+                # We should sync this argument, but we do not know how to transfer this type of argument
+                # What do we do? Should we throw an error?
+                warn(f"Argument {i} is of type {type(arg)} and should be synchronized, but is not implemented.")
+                result_host.append(None)
+        return result_host
 
 
 def _preprocess_gpu_arguments(old_arguments, params):
@@ -813,25 +887,29 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
     """Default verify function based on np.allclose."""
     # first check if the length is the same
     if len(instance.arguments) != len(answer):
-        raise TypeError(
-            "The length of argument list and provided results do not match."
-        )
+        raise TypeError("The length of argument list and provided results do not match.")
     # for each element in the argument list, check if the types match
     for i, arg in enumerate(instance.arguments):
         if answer[i] is not None:  # skip None elements in the answer list
-            if isinstance(answer[i], (np.ndarray, cp.ndarray)) and isinstance(
-                arg, (np.ndarray, cp.ndarray)
-            ):
-                if answer[i].dtype != arg.dtype:
+            # convert Julia Arrays to numpy arrays for verification
+            if util.is_julia_array(arg):
+                arg = np.array(arg)
+            if util.is_julia_array(answer[i]):
+                answer[i] = np.array(answer[i])
+
+            cp = _get_cupy()
+            cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+            if isinstance(answer[i], (np.ndarray,) + cupy_ndarray) and isinstance(arg, (np.ndarray,) + cupy_ndarray):
+                if not np.can_cast(arg.dtype, answer[i].dtype):
                     raise TypeError(
-                        f"Element {i} of the expected results list is not of the same dtype as the kernel output: "
+                        f"Element {i} of the expected results list has a dtype that is not compatible with the dtype of the kernel output: "
                         + str(answer[i].dtype)
                         + " != "
                         + str(arg.dtype)
                         + "."
                     )
                 if answer[i].size != arg.size:
-                    raise TypeError(
+                    raise ValueError(
                         f"Element {i} of the expected results list has a size different from "
                         + "the kernel argument: "
                         + str(answer[i].size)
@@ -849,7 +927,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                         + "."
                     )
                 if answer[i].size() != arg.size():
-                    raise TypeError(
+                    raise ValueError(
                         f"Element {i} of the expected results list has a size different from "
                         + "the kernel argument: "
                         + str(answer[i].size)
@@ -869,16 +947,16 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                     )
             else:
                 # either answer[i] and argument have different types or answer[i] is not a numpy type
-                if not isinstance(
-                    answer[i], (np.ndarray, cp.ndarray, torch.Tensor)
-                ) or not isinstance(answer[i], np.number):
+                cp = _get_cupy()
+                cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+                if not isinstance(answer[i], (np.ndarray, torch.Tensor) + cupy_ndarray) or not isinstance(
+                    answer[i], np.number
+                ):
                     raise TypeError(
-                        f"Element {i} of expected results list is not a numpy/cupy ndarray, torch Tensor or numpy scalar."
+                        f"Arg or Element {i} of expected results list is {type(arg)} / {type(answer[i])}, not a numpy/cupy ndarray, torch Tensor or numpy scalar."  # noqa: E501
                     )
                 else:
-                    raise TypeError(
-                        f"Element {i} of expected results list and kernel arguments have different types."
-                    )
+                    raise TypeError(f"Element {i} of expected results list and kernel arguments have different types.")
 
     def _ravel(a):
         if hasattr(a, "ravel") and len(a.shape) > 1:
@@ -896,33 +974,41 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
         if expected is not None:
             result = _ravel(result_host[i])
             expected = _flatten(expected)
-            if any([isinstance(array, cp.ndarray) for array in [expected, result]]):
-                output_test = cp.allclose(expected, result, atol=atol)
-            elif isinstance(expected, torch.Tensor) and isinstance(
-                result, torch.Tensor
-            ):
-                output_test = torch.allclose(expected, result, atol=atol)
-            else:
-                output_test = np.allclose(expected, result, atol=atol)
+            cp = _get_cupy()
+            has_cp_array = False if not cp else any([isinstance(array, cp.ndarray) for array in [expected, result]])
+            lib = (
+                cp
+                if has_cp_array
+                else torch
+                if isinstance(expected, torch.Tensor) and isinstance(result, torch.Tensor)
+                else np
+            )
+            expected_nan = lib.isnan(expected)
+            output_test = lib.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
+            if expected_nan.any():
+                warn(
+                    f"Answer contains {expected_nan.sum()} NaNs. NaN values will now be considered equal in comparison."
+                )
 
             if not output_test and verbose:
-                print(
-                    "Error: "
-                    + util.get_config_string(instance.params)
-                    + " detected during correctness check"
-                )
-                print(
-                    "this error occured when checking value of the %oth kernel argument"
-                    % (i,)
-                )
-                print(
-                    "Printing kernel output and expected result, set verbose=False to suppress this debug print"
-                )
-                np.set_printoptions(edgeitems=50)
-                print("Kernel output:")
+                print("Error: " + util.get_config_string(instance.params) + " detected during correctness check")
+                print("this error occurred when checking value of the %oth kernel argument" % (i,))
+                print("Printing kernel output and expected result, set verbose=False to suppress this debug print")
+                np.set_printoptions(edgeitems=30)
+                print(f"Kernel output ({np.shape(result)}):")
                 print(result)
-                print("Expected:")
+                print(f"Expected ({np.shape(expected)}):")
                 print(expected)
+                # check if there are NaNs in the output or expected, if so, print where they are
+                if lib.isnan(result).any():
+                    print("NaNs in kernel output at indices:", lib.where(lib.isnan(result)))
+                if lib.isnan(expected).any():
+                    print("NaNs in expected result at indices:", lib.where(lib.isnan(expected)))
+                # print only the elements that are different
+                print("Difference at specific elements:")
+                diff = lib.abs(expected - result)
+                indices = lib.where(diff > atol)
+                print(diff[indices])
             correct = correct and output_test
 
     if not correct:
@@ -941,7 +1027,7 @@ def split_argument_list(argument_list):
         match = re.match(regex, arg, re.S)
         if not match:
             raise ValueError("error parsing templated kernel argument list")
-        type_list.append(re.sub(r"\s+", " ", match.group(1).strip(), re.S))
+        type_list.append(re.sub(r"\s+", " ", match.group(1).strip(), flags=re.S))
         name_list.append(match.group(2).strip())
     return type_list, name_list
 
@@ -952,18 +1038,14 @@ def apply_template_typenames(type_list, templated_typenames):
     def replace_typename_token(matchobj):
         """Function for a whitespace preserving token regex replace."""
         # replace only the match, leaving the whitespace around it as is
-        return (
-            matchobj.group(1)
-            + templated_typenames[matchobj.group(2)]
-            + matchobj.group(3)
-        )
+        return matchobj.group(1) + templated_typenames[matchobj.group(2)] + matchobj.group(3)
 
     for i, arg_type in enumerate(type_list):
         for k, v in templated_typenames.items():
             # if the templated typename occurs as a token in the string, meaning that it is enclosed in
             # beginning of string or whitespace, and end of string, whitespace or star
             regex = r"(^|\s+)(" + k + r")($|\s+|\*)"
-            sub = re.sub(regex, replace_typename_token, arg_type, re.S)
+            sub = re.sub(regex, replace_typename_token, arg_type, flags=re.S)
             type_list[i] = sub
 
 
@@ -987,9 +1069,7 @@ def wrap_templated_kernel(kernel_string, kernel_name):
     # relatively strict regex that does not allow nested template parameters like vector<TF>
     # within the template parameter list
     regex = (
-        r"template\s*<([^>]*?)>\s*__global__\s+void\s+(__launch_bounds__\([^\)]+?\)\s+)?"
-        + name
-        + r"\s*\((.*?)\)\s*\{"
+        r"template\s*<([^>]*?)>\s*__global__\s+void\s+(__launch_bounds__\([^\)]+?\)\s+)?" + name + r"\s*\((.*?)\)\s*\{"
     )
     match = re.search(regex, kernel_string, re.S)
     if not match:
@@ -997,15 +1077,12 @@ def wrap_templated_kernel(kernel_string, kernel_name):
 
     template_parameters = match.group(1).split(",")
     argument_list = match.group(3).split(",")
-    argument_list = [
-        s.strip() for s in argument_list
-    ]  # remove extra whitespace around 'type name' strings
+    # remove extra whitespace around 'type name' strings
+    argument_list = [s.strip() for s in argument_list]
 
     type_list, name_list = split_argument_list(argument_list)
 
-    templated_typenames = get_templated_typenames(
-        template_parameters, template_arguments
-    )
+    templated_typenames = get_templated_typenames(template_parameters, template_arguments)
     apply_template_typenames(type_list, templated_typenames)
 
     # replace __global__ with __device__ in the templated kernel definition
@@ -1019,9 +1096,7 @@ def wrap_templated_kernel(kernel_string, kernel_name):
         launch_bounds = match.group(2)
 
     # generate code for the compile-time template instantiation
-    template_instantiation = (
-        f"template __device__ void {kernel_name}(" + ", ".join(type_list) + ");\n"
-    )
+    template_instantiation = f"template __device__ void {kernel_name}(" + ", ".join(type_list) + ");\n"
 
     # generate code for the wrapper kernel
     new_arg_list = ", ".join([" ".join((a, b)) for a, b in zip(type_list, name_list)])

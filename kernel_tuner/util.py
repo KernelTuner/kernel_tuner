@@ -1,5 +1,6 @@
 """Module for kernel tuner utility functions."""
 
+import ast
 import errno
 import json
 import logging
@@ -7,12 +8,18 @@ import os
 import re
 import sys
 import tempfile
+import textwrap
 import time
 import warnings
-from inspect import signature
+from datetime import timedelta
+from inspect import getsource, signature
+from math import (
+    ceil,  # noqa: F401
+    floor,  # noqa: F401
+)  # importing here to make available for eval in restrictions / metrics / problem size etc.
 from pathlib import Path
 from types import FunctionType
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 from constraint import (
@@ -33,16 +40,14 @@ from constraint import (
 
 from kernel_tuner.accuracy import Tunable
 
-try:
-    import cupy as cp
-except ImportError:
-    cp = np
-try:
-    from cuda import cuda, cudart, nvrtc
-except ImportError:
-    cuda = None
 
-from kernel_tuner.observers.nvml import NVMLObserver
+def _get_cupy():
+    try:
+        import cupy as _cp
+    except ImportError:
+        return None
+    return _cp
+
 
 # number of special values to insert when a configuration cannot be measured
 
@@ -78,6 +83,28 @@ class NpEncoder(json.JSONEncoder):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super(NpEncoder, self).default(obj)
+
+
+def get_result_cost(result: dict, objectives: list[str], objective_higher_is_better: list[bool]) -> list[float]:
+    """Returns the cost of a result, taking the objective directions into account."""
+    # return the highest cost for invalid results
+    if "__error__" in result:
+        return [sys.float_info.max] * len(objectives)
+
+    cost_vec = list()
+    for objective, is_maximizer in zip(objectives, objective_higher_is_better):
+        objective_value = result[objective]
+        cost = -objective_value if is_maximizer else objective_value
+        cost_vec.append(cost)
+
+    return cost_vec
+
+
+def check_result_type(r):
+    """Check if the result has the right format."""
+    if "__error__" in r:
+        return isinstance(r["__error__"], ErrorConfig)
+    return True
 
 
 class TorchPlaceHolder:
@@ -133,53 +160,50 @@ def check_argument_type(dtype, kernel_argument):
     return False  # unknown dtype. do not throw exception to still allow kernel to run.
 
 
-def check_argument_list(kernel_name, kernel_string, args):
+def check_argument_list(kernel_name, kernel_string, args, lang=None):
     """Raise an exception if kernel arguments do not match host arguments."""
     kernel_arguments = list()
     collected_errors = list()
 
+    # Find all kernel argument lists in the kernel string
+    if lang and lang.upper() == "JULIA":
+        # for Julia, multiple kernels may be specified in one file, and remove the normally included tunable parameters
+        kernel_string = kernel_string.split(kernel_name)[1]
+        kernel_string = kernel_name + kernel_string
+        kernel_string = kernel_string.split("::Val")[0].rstrip()
     for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
         kernel_start = iterator.end()
-        kernel_end = kernel_string.find(")", kernel_start)
+        # for Julia, search until the last ',' as there may be e.g. `@Const(Min)` arguments
+        kernel_end = kernel_string.find(r".*(\,)" if lang and lang.upper() == "JULIA" else ")", kernel_start)
         if kernel_start != 0:
             kernel_arguments.append(kernel_string[kernel_start:kernel_end].split(","))
 
+    # Check each set of kernel arguments
     for arguments_set, arguments in enumerate(kernel_arguments):
+        # check arguments and signature lengths
+        if lang and lang.upper() == "JULIA" and len(arguments) > len(args):
+            # for Julia additional parameters may be passed
+            continue
         collected_errors.append(list())
         if len(arguments) != len(args):
-            collected_errors[arguments_set].append("Kernel and host argument lists do not match in size.")
+            collected_errors[arguments_set].append(
+                f"Kernel ({len(arguments)}) and host argument ({len(args)}) lists do not match in size."
+            )
             continue
 
+        # skip checking for Julia, as types are commonly not specified in the kernel arguments
+        if lang and lang.upper() == "JULIA":
+            collected_errors.pop(arguments_set)
+            continue
+
+        # Check each argument in the kernel argument list
         for i, arg in enumerate(args):
             kernel_argument = arguments[i]
-
-            # Handle tunable arguments
-            if isinstance(arg, Tunable):
-                continue
-
-            # Handle numpy arrays and other array types
-            if not isinstance(arg, (np.ndarray, np.generic, cp.ndarray, torch.Tensor, DeviceArray)):
-                raise TypeError(
-                    f"Argument at position {i} of type: {type(arg)} should be of type "
-                    "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
+            correct, str_dtype = check_individual_arguments(i, arg, kernel_argument)
+            if not correct:
+                collected_errors[arguments_set].append(
+                    f"Argument at position {str(i)} of dtype: {str_dtype} does not match {kernel_argument}."
                 )
-
-            correct = True
-            if isinstance(arg, np.ndarray):
-                if "*" not in kernel_argument:
-                    correct = False
-
-            if isinstance(arg, DeviceArray):
-                str_dtype = str(np.dtype(arg.typestr))
-            else:
-                str_dtype = str(arg.dtype)
-
-            if correct and check_argument_type(str_dtype, kernel_argument):
-                continue
-
-            collected_errors[arguments_set].append(
-                f"Argument at position {i} of dtype: {str_dtype} does not match {kernel_argument}."
-            )
 
         if not collected_errors[arguments_set]:
             # We assume that if there is a possible list of arguments that matches with the provided one
@@ -190,12 +214,145 @@ def check_argument_list(kernel_name, kernel_string, args):
         warnings.warn(errors[0], UserWarning)
 
 
-def check_stop_criterion(to):
-    """Checks if max_fevals is reached or time limit is exceeded."""
-    if "max_fevals" in to and len(to.unique_results) >= to.max_fevals:
-        raise StopCriterionReached(f"max_fevals reached ({len(to.unique_results)} >= {to.max_fevals})")
-    if "time_limit" in to and (((time.perf_counter() - to.start_time) + (to.simulated_time * 1e-3)) > to.time_limit):
-        raise StopCriterionReached(f"time limit ({to.time_limit}) exceeded")
+def check_individual_arguments(i, arg, kernel_argument):
+    """Check whether the host argument matches the kernel argument."""
+    correct = True
+    cp = _get_cupy()
+    cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+
+    # Handle tunable arguments
+    if isinstance(arg, Tunable):
+        return correct, ""
+
+    # Handle numpy arrays and other array types
+    if not isinstance(arg, (np.ndarray, np.generic, torch.Tensor, DeviceArray) + cupy_ndarray):
+        if is_julia_array(arg):
+            # skip for Julia, types are commonly not specified in the kernel arguments
+            return correct, ""
+        raise TypeError(
+            f"Argument at position {i} of type: {type(arg)} should be of type "
+            "np.ndarray, numpy scalar, HIP Python DeviceArray, Julia VectorValue type"
+        )
+
+    if isinstance(arg, np.ndarray) and "*" not in kernel_argument:
+        correct = False
+
+    if isinstance(arg, DeviceArray):
+        str_dtype = str(np.dtype(arg.typestr))
+    else:
+        str_dtype = str(arg.dtype)
+
+    if correct:
+        return check_argument_type(str_dtype, kernel_argument), str_dtype
+
+    return False, str_dtype
+
+
+class Timer:
+    """Measures elapsed wall-clock time."""
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        """Reset the timer to now."""
+        self._start_ns = time.perf_counter_ns()
+
+    def get(self) -> float:
+        """Elapsed time in seconds."""
+        now = time.perf_counter_ns()
+        return (now - self._start_ns) * 1e-9
+
+    def get_and_reset(self) -> float:
+        """Elapsed time in seconds, then reset."""
+        now = time.perf_counter_ns()
+        elapsed_ns = now - self._start_ns
+        self._start_ns = now
+        return elapsed_ns * 1e-9
+
+    def __str__(self) -> str:
+        """Human-readable elapsed time."""
+        elapsed = self.get()
+
+        if elapsed < 1:
+            result = f"{elapsed * 1e3:.2f} ms"
+        elif elapsed < 60:
+            result = f"{elapsed:.3f} s"
+        elif elapsed < 3600:
+            result = f"{elapsed / 60:.2f} min"
+        else:
+            result = f"{elapsed / 3600:.2f} h"
+        return result
+
+
+class TuningBudget:
+    def __init__(self, time_limit=None, max_fevals=None):
+        if time_limit is not None and not isinstance(time_limit, timedelta):
+            time_limit = timedelta(seconds=time_limit)
+
+        if max_fevals is not None and max_fevals <= 0:
+            raise ValueError("max_fevals must be greater than zero")
+
+        if time_limit is not None and time_limit <= timedelta(seconds=0):
+            raise ValueError("time_limit must be greater than zero")
+
+        self.start_timer = Timer()
+        self.time_spent_extra = timedelta()
+        self.time_limit = time_limit
+        self.num_fevals = 0
+        self.max_fevals = max_fevals
+
+    def add_evaluations(self, n=1):
+        self.num_fevals += n
+
+    def add_time(self, seconds=0, milliseconds=0):
+        self.time_spent_extra += timedelta(seconds=seconds, milliseconds=milliseconds)
+
+    def get_time_spent(self) -> timedelta:
+        seconds_passed = self.start_timer.get()
+        return timedelta(seconds=seconds_passed) + self.time_spent_extra
+
+    def get_time_remaining(self) -> timedelta:
+        if self.time_limit is not None:
+            return max(self.time_limit - self.get_time_spent(), timedelta(seconds=0))
+        else:
+            return timedelta.max
+
+    def get_evaluations_spent(self) -> int:
+        return self.num_fevals
+
+    def get_evaluations_remaining(self) -> int:
+        if self.max_fevals is not None:
+            return max(self.max_fevals - self.num_fevals, 0)
+        else:
+            return float("inf")
+
+    def is_done(self) -> bool:
+        if self.max_fevals is not None and self.num_fevals >= self.max_fevals:
+            return True
+
+        if self.time_limit is not None and self.get_time_spent() > self.time_limit:
+            return True
+
+        return False
+
+    def raise_exception_if_done(self):
+        if self.max_fevals is not None and self.num_fevals >= self.max_fevals:
+            raise StopCriterionReached(f"max_fevals ({self.max_fevals}) reached")
+
+        if self.time_limit is not None and self.get_time_spent() > self.time_limit:
+            raise StopCriterionReached("time limit exceeded")
+
+    def get_fraction_consumed(self) -> float:
+        result = 0.0
+
+        if self.max_fevals is not None:
+            result = max(result, self.num_fevals / self.max_fevals)
+
+        if self.time_limit is not None:
+            result = max(result, self.get_time_spent() / self.time_limit)
+
+        return min(1.0, result)
 
 
 def check_tune_params_list(tune_params, observers, simulation_mode=False):
@@ -205,6 +362,8 @@ def check_tune_params_list(tune_params, observers, simulation_mode=False):
         if name in forbidden_names:
             raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
     if any("nvml_" in param for param in tune_params):
+        from kernel_tuner.observers.nvml import NVMLObserver
+
         if not simulation_mode and (not observers or not any(isinstance(obs, NVMLObserver) for obs in observers)):
             raise ValueError("Tune parameters starting with nvml_ require an NVMLObserver!")
 
@@ -213,11 +372,15 @@ def check_block_size_names(block_size_names):
     if block_size_names is not None:
         # do some type checks for the user input
         if not isinstance(block_size_names, list):
-            raise ValueError("block_size_names should be a list of strings!")
+            raise ValueError("block_size_names should be a list of strings!", block_size_names, type(block_size_names))
         if len(block_size_names) > 3:
-            raise ValueError("block_size_names should not contain more than 3 names!")
+            raise ValueError("block_size_names should not contain more than 3 names!", block_size_names)
         if not all([isinstance(name, "".__class__) for name in block_size_names]):
-            raise ValueError("block_size_names should contain only strings!")
+            raise ValueError(
+                "block_size_names should contain only strings!",
+                block_size_names,
+                [type(name) for name in block_size_names],
+            )
 
 
 def append_default_block_size_names(block_size_names):
@@ -236,17 +399,30 @@ def check_block_size_params_names_list(block_size_names, tune_params):
                     "Block size name " + name + " is not specified in the tunable parameters list!", UserWarning
                 )
     else:  # if default block size names are used
-        if not any([k in default_block_size_names for k in tune_params.keys()]):
+        if not any([k.lower() in default_block_size_names for k in tune_params.keys()]):
             warnings.warn(
                 "None of the tunable parameters specify thread block dimensions!",
                 UserWarning,
             )
+        else:
+            # check for alternative case spelling of defaults such as BLOCK_SIZE_X or block_Size_X etc
+            result = []
+            for k in tune_params.keys():
+                if k.lower() in default_block_size_names and k not in default_block_size_names:
+                    result.append(k)
+            # ensure order of block_size_names is correct regardless of case used
+            block_size_names = sorted(result, key=str.casefold)
+
+    return block_size_names
 
 
 def check_restriction(restrict, params: dict) -> bool:
     """Check whether a configuration meets a search space restriction."""
+    # if it's a function python-constraint it can be called directly
+    if isinstance(restrict, FunctionConstraint):
+        return restrict._func(*params.values())
     # if it's a python-constraint, convert to function and execute
-    if isinstance(restrict, Constraint):
+    elif isinstance(restrict, Constraint):
         restrict = convert_constraint_restriction(restrict)
         return restrict(list(params.values()))
     # if it's a string, fill in the parameters and evaluate
@@ -277,7 +453,7 @@ def check_restriction(restrict, params: dict) -> bool:
             return restrict(**selected_params)
     # otherwise, raise an error
     else:
-        raise ValueError(f"Unkown restriction type {type(restrict)} ({restrict})")
+        raise ValueError(f"Unknown restriction type {type(restrict)} ({restrict})")
 
 
 def check_restrictions(restrictions, params: dict, verbose: bool) -> bool:
@@ -345,7 +521,7 @@ def convert_constraint_restriction(restrict: Constraint):
 
     elif isinstance(restrict, (InSetConstraint, NotInSetConstraint, SomeInSetConstraint, SomeNotInSetConstraint)):
         raise NotImplementedError(
-            f"Restriction of the type {type(restrict)} is explicitely not supported in backwards compatibility mode, because the behaviour is too complex. Please rewrite this constraint to a function to use it with this algorithm."
+            f"Restriction of the type {type(restrict)} is explicitly not supported in backwards compatibility mode, because the behaviour is too complex. Please rewrite this constraint to a function to use it with this algorithm."
         )
     else:
         raise TypeError(f"Unrecognized restriction {restrict}")
@@ -382,10 +558,13 @@ def delete_temp_file(filename):
 
 def detect_language(kernel_string):
     """Attempt to detect language from the kernel_string."""
+    kernel_string = kernel_string.lower().strip()
     if "__global__" in kernel_string:
         lang = "CUDA"
     elif "__kernel" in kernel_string:
         lang = "OpenCL"
+    elif any(token in kernel_string for token in ["@cuda", "@kernel", "@device_code"]):
+        lang = "Julia"
     else:
         lang = "C"
     return lang
@@ -397,9 +576,67 @@ def get_best_config(results, objective, objective_higher_is_better=False):
     ignore_val = sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
     best_config = func(
         results,
-        key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val,
+        key=lambda x: x[objective] if "__error__" not in x and isinstance(x[objective], float) else ignore_val,
     )
     return best_config
+
+
+def get_pareto_results(
+    results: list[dict], objectives: list[str], objective_higher_is_better: list[bool], mark_optima=True
+):
+    from pymoo.util.nds.non_dominated_sorting import find_non_dominated
+
+    assert isinstance(results, list)
+    assert isinstance(objectives, list)
+
+    n_rows = len(results)
+    n_cols = len(objectives)
+    Y = np.empty((n_rows, n_cols), dtype=float)
+    for row_idx, result in enumerate(results):
+        if "__error__" in result:
+            Y[row_idx, :] = sys.float_info.max
+            continue
+        for col_idx, (objective_name, higher_is_better) in enumerate(zip(objectives, objective_higher_is_better)):
+            y = result[objective_name]
+            # negate for maximizers to optimize through minimization
+            Y[row_idx, col_idx] = -y if higher_is_better else y
+
+    pf_indices = find_non_dominated(Y)
+    pf = [results[idx] for idx in pf_indices]
+    if mark_optima:
+        for p in pf:
+            p["optimal"] = True
+    return pf
+
+
+# specifies for a number of pre-defined objectives whether
+# the objective should be minimized or maximized (boolean value denotes higher is better)
+objective_default_map = {
+    "time": False,
+    "energy": False,
+    "fitness": True,
+    "cost": False,
+    "loss": False,
+    "GFLOP/s": True,
+    "TFLOP/s": True,
+    "GB/s": True,
+    "TB/s": True,
+    "GFLOPS/W": True,
+    "TFLOPS/W": True,
+    "GFLOP/J": True,
+    "TFLOP/J": True,
+}
+
+
+def get_objective_defaults(objective, objective_higher_is_better):
+    """Use time as default objective and infer objective_higher_is_better for known objectives."""
+    objective = objective or "time"
+    if objective_higher_is_better is None:
+        if objective in objective_default_map:
+            objective_higher_is_better = objective_default_map[objective]
+        else:
+            raise ValueError(f"Please specify objective_higher_is_better for objective {objective}")
+    return objective, objective_higher_is_better
 
 
 def get_config_string(params, keys=None, units=None):
@@ -430,16 +667,26 @@ def get_config_string(params, keys=None, units=None):
 def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names):
     """Compute grid dims based on problem sizes and listed grid divisors."""
 
-    def get_dimension_divisor(divisor_list, default, params):
-        if divisor_list is None:
-            if default in params:
-                divisor_list = [default]
-            else:
-                return 1
-        if callable(divisor_list):
-            return divisor_list(params)
+    def get_dimension_divisor(divisor, default, params):
+        divisor_num = 1
+
+        if divisor is None:
+            divisor_num = params.get(default, 1)
+        elif isinstance(divisor, int):
+            divisor_num = divisor
+        elif callable(divisor):
+            divisor_num = divisor(params)
+        elif isinstance(divisor, str):
+            divisor_num = int(eval(replace_param_occurrences(divisor, params)))
+        elif np.iterable(divisor):
+            for div in divisor:
+                divisor_num *= get_dimension_divisor(div, 1, params)
         else:
-            return np.prod([int(eval(replace_param_occurrences(s, params))) for s in divisor_list])
+            raise ValueError(
+                "Error: unrecognized type in grid divisor list, should be any of int, str, callable, or iterable"
+            )
+
+        return divisor_num
 
     divisors = [get_dimension_divisor(d, block_size_names[i], params) for i, d in enumerate(grid_div)]
     return tuple(int(np.ceil(float(current_problem_size[i]) / float(d))) for i, d in enumerate(divisors))
@@ -508,7 +755,8 @@ def get_kernel_string(kernel_source, params=None):
         kernel_string = read_file(kernel_source)
     elif isinstance(kernel_source, str):
         if looks_like_a_filename(kernel_source):
-            kernel_string = read_file(kernel_source) or kernel_source
+            with open(kernel_source, "r") as f:
+                kernel_string = f.read()
         else:
             kernel_string = kernel_source
     else:
@@ -549,9 +797,7 @@ def get_smem_args(smem_args, params):
 
 def get_temp_filename(suffix=None):
     """Return a string in the form of temp_X, where X is a large integer."""
-    tmp_file = tempfile.mkstemp(
-        suffix=suffix or "", prefix="temp_", dir=os.getcwd()
-    )  # or "" for Python 2 compatibility
+    tmp_file = tempfile.mkstemp(suffix=suffix, prefix="temp_", dir=os.getcwd())
     os.close(tmp_file[0])
     return tmp_file[1]
 
@@ -567,6 +813,17 @@ def get_thread_block_dimensions(params, block_size_names=None):
     return (int(block_size_x), int(block_size_y), int(block_size_z))
 
 
+def copy_without_benchmark_timings(result: dict) -> dict:
+    """Returns a new dict where all the timing information related
+    to benchmarking a single configurations have been disable.
+    """
+    result = dict(result)  # Copy
+    result["compile_time"] = 0
+    result["verification_time"] = 0
+    result["benchmark_time"] = 0
+    return result
+
+
 def get_total_timings(results, env, overhead_time):
     """Sum all timings and put their totals in the env."""
     total_framework_time = 0
@@ -578,6 +835,7 @@ def get_total_timings(results, env, overhead_time):
         for result in results:
             if (
                 "framework_time" not in result
+                or "benchmark_time" not in result
                 or "strategy_time" not in result
                 or "compile_time" not in result
                 or "verification_time" not in result
@@ -590,7 +848,7 @@ def get_total_timings(results, env, overhead_time):
             total_verification_time += result["verification_time"]
             total_benchmark_time += result["benchmark_time"]
 
-    # add the seperate times to the environment dict
+    # add the separate time values to the environment dict
     env["total_framework_time"] = total_framework_time
     env["total_strategy_time"] = total_strategy_time
     env["total_compile_time"] = total_compile_time
@@ -602,14 +860,6 @@ def get_total_timings(results, env, overhead_time):
         total_framework_time + total_strategy_time + total_compile_time + total_verification_time + total_benchmark_time
     )
     return env
-
-
-NVRTC_VALID_CC = np.array(["50", "52", "53", "60", "61", "62", "70", "72", "75", "80", "87", "89", "90", "90a"])
-
-
-def to_valid_nvrtc_gpu_arch_cc(compute_capability: str) -> str:
-    """Returns a valid Compute Capability for NVRTC `--gpu-architecture=`, as per https://docs.nvidia.com/cuda/nvrtc/index.html#group__options."""
-    return max(NVRTC_VALID_CC[NVRTC_VALID_CC <= compute_capability], default="52")
 
 
 def print_config(config, tuning_options, runner):
@@ -658,17 +908,18 @@ def process_metrics(params, metrics):
     :rtype: dict
 
     """
-    if not isinstance(metrics, dict):
-        raise ValueError("metrics should be a dictionary to preserve order and support composability")
-    for k, v in metrics.items():
-        if isinstance(v, str):
-            value = eval(replace_param_occurrences(v, params))
-        elif callable(v):
-            value = v(params)
-        else:
-            raise ValueError("metric dicts values should be strings or callable")
-        # We overwrite any existing values for the given key
-        params[k] = value
+    if metrics is not None:
+        if not isinstance(metrics, dict):
+            raise ValueError("metrics should be a dictionary to preserve order and support composability")
+        for k, v in metrics.items():
+            if isinstance(v, str):
+                value = eval(replace_param_occurrences(v, params))
+            elif callable(v):
+                value = v(params)
+            else:
+                raise ValueError("metric dicts values should be strings or callable")
+            # We overwrite any existing values for the given key
+            params[k] = value
     return params
 
 
@@ -689,8 +940,8 @@ def looks_like_a_filename(kernel_source):
         for s in ["__global__ ", "__kernel ", "void ", "float "]:
             if s in kernel_source:
                 result = False
-        # string must contain substring ".c", ".opencl", or ".F"
-        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F")])
+        # string must contain substring ".c", ".opencl", ".F", ".jl"
+        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F", ".jl")])
     logging.debug("kernel_source is a filename: %s" % str(result))
     return result
 
@@ -766,7 +1017,7 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
             v = replace_param_occurrences(v, params)
 
         if not k.isidentifier():
-            raise ValueError("name is not a valid identifier: {k}")
+            raise ValueError(f"name is not a valid identifier: {k}")
 
         # Escape newline characters
         v = str(v)
@@ -781,12 +1032,18 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
                 kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)  # + r"[^\S]*"
             else:
                 kernel_prefix += f"constexpr int {k} = {v};\n"
+        elif lang.upper() == "JULIA":
+            # kernel_prefix += f"const {k} = {v}\n"
+            # in Julia, we can't redefine constants like this, so we skip it and give it as arguments on the kernel launch
+            pass
         else:
             kernel_prefix += f"#define {k} {v}\n"
 
     # since we insert defines above the original kernel code, the line numbers will be incorrect
     # the following preprocessor directive informs the compiler that lines should be counted from 1
-    if kernel_prefix:
+    if lang.upper() == "JULIA":
+        kernel_prefix += "\n"
+    elif kernel_prefix:
         kernel_prefix += "#line 1\n"
 
     # Also replace parameter occurrences inside the kernel name
@@ -862,7 +1119,7 @@ def normalize_verify_function(v):
 
 
 def parse_restrictions(
-    restrictions: list[str], tune_params: dict, monolithic=False, format=None, try_to_constraint=True
+    restrictions: list[str], tune_params: dict, monolithic=False, format=None
 ) -> list[tuple[Union[Constraint, str], list[str]]]:
     """Parses restrictions from a list of strings into compilable functions and constraints, or a single compilable function (if monolithic is True). Returns a list of tuples of (strings or constraints) and parameters."""
     # rewrite the restrictions so variables are singled out
@@ -886,160 +1143,6 @@ def parse_restrictions(
         else:
             return key
 
-    def to_multiple_restrictions(restrictions: list[str]) -> list[str]:
-        """Split the restrictions into multiple restriction where possible (e.g. 3 <= x * y < 9 <= z -> [(MinProd(3), [x, y]), (MaxProd(9-1), [x, y]), (MinProd(9), [z])])."""
-        split_restrictions = list()
-        for res in restrictions:
-            # if there are logic chains in the restriction, skip splitting further
-            if " and " in res or " or " in res:
-                split_restrictions.append(res)
-                continue
-            # find the indices of splittable comparators
-            comparators = ["<=", ">=", ">", "<"]
-            comparators_indices = [(m.start(0), m.end(0)) for m in re.finditer("|".join(comparators), res)]
-            if len(comparators_indices) <= 1:
-                # this can't be split further
-                split_restrictions.append(res)
-                continue
-            # split the restrictions from the previous to the next comparator
-            for index in range(len(comparators_indices)):
-                temp_copy = res
-                prev_stop = comparators_indices[index - 1][1] + 1 if index > 0 else 0
-                next_stop = (
-                    comparators_indices[index + 1][0] if index < len(comparators_indices) - 1 else len(temp_copy)
-                )
-                split_restrictions.append(temp_copy[prev_stop:next_stop].strip())
-        return split_restrictions
-
-    def to_numeric_constraint(
-        restriction: str, params: list[str]
-    ) -> Optional[Union[MinSumConstraint, ExactSumConstraint, MaxSumConstraint, MaxProdConstraint]]:
-        """Converts a restriction to a built-in numeric constraint if possible."""
-        comparators = ["<=", "==", ">=", ">", "<"]
-        comparators_found = re.findall("|".join(comparators), restriction)
-        # check if there is exactly one comparator, if not, return None
-        if len(comparators_found) != 1:
-            return None
-        comparator = comparators_found[0]
-
-        # split the string on the comparison and remove leading and trailing whitespace
-        left, right = tuple(s.strip() for s in restriction.split(comparator))
-
-        # find out which side is the constant number
-        def is_or_evals_to_number(s: str) -> Optional[Union[int, float]]:
-            try:
-                # check if it's a number or solvable to a number (e.g. '32*2')
-                number = eval(s)
-                assert isinstance(number, (int, float))
-                return number
-            except Exception:
-                # it's not a solvable subexpression, return None
-                return None
-
-        # either the left or right side of the equation must evaluate to a constant number
-        left_num = is_or_evals_to_number(left)
-        right_num = is_or_evals_to_number(right)
-        if (left_num is None and right_num is None) or (left_num is not None and right_num is not None):
-            # left_num and right_num can't be both None or both a constant
-            return None
-        number, variables, variables_on_left = (
-            (left_num, right.strip(), False) if left_num is not None else (right_num, left.strip(), True)
-        )
-
-        # if the number is an integer, we can map '>' to '>=' and '<' to '<=' by changing the number (does not work with floating points!)
-        number_is_int = isinstance(number, int)
-        if number_is_int:
-            if comparator == "<":
-                if variables_on_left:
-                    # (x < 2) == (x <= 2-1)
-                    number -= 1
-                else:
-                    # (2 < x) == (2+1 <= x)
-                    number += 1
-            elif comparator == ">":
-                if variables_on_left:
-                    # (x > 2) == (x >= 2+1)
-                    number += 1
-                else:
-                    # (2 > x) == (2-1 >= x)
-                    number -= 1
-
-        # check if an operator is applied on the variables, if not return
-        operators = [r"\*\*", r"\*", r"\+"]
-        operators_found = re.findall(str("|".join(operators)), variables)
-        if len(operators_found) == 0:
-            # no operators found, return only based on comparator
-            if len(params) != 1 or variables not in params:
-                # there were more than one variable but no operator
-                return None
-            # map to a Constraint
-            # if there are restrictions with a single variable, it will be used to prune the domain at the start
-            elif comparator == "==":
-                return ExactSumConstraint(number)
-            elif comparator == "<=" or (comparator == "<" and number_is_int):
-                return MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
-            elif comparator == ">=" or (comparator == ">" and number_is_int):
-                return MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
-            raise ValueError(f"Invalid comparator {comparator}")
-
-        # check which operator is applied on the variables
-        operator = operators_found[0]
-        if not all(o == operator for o in operators_found):
-            # if the operator is inconsistent (e.g. 'x + y * z == 3'), return None
-            return None
-
-        # split the string on the comparison
-        splitted = variables.split(operator)
-        # check if there are only pure, non-recurring variables (no operations or constants) in the restriction
-        if len(splitted) == len(params) and all(s.strip() in params for s in splitted):
-            # map to a Constraint
-            if operator == "**":
-                # power operations are not (yet) supported, added to avoid matching the double asterisk
-                return None
-            elif operator == "*":
-                if comparator == "<=" or (comparator == "<" and number_is_int):
-                    return MaxProdConstraint(number) if variables_on_left else MinProdConstraint(number)
-                elif comparator == ">=" or (comparator == ">" and number_is_int):
-                    return MinProdConstraint(number) if variables_on_left else MaxProdConstraint(number)
-            elif operator == "+":
-                if comparator == "==":
-                    return ExactSumConstraint(number)
-                elif comparator == "<=" or (comparator == "<" and number_is_int):
-                    return MaxSumConstraint(number) if variables_on_left else MinSumConstraint(number)
-                elif comparator == ">=" or (comparator == ">" and number_is_int):
-                    return MinSumConstraint(number) if variables_on_left else MaxSumConstraint(number)
-            else:
-                raise ValueError(f"Invalid operator {operator}")
-        return None
-
-    def to_equality_constraint(
-        restriction: str, params: list[str]
-    ) -> Optional[Union[AllEqualConstraint, AllDifferentConstraint]]:
-        """Converts a restriction to either an equality or inequality constraint on all the parameters if possible."""
-        # check if all parameters are involved
-        if len(params) != len(tune_params):
-            return None
-
-        # find whether (in)equalities appear in this restriction
-        equalities_found = re.findall("==", restriction)
-        inequalities_found = re.findall("!=", restriction)
-        # check if one of the two have been found, if none or both have been found, return None
-        if not (len(equalities_found) > 0 ^ len(inequalities_found) > 0):
-            return None
-        comparator = equalities_found[0] if len(equalities_found) > 0 else inequalities_found[0]
-
-        # split the string on the comparison
-        splitted = restriction.split(comparator)
-        # check if there are only pure, non-recurring variables (no operations or constants) in the restriction
-        if len(splitted) == len(params) and all(s.strip() in params for s in splitted):
-            # map to a Constraint
-            if comparator == "==":
-                return AllEqualConstraint()
-            elif comparator == "!=":
-                return AllDifferentConstraint()
-            return ValueError(f"Not possible: comparator should be '==' or '!=', is {comparator}")
-        return None
-
     # remove functionally duplicate restrictions (preserves order and whitespace)
     if all(isinstance(r, str) for r in restrictions):
         # clean the restriction strings to functional equivalence
@@ -1051,9 +1154,6 @@ def parse_restrictions(
 
     # create the parsed restrictions
     if monolithic is False:
-        # split into multiple restrictions where possible
-        if try_to_constraint:
-            restrictions = to_multiple_restrictions(restrictions)
         # split into functions that only take their relevant parameters
         parsed_restrictions = list()
         for res in restrictions:
@@ -1061,30 +1161,11 @@ def parse_restrictions(
             parsed_restriction = re.sub(regex_match_variable, replace_params_split, res).strip()
             params_used = list(params_used)
             finalized_constraint = None
-            if try_to_constraint and " or " not in res and " and " not in res:
-                # if applicable, strip the outermost round brackets
-                while (
-                    parsed_restriction[0] == "("
-                    and parsed_restriction[-1] == ")"
-                    and "(" not in parsed_restriction[1:]
-                    and ")" not in parsed_restriction[:1]
-                ):
-                    parsed_restriction = parsed_restriction[1:-1]
-                # check if we can turn this into the built-in numeric comparison constraint
-                if all(
-                    all(isinstance(v, (int, float)) and type(v) is not type(True) for v in tune_params[param])
-                    for param in params_used
-                ):
-                    finalized_constraint = to_numeric_constraint(parsed_restriction, params_used)
-                if finalized_constraint is None:
-                    # check if we can turn this into the built-in equality comparison constraint
-                    finalized_constraint = to_equality_constraint(parsed_restriction, params_used)
-            if finalized_constraint is None:
-                # we must turn it into a general function
-                if format is not None and format.lower() == "pyatf":
-                    finalized_constraint = parsed_restriction
-                else:
-                    finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
+            # we must turn it into a general function
+            if format is not None and format.lower() == "pyatf":
+                finalized_constraint = parsed_restriction
+            else:
+                finalized_constraint = f"def r({', '.join(params_used)}): return {parsed_restriction} \n"
             parsed_restrictions.append((finalized_constraint, params_used))
 
         # if pyATF, restrictions that are set on the same parameter must be combined into one
@@ -1145,10 +1226,111 @@ def parse_restrictions(
     return parsed_restrictions
 
 
+def get_all_lambda_asts(func):
+    """Extracts the AST nodes of all lambda functions defined on the same line as func.
+
+    Args:
+        func: A lambda function object.
+
+    Returns:
+        A list of all ast.Lambda node objects on the line where func is defined.
+
+    Raises:
+        ValueError: If the source can't be retrieved or no lambda is found.
+    """
+    res = []
+    try:
+        source = getsource(func)
+        source = textwrap.dedent(source).strip()
+        parsed = ast.parse(source)
+
+        # Find the Lambda node
+        for node in ast.walk(parsed):
+            if isinstance(node, ast.Lambda):
+                res.append(node)
+        if not res:
+            raise ValueError(f"No lambda node found in the source {source}.")
+    except SyntaxError:
+        """Ignore syntax errors on the lambda"""
+        return res
+    except OSError:
+        raise ValueError("Could not retrieve source. Is this defined interactively or dynamically?")
+    return res
+
+
+class ConstraintLambdaTransformer(ast.NodeTransformer):
+    """Replaces any `NAME['string']` subscript with just `'string'`, if `NAME`
+    matches the lambda argument name.
+    """
+
+    def __init__(self, dict_arg_name):
+        self.dict_arg_name = dict_arg_name
+
+    def visit_Subscript(self, node):
+        # We only replace subscript expressions of the form <dict_arg_name>['some_string']
+        if (
+            isinstance(node.value, ast.Name)
+            and node.value.id == self.dict_arg_name
+            and isinstance(node.slice, ast.Constant)
+            and isinstance(node.slice.value, str)
+        ):
+            # Replace `dict_arg_name['some_key']` with the string used as key
+            return ast.Name(node.slice.value)
+        return self.generic_visit(node)
+
+
+def unparse_constraint_lambda(lambda_ast):
+    """Parse the lambda function to replace accesses to tunable parameter dict
+    Returns string body of the rewritten lambda function
+    """
+    args = lambda_ast.args
+    body = lambda_ast.args
+
+    # Kernel Tuner only allows constraint lambdas with a single argument
+    arg = args.args[0].arg
+
+    # Create transformer that replaces accesses to tunable parameter dict
+    # with simply the name of the tunable parameter
+    transformer = ConstraintLambdaTransformer(arg)
+    new_lambda_ast = transformer.visit(lambda_ast)
+
+    rewritten_lambda_body_as_string = ast.unparse(new_lambda_ast.body).strip()
+
+    return rewritten_lambda_body_as_string
+
+
+def convert_constraint_lambdas(restrictions):
+    """Extract and convert all constraint lambdas from the restrictions"""
+    res = []
+    for c in restrictions:
+        if isinstance(c, (str, Constraint)):
+            res.append(c)
+        if callable(c) and not isinstance(c, Constraint):
+            try:
+                lambda_asts = get_all_lambda_asts(c)
+            except ValueError:
+                res.append(c)  # it's just a plain function, not a lambda
+                continue
+
+            for lambda_ast in lambda_asts:
+                new_c = unparse_constraint_lambda(lambda_ast)
+                res.append(new_c)
+
+    result = list(set(res))
+    if not len(result) == len(restrictions):
+        raise ValueError(
+            "An error occured when parsing restrictions. If you mix lambdas and string-based restrictions, please define the lambda first."
+        )
+
+    return result
+
+
 def compile_restrictions(
-    restrictions: list, tune_params: dict, monolithic=False, format=None, try_to_constraint=True
-) -> list[tuple[Union[str, Constraint, FunctionType], list[str], Union[str, None]]]:
-    """Parses restrictions from a list of strings into a list of strings, Functions, or Constraints (if `try_to_constraint`) and parameters used and source, or a single Function if monolithic is true."""
+    restrictions: list, tune_params: dict, monolithic=False, format=None
+) -> list[tuple[Union[str, FunctionType], list[str], Union[str, None]]]:
+    """Parses restrictions from a list of strings into a list of strings or Functions and parameters used and source, or a single Function if monolithic is true."""
+    restrictions = convert_constraint_lambdas(restrictions)
+
     # filter the restrictions to get only the strings
     restrictions_str, restrictions_ignore = [], []
     for r in restrictions:
@@ -1157,9 +1339,7 @@ def compile_restrictions(
         return restrictions_ignore
 
     # parse the strings
-    parsed_restrictions = parse_restrictions(
-        restrictions_str, tune_params, monolithic=monolithic, format=format, try_to_constraint=try_to_constraint
-    )
+    parsed_restrictions = parse_restrictions(restrictions_str, tune_params, monolithic=monolithic, format=format)
 
     # compile the parsed restrictions into a function
     compiled_restrictions: list[tuple] = list()
@@ -1190,7 +1370,17 @@ def compile_restrictions(
     return noncompiled_restrictions + compiled_restrictions
 
 
-def process_cache(cache, kernel_options, tuning_options, runner):
+def check_matching_problem_size(cached_problem_size, problem_size):
+    """Check the if requested problem size matches the problem size in the cache."""
+    cached_problem_size_arr = np.array(cached_problem_size)
+    problem_size_arr = np.array(problem_size)
+    if cached_problem_size_arr.size != problem_size_arr.size or not (cached_problem_size_arr == problem_size_arr).all():
+        raise ValueError(
+            f"Cannot load cache which contains results for different problem_size, cache: {cached_problem_size}, requested: {problem_size}"
+        )
+
+
+def process_cache(cachefile, kernel_options, tuning_options, runner):
     """Cache file for storing tuned configurations.
 
     the cache file is stored using JSON and uses the following format:
@@ -1218,13 +1408,15 @@ def process_cache(cache, kernel_options, tuning_options, runner):
     if not isinstance(tuning_options.tune_params, dict):
         raise ValueError("Caching only works correctly when tunable parameters are stored in a dictionary")
 
+    device_name = runner.get_device_info().name
+
     # if file does not exist, create new cache
-    if not os.path.isfile(cache):
+    if not os.path.isfile(cachefile):
         if tuning_options.simulation_mode:
-            raise ValueError(f"Simulation mode requires an existing cachefile: file {cache} does not exist")
+            raise ValueError(f"Simulation mode requires an existing cachefile: file {cachefile} does not exist")
 
         c = dict()
-        c["device_name"] = runner.dev.name
+        c["device_name"] = device_name
         c["kernel_name"] = kernel_options.kernel_name
         c["problem_size"] = kernel_options.problem_size if not callable(kernel_options.problem_size) else "callable"
         c["tune_params_keys"] = list(tuning_options.tune_params.keys())
@@ -1235,46 +1427,33 @@ def process_cache(cache, kernel_options, tuning_options, runner):
         contents = json.dumps(c, cls=NpEncoder, indent="")[:-3]  # except the last "}\n}"
 
         # write the header to the cachefile
-        with open(cache, "w") as cachefile:
-            cachefile.write(contents)
+        with open(cachefile, "w") as f:
+            f.write(contents)
 
-        tuning_options.cachefile = cache
-        tuning_options.cache = {}
+        return {}
 
     # if file exists
     else:
-        cached_data = read_cache(
-            cache, not tuning_options.simulation_mode
-        )  # don't open the cache in (parallel) simulation mode to avoid race conditions
+        cached_data = read_cache(cachefile, open_cache=not tuning_options.simulation_mode)
 
         # if in simulation mode, use the device name from the cache file as the runner device name
         if runner.simulation_mode:
-            runner.dev.name = cached_data["device_name"]
+            device_name = cached_data["device_name"]
+
+            # Is this always safe?
+            runner.dev.name = device_name
 
         # check if it is safe to continue tuning from this cache
-        if cached_data["device_name"] != runner.dev.name:
+        if cached_data["device_name"] != device_name:
             raise ValueError(
-                f"Cannot load cache which contains results for different device (cache: {cached_data['device_name']}, actual: {runner.dev.name})"
+                f"Cannot load cache which contains results for different device (cache: {cached_data['device_name']}, actual: {device_name})"
             )
         if cached_data["kernel_name"] != kernel_options.kernel_name:
             raise ValueError(
                 f"Cannot load cache which contains results for different kernel (cache: {cached_data['kernel_name']}, actual: {kernel_options.kernel_name})"
             )
         if "problem_size" in cached_data and not callable(kernel_options.problem_size):
-            # if it's a single value, convert to an array
-            if isinstance(cached_data["problem_size"], int):
-                cached_data["problem_size"] = [cached_data["problem_size"]]
-            # if problem_size is not iterable, compare directly
-            if not hasattr(kernel_options.problem_size, "__iter__"):
-                if cached_data["problem_size"] != kernel_options.problem_size:
-                    raise ValueError("Cannot load cache which contains results for different problem_size")
-            # else (problem_size is iterable)
-            # cache returns list, problem_size is likely a tuple. Therefore, the next check
-            # checks the equality of all items in the list/tuples individually
-            elif not all([i == j for i, j in zip(cached_data["problem_size"], kernel_options.problem_size)]):
-                raise ValueError(
-                    f"Cannot load cache which contains results for different problem_size ({cached_data['problem_size']=} != {kernel_options.problem_size=})"
-                )
+            check_matching_problem_size(cached_data["problem_size"], kernel_options.problem_size)
         if cached_data["tune_params_keys"] != list(tuning_options.tune_params.keys()):
             if all(key in tuning_options.tune_params for key in cached_data["tune_params_keys"]):
                 raise ValueError(
@@ -1284,17 +1463,16 @@ def process_cache(cache, kernel_options, tuning_options, runner):
                 )
             raise ValueError(
                 f"Cannot load cache which contains results obtained with different tunable parameters. \
-                Cache has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
+                Cache at '{cachefile}' has: {cached_data['tune_params_keys']}, tuning_options has: {list(tuning_options.tune_params.keys())}"
             )
 
-        tuning_options.cachefile = cache
-        tuning_options.cache = cached_data["cache"]
+        return cached_data["cache"]
 
 
-def correct_open_cache(cache, open_cache=True):
+def correct_open_cache(cachefile, open_cache=True):
     """If cache file was not properly closed, pretend it was properly closed."""
-    with open(cache, "r") as cachefile:
-        filestr = cachefile.read().strip()
+    with open(cachefile, "r") as f:
+        filestr = f.read().strip()
 
     # if file was not properly closed, pretend it was properly closed
     if len(filestr) > 0 and filestr[-3:] not in ["}\n}", "}}}"]:
@@ -1306,17 +1484,18 @@ def correct_open_cache(cache, open_cache=True):
     else:
         if open_cache:
             # if it was properly closed, open it for appending new entries
-            with open(cache, "w") as cachefile:
-                cachefile.write(filestr[:-3] + ",")
+            with open(cachefile, "w") as f:
+                f.write(filestr[:-3] + ",")
 
     return filestr
 
 
-def read_cache(cache, open_cache=True):
+def read_cache(cachefile, open_cache=True):
     """Read the cachefile into a dictionary, if open_cache=True prepare the cachefile for appending."""
-    filestr = correct_open_cache(cache, open_cache)
+    filestr = correct_open_cache(cachefile, open_cache)
 
     error_configs = {
+        "ErrorConfig": ErrorConfig(),
         "InvalidConfig": InvalidConfig(),
         "CompilationFailedConfig": CompilationFailedConfig(),
         "RuntimeFailedConfig": RuntimeFailedConfig(),
@@ -1325,32 +1504,36 @@ def read_cache(cache, open_cache=True):
     # replace strings with ErrorConfig instances
     cache_data = json.loads(filestr)
     for element in cache_data["cache"].values():
+        error = None
         for k, v in element.items():
             if isinstance(v, str) and v in error_configs:
-                element[k] = error_configs[v]
+                # This makes sure the old cache file format can still be used.
+                error = error_configs[v]
+        if error is not None:
+            element["__error__"] = error
 
     return cache_data
 
 
-def close_cache(cache):
-    if not os.path.isfile(cache):
+def close_cache(cachefile):
+    if not os.path.isfile(cachefile):
         raise ValueError("close_cache expects cache file to exist")
 
-    with open(cache, "r") as fh:
+    with open(cachefile, "r") as fh:
         contents = fh.read()
 
     # close to file to make sure it can be read by JSON parsers
     if contents[-1] == ",":
-        with open(cache, "w") as fh:
+        with open(cachefile, "w") as fh:
             fh.write(contents[:-1] + "}\n}")
 
 
-def store_cache(key, params, tuning_options):
+def store_cache(key, params, cachefile, cache):
     """Stores a new entry (key, params) to the cachefile."""
     # logging.debug('store_cache called, cache=%s, cachefile=%s' % (tuning_options.cache, tuning_options.cachefile))
-    if isinstance(tuning_options.cache, dict):
-        if key not in tuning_options.cache:
-            tuning_options.cache[key] = params
+    if isinstance(cache, dict):
+        if key not in cache:
+            cache[key] = params
 
             # Convert ErrorConfig objects to string, wanted to do this inside the JSONconverter but couldn't get it to work
             output_params = params.copy()
@@ -1358,9 +1541,9 @@ def store_cache(key, params, tuning_options):
                 if isinstance(v, ErrorConfig):
                     output_params[k] = str(v)
 
-            if tuning_options.cachefile:
-                with open(tuning_options.cachefile, "a") as cachefile:
-                    cachefile.write("\n" + json.dumps({key: output_params}, cls=NpEncoder)[1:-1] + ",")
+            if cachefile:
+                with open(cachefile, "a") as f:
+                    f.write("\n" + json.dumps({key: output_params}, cls=NpEncoder)[1:-1] + ",")
 
 
 def dump_cache(obj: str, tuning_options):
@@ -1370,17 +1553,60 @@ def dump_cache(obj: str, tuning_options):
             cachefile.write(obj)
 
 
-def cuda_error_check(error):
-    """Checking the status of CUDA calls using the NVIDIA cuda-python backend."""
-    if isinstance(error, cuda.CUresult):
-        if error != cuda.CUresult.CUDA_SUCCESS:
-            _, name = cuda.cuGetErrorName(error)
-            raise RuntimeError(f"CUDA error: {name.decode()}")
-    elif isinstance(error, cudart.cudaError_t):
-        if error != cudart.cudaError_t.cudaSuccess:
-            _, name = cudart.getErrorName(error)
-            raise RuntimeError(f"CUDART error: {name.decode()}")
-    elif isinstance(error, nvrtc.nvrtcResult):
-        if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
-            _, desc = nvrtc.nvrtcGetErrorString(error)
-            raise RuntimeError(f"NVRTC error: {desc.decode()}")
+def possible_julia_vector_to_list(obj):
+    """Convert a Julia vector to a Python list if needed."""
+    if "VectorValue" in str(type(obj)):
+        l = list(obj)
+        l = [possible_julia_vector_to_list(e) for e in l]
+        return l
+    return obj
+
+
+def is_julia_array(obj):
+    """Check if an object is a Julia array."""
+    return any([name in str(type(obj)) for name in ["ArrayValue", "VectorValue", "MatrixValue"]])
+
+
+def julia_list_of_pairs_to_dict(params):
+    if isinstance(params, dict) or "DictValue" in str(type(params)):
+        raise ValueError(
+            f"params {params} should not be a Julia dict, because it does not preserve order. Use a list of pairs instead."
+        )
+    params = [tuple([k, possible_julia_vector_to_list(tp)]) for k, tp in params]
+    params = dict(params)
+    return params
+
+
+def infer_restrictions_from_cache(cache: dict):
+    param_names = cache["tune_params_keys"]
+    valid_param_config_set = set(
+        tuple(result[param_name] for param_name in param_names)
+        for result in cache["cache"].values()
+        if "__error__" not in result
+    )
+
+    def restrictions_func(*param_values) -> bool:
+        nonlocal valid_param_config_set
+        return param_values in valid_param_config_set
+
+    return FunctionConstraint(restrictions_func)
+
+
+def infer_args_from_cache(cache: dict) -> dict:
+    prob_size = cache["problem_size"]
+    if isinstance(prob_size, str):
+        raise ValueError(
+            "Inferring kernel arguments from cache file that used callable for problem size is not possible"
+        )
+    elif isinstance(prob_size, int):
+        prob_size = (prob_size,)
+
+    inferred_args = dict(
+        kernel_name=cache["kernel_name"],
+        kernel_source="",
+        problem_size=tuple(prob_size),
+        arguments=[],
+        tune_params=cache["tune_params"],
+    )
+
+    return inferred_args

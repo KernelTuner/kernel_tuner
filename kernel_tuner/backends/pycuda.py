@@ -1,4 +1,5 @@
 """This module contains all CUDA specific kernel_tuner functions."""
+
 from __future__ import print_function
 
 import logging
@@ -97,16 +98,12 @@ class PyCudaFunctions(GPUBackend):
             PyCudaFunctions.last_selected_context = self.context
 
         # inspect device properties
-        devprops = {
-            str(k): v for (k, v) in self.context.get_device().get_attributes().items()
-        }
+        devprops = {str(k): v for (k, v) in self.context.get_device().get_attributes().items()}
         self.max_threads = devprops["MAX_THREADS_PER_BLOCK"]
-        cc = str(devprops.get("COMPUTE_CAPABILITY_MAJOR", "0")) + str(
-            devprops.get("COMPUTE_CAPABILITY_MINOR", "0")
-        )
+        cc = str(devprops.get("COMPUTE_CAPABILITY_MAJOR", "0")) + str(devprops.get("COMPUTE_CAPABILITY_MINOR", "0"))
         if cc == "00":
             cc = self.context.get_device().compute_capability()
-        self.cc = str(cc[0]) + str(cc[1])
+        self.cc = str(cc)
         self.iterations = iterations
         self.current_module = None
         self.func = None
@@ -130,15 +127,10 @@ class PyCudaFunctions(GPUBackend):
         # default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
 
-        # setup observers
-        self.observers = observers or []
-        self.observers.append(PyCudaRuntimeObserver(self))
-        for obs in self.observers:
-            obs.register_device(self)
-
         # collect environment information
         env = dict()
         env["device_name"] = self.context.get_device().name()
+        env["pci_bus_id"] = self.context.get_device().pci_bus_id()
         env["cuda_version"] = ".".join([str(i) for i in drv.get_version()])
         env["compute_capability"] = self.cc
         env["iterations"] = self.iterations
@@ -146,6 +138,12 @@ class PyCudaFunctions(GPUBackend):
         env["device_properties"] = devprops
         self.env = env
         self.name = env["device_name"]
+
+        # setup observers
+        self.observers = observers or []
+        self.observers.append(PyCudaRuntimeObserver(self))
+        for obs in self.observers:
+            obs.register_device(self)
 
     def __del__(self):
         for gpu_mem in self.allocations:
@@ -180,6 +178,9 @@ class PyCudaFunctions(GPUBackend):
             # pycuda does not support bool, convert to uint8 instead
             elif isinstance(arg, np.bool_):
                 gpu_args.append(arg.astype(np.uint8))
+            # pycuda does not support 16-bit formats, view them as uint16
+            elif isinstance(arg, np.generic) and str(arg.dtype) in ("float16", "bfloat16"):
+                gpu_args.append(arg.view(np.uint16))
             # if not an array, just pass argument along
             else:
                 gpu_args.append(arg)
@@ -347,14 +348,7 @@ class PyCudaFunctions(GPUBackend):
         """
         if stream is None:
             stream = self.stream
-        func(
-            *gpu_args,
-            block=threads,
-            grid=grid,
-            stream=stream,
-            shared=self.smem_size,
-            texrefs=self.texrefs
-        )
+        func(*gpu_args, block=threads, grid=grid, stream=stream, shared=self.smem_size, texrefs=self.texrefs)
 
     def memset(self, allocation, value, size):
         """Set the memory in allocation to the value in value.

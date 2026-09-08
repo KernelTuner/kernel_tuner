@@ -12,7 +12,7 @@ except ImportError:
 class PowerSensorObserver(BenchmarkObserver):
     """Observer that an external PowerSensor2 device to accurately measure power
 
-    Requires PowerSensor2 hardware and powersensor Python bindings.
+    Requires PowerSensor3 hardware and powersensor Python bindings.
 
     :param observables: A list of string, containing any of "ps_energy" or "ps_power".
         To measure energy in Joules or power consumption in Watt.
@@ -51,9 +51,8 @@ class PowerSensorObserver(BenchmarkObserver):
             )  # Joules
             self.results["ps_energy"].append(ps_measured_e)
         if "ps_power" in self.observables:
-            ps_measured_t = (
-                    end_state.time_at_read - self.begin_state.time_at_read
-            )  # seconds
+            ps_measured_t = ((end_state.time_at_read - self.begin_state.time_at_read).microseconds / 1e6)    # Seconds
+
             self.results["ps_power"].append(ps_measured_e / ps_measured_t)  # Watt
 
     def get_results(self):

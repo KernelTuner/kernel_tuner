@@ -13,7 +13,7 @@ from scipy.stats.qmc import LatinHypercube
 
 # BO imports
 from kernel_tuner.searchspace import Searchspace
-from kernel_tuner.strategies.common import CostFunc
+from kernel_tuner.strategies.common import CostFunc, get_options
 from kernel_tuner.util import StopCriterionReached
 
 try:
@@ -24,9 +24,25 @@ try:
 except ImportError:
     bayes_opt_present = False
 
-from kernel_tuner import util
-
 supported_methods = ["poi", "ei", "lcb", "lcb-srinivas", "multi", "multi-advanced", "multi-fast", "multi-ultrafast"]
+
+# _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
+_options = dict(
+    covariancekernel=(
+        'The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"',
+        "matern32",
+    ),
+    covariancelengthscale=("The covariance length scale", 1.5),
+    method=(
+        "The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods),
+        "multi-ultrafast",
+    ),
+    samplingmethod=(
+        "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
+        "lhs",
+    ),
+    popsize=("Number of initial samples", 20),
+)
 
 
 def generate_normalized_param_dicts(tune_params: dict, eps: float) -> Tuple[dict, dict]:
@@ -94,6 +110,9 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     :rtype: list(dict()), dict()
 
     """
+    # we don't actually use this for Bayesian Optimization, but it is used to check for unsupported options
+    get_options(tuning_options.strategy_options, _options, unsupported=["x0"])
+
     max_fevals = tuning_options.strategy_options.get("max_fevals", 100)
     prune_parameterspace = tuning_options.strategy_options.get("pruneparameterspace", True)
     if not bayes_opt_present:
@@ -107,19 +126,8 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     _, _, eps = cost_func.get_bounds_x0_eps()
 
     # compute cartesian product of all tunable parameters
-    parameter_space = itertools.product(*tune_params.values())
-
-    # check for search space restrictions
-    if searchspace.restrictions is not None:
-        tuning_options.verbose = False
-    parameter_space = filter(lambda p: util.config_valid(p, tuning_options, runner.dev.max_threads), parameter_space)
-    parameter_space = list(parameter_space)
-    if len(parameter_space) < 1:
-        raise ValueError("Empty parameterspace after restrictionscheck. Restrictionscheck is possibly too strict.")
-    if len(parameter_space) == 1:
-        raise ValueError(
-            f"Only one configuration after restrictionscheck. Restrictionscheck is possibly too strict. Configuration: {parameter_space[0]}"
-        )
+    # TODO actually use the Searchspace object properly throughout Bayesian Optimization
+    parameter_space = searchspace.list
 
     # normalize search space to [0,1]
     normalize_dict, denormalize_dict = generate_normalized_param_dicts(tune_params, eps)
@@ -137,7 +145,13 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     # initialize and optimize
     try:
         bo = BayesianOptimization(
-            parameter_space, removed_tune_params, tuning_options, normalize_dict, denormalize_dict, cost_func
+            parameter_space,
+            searchspace,
+            removed_tune_params,
+            tuning_options,
+            normalize_dict,
+            denormalize_dict,
+            cost_func,
         )
     except StopCriterionReached:
         warnings.warn(
@@ -149,36 +163,18 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         if max_fevals - bo.fevals <= 0:
             raise ValueError("No function evaluations left for optimization after sampling")
         bo.optimize(max_fevals)
-    except util.StopCriterionReached as e:
+    except StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
 
     return cost_func.results
 
 
-# _options dict is used for generating documentation, but is not used to check for unsupported strategy_options in bayes_opt
-_options = dict(
-    covariancekernel=(
-        'The Covariance kernel to use, choose any from "constantrbf", "rbf", "matern32", "matern52"',
-        "matern32",
-    ),
-    covariancelengthscale=("The covariance length scale", 1.5),
-    method=(
-        "The Bayesian Optimization method to use, choose any from " + ", ".join(supported_methods),
-        "multi-ultrafast",
-    ),
-    samplingmethod=(
-        "Method used for initial sampling the parameter space, either random or Latin Hypercube Sampling (LHS)",
-        "lhs",
-    ),
-    popsize=("Number of initial samples", 20),
-)
-
-
 class BayesianOptimization:
     def __init__(
         self,
         searchspace: list,
+        searchspace_obj: Searchspace,
         removed_tune_params: list,
         tuning_options: dict,
         normalize_dict: dict,
@@ -241,7 +237,7 @@ class BayesianOptimization:
             self.worst_value = np.inf
             self.argopt = np.argmin
         elif opt_direction == "max":
-            self.worst_value = np.NINF
+            self.worst_value = -np.inf
             self.argopt = np.argmax
         else:
             raise ValueError("Invalid optimization direction '{}'".format(opt_direction))
@@ -256,6 +252,7 @@ class BayesianOptimization:
 
         # set remaining values
         self.__searchspace = searchspace
+        self.__searchspace_obj = searchspace_obj
         self.removed_tune_params = removed_tune_params
         self.searchspace_size = len(self.searchspace)
         self.num_dimensions = len(self.dimensions())
@@ -271,7 +268,6 @@ class BayesianOptimization:
         self.__valid_observations = list()
         self.unvisited_cache = self.unvisited()
         time_setup = time.perf_counter_ns()
-        self.error_message_searchspace_fully_observed = "The search space has been fully observed"
 
         # take initial sample
         if self.num_initial_samples > 0:
@@ -459,11 +455,38 @@ class BayesianOptimization:
         """Update the model based on the current list of observations."""
         self.__model.fit(self.__valid_params, self.__valid_observations)
 
+    def evaluate_parallel_objective_function(self, param_configs: list[tuple]) -> list[float]:
+        """Evaluates the objective function for multiple configurations in parallel."""
+        results = []
+        valid_param_configs = []
+        valid_indices = []
+
+        # Extract the valid configurations
+        for param_config in param_configs:
+            param_config = self.unprune_param_config(param_config)
+            denormalized_param_config = self.denormalize_param_config(param_config)
+            if not self.__searchspace_obj.is_param_config_valid(denormalized_param_config):
+                results.append(self.invalid_value)
+            else:
+                valid_indices.append(len(results))
+                results.append(None)
+                valid_param_configs.append(param_config)
+
+        # Run valid configurations in parallel
+        scores = self.cost_func.eval_all(valid_param_configs)
+
+        # Put the scores at the right location in the result
+        for idx, score in zip(valid_indices, scores):
+            results[idx] = score
+            
+        self.fevals += len(scores)
+        return results
+
     def evaluate_objective_function(self, param_config: tuple) -> float:
         """Evaluates the objective function."""
         param_config = self.unprune_param_config(param_config)
         denormalized_param_config = self.denormalize_param_config(param_config)
-        if not util.config_valid(denormalized_param_config, self.tuning_options, self.max_threads):
+        if not self.__searchspace_obj.is_param_config_valid(denormalized_param_config):
             return self.invalid_value
         val = self.cost_func(param_config)
         self.fevals += 1
@@ -504,8 +527,11 @@ class BayesianOptimization:
             normalized_param_config = self.normalize_param_config(param_config)
             try:
                 index = self.find_param_config_index(normalized_param_config)
-                indices.append(index)
-                normalized_param_configs.append(normalized_param_config)
+
+                # returned indices must not contain duplicates
+                if index not in indices:
+                    indices.append(index)
+                    normalized_param_configs.append(normalized_param_config)
             except ValueError:
                 """With search space restrictions, the search space may not be a cartesian product of parameter values.
                 It is thus possible for LHS to generate a parameter combination that is not in the actual searchspace.
@@ -572,7 +598,7 @@ class BayesianOptimization:
         """Find the next best candidate configuration(s), evaluate those and update the model accordingly."""
         while self.fevals < max_fevals:
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError(self.error_message_searchspace_fully_observed)
+                break
             predictions, _, std = self.predict_list(self.unvisited_cache)
             hyperparam = self.contextual_variance(std)
             list_of_acquisition_values = self.__af(predictions, hyperparam)
@@ -611,7 +637,7 @@ class BayesianOptimization:
             predictions, _, std = self.predict_list(self.unvisited_cache)
             hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError(self.error_message_searchspace_fully_observed)
+                break
             time_predictions = time.perf_counter_ns()
             actual_candidate_params = list()
             actual_candidate_indices = list()
@@ -727,7 +753,7 @@ class BayesianOptimization:
             if single_af:
                 return self.__optimize(max_fevals)
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError(self.error_message_searchspace_fully_observed)
+                break
             observations_median = np.median(self.__valid_observations)
             if increase_precision is False:
                 predictions, _, std = self.predict_list(self.unvisited_cache)
@@ -835,7 +861,7 @@ class BayesianOptimization:
             predictions, _, std = self.predict_list(self.unvisited_cache)
             hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError(self.error_message_searchspace_fully_observed)
+                break
             for af in aqfs:
                 if self.__visited_num >= self.searchspace_size or self.fevals >= max_fevals:
                     break
@@ -860,10 +886,11 @@ class BayesianOptimization:
         while self.fevals < max_fevals:
             aqfs = self.multi_afs
             # if we take the prediction only once, we want to go from most exploiting to most exploring, because the more exploiting an AF is, the more it relies on non-stale information from the model
-            if (
+            fit_observations = (
                 last_prediction_time * predict_eval_ratio <= last_eval_time
                 or last_prediction_counter >= predict_eval_ratio
-            ):
+            )
+            if fit_observations:
                 last_prediction_counter = 0
                 pred_start = time.perf_counter()
                 if last_eval_time > 0.0:
@@ -875,7 +902,7 @@ class BayesianOptimization:
             eval_start = time.perf_counter()
             hyperparam = self.contextual_variance(std)
             if self.__visited_num >= self.searchspace_size:
-                raise ValueError(self.error_message_searchspace_fully_observed)
+                break
             for af in aqfs:
                 if self.__visited_num >= self.searchspace_size or self.fevals >= max_fevals:
                     break

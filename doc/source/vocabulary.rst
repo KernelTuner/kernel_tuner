@@ -13,19 +13,24 @@ In general, it is best to avoid using these parameter names for purposes other t
 
 .. code-block:: python
 
-    kernel_tuner #is inserted by Kernel Tuner to signal the code is compiled using the tuner
+    kernel_tuner # is inserted by Kernel Tuner to signal the code is compiled using the tuner
 
-    block_size_* #reserved for thread block dimensions
-    grid_size_* #reserved for grid dimensions, if you want to tune these use problem_size
+    block_size_* # reserved for thread block dimensions
+    grid_size_* # reserved for grid dimensions, if you want to tune these use problem_size
 
-    compiler_opt_* #reserved for future support for tuning compiler options
+    compiler_opt_* # reserved for future support for tuning compiler options
 
-    loop_unroll_factor_* #reserved for tunable parameters that specify loop unrolling factors
+    loop_unroll_factor_* # reserved for tunable parameters that specify loop unrolling factors
 
-    nvml_* #reserved for tunable parameters and outputs related to NVML
-    nvml_pwr_limit #use NVML to set power limit
-    nvml_gr_clock #use NVML to set graphics clock
-    nvml_mem_clock #use NVML to set memory clock
+    nvml_* # reserved for tunable parameters and outputs related to NVML
+    nvml_pwr_limit # use NVML to set power limit
+    nvml_gr_clock # use NVML to set graphics clock
+    nvml_mem_clock # use NVML to set memory clock
+
+    cuda_* # reserved for setting parameters related to CUDA kernel execution
+    cuda_sm_percentage # set the percentage of active SMs (requires cuda-python)
+
+
 
 
 There are also a number of names that Kernel Tuner uses for reporting benchmarking results. 
@@ -33,7 +38,7 @@ Because these are reported along with the tunable parameters, it is generally a 
 
 .. code-block:: python
 
-    time* #reserved for time measurements
+    time* # reserved for time measurements
 
     # Information that can be observed using kernel_tuner.nvml.NVMLObserver:
     nvml_energy

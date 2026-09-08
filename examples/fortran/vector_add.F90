@@ -17,11 +17,11 @@ subroutine vector_add(C, A, B, n)
     real (c_float), intent(in), dimension(N) :: A, B
     integer (c_int), intent(in) :: n
 
-    !$OMP parallel do
+    !$omp parallel do
     do i = 1, N
       C(i) = A(i) + B(i)
     end do
-    !$OMP end parallel do
+    !$omp end parallel do
 
 end subroutine vector_add
 

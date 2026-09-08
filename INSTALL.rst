@@ -125,7 +125,7 @@ Or you could install Kernel Tuner and PyOpenCL together if you haven't done so a
 If this fails, please see the PyOpenCL installation guide (https://wiki.tiker.net/PyOpenCL/Installation)
 
 HIP and HIP Python
--------------
+------------------
 
 Before we can install HIP Python, you'll need to have the HIP runtime and compiler installed on your system.
 The HIP compiler is included as part of the ROCm software stack. Here is AMD's installation guide:

@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 # import data from pyproject.toml using https://github.com/sphinx-toolbox/sphinx-pyproject
 # additional data can be added with `[tool.sphinx-pyproject]` and retrieved with `config['']`.
 config = SphinxConfig(
-    "../../pyproject.toml", style="poetry"
+    "../../pyproject.toml",
 )  # add `, globalns=globals()` to directly insert in namespace
 year = time.strftime("%Y")
 startyear = "2016"

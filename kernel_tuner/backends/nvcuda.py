@@ -1,22 +1,57 @@
 """This module contains all NVIDIA cuda-python specific kernel_tuner functions."""
-from warnings import warn
 
 import numpy as np
+import uuid
+import os
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.nvcuda import CudaRuntimeObserver
-from kernel_tuner.util import SkippableFailure, cuda_error_check, to_valid_nvrtc_gpu_arch_cc
+from kernel_tuner.util import SkippableFailure
+from kernel_tuner.utils.nvcuda import cuda_error_check, to_valid_nvrtc_gpu_arch_cc, find_cuda_home, _check
+
+def preload_python_nvrtc():
+    """Preload the libnvrtc.so library into the process memory to avoid conflicts with Julia's artifacts."""
+
+    import ctypes as ct
+    import sysconfig
+
+    # search site-packages for nvidia-cuda-nvrtc wheels
+    site_packages = sysconfig.get_paths()["purelib"]
+    nvidia_path = os.path.join(site_packages, "nvidia", "nvrtc", "lib")
+    
+    # fall back to CUDA_HOME / CUDA_PATH if present
+    cuda_home = os.environ.get("CUDA_HOME") or os.environ.get("CUDA_PATH")
+    cuda_home_lib = os.path.join(cuda_home, "lib64") if cuda_home else None
+
+    # search for libnvrtc.so in the search directories and load it into process memory
+    search_dirs = [nvidia_path, cuda_home_lib]
+    for d in search_dirs:
+        if d and os.path.exists(d):
+            for file in os.listdir(d):
+                if file.startswith("libnvrtc.so"):
+                    full_path = os.path.join(d, file)
+                    # force load into process memory before Julia loads its artifacts
+                    ct.CDLL(full_path, mode=ct.RTLD_GLOBAL)
+                    return True
+    return False
 
 # embedded in try block to be able to generate documentation
 # and run tests without cuda-python installed
 try:
-    from cuda import cuda, cudart, nvrtc
+    from cuda.bindings import driver, nvrtc, runtime
+    preload_python_nvrtc()
 except ImportError:
-    cuda = None
+    try:
+        # backward compatibility hack for older cuda-python versions
+        from cuda import cuda as driver
+        from cuda import cudart as runtime
+        from cuda import nvrtc as nvrtc
+    except ImportError:
+        driver = None
 
 
 class CudaFunctions(GPUBackend):
-    """Class that groups the Cuda functions on maintains state about the device."""
+    """Class that groups the Cuda functions and it maintains state about the device."""
 
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
         """Instantiate CudaFunctions object used for interacting with the CUDA device.
@@ -38,34 +73,30 @@ class CudaFunctions(GPUBackend):
         """
         self.allocations = []
         self.texrefs = []
-        if not cuda:
+        if not driver:
             raise ImportError(
                 "cuda-python not installed, install using 'pip install cuda-python', or check https://kerneltuner.github.io/kernel_tuner/stable/install.html#cuda-and-pycuda."
             )
 
         # initialize and select device
-        err = cuda.cuInit(0)
+        err = driver.cuInit(0)
         cuda_error_check(err)
-        err, self.device = cuda.cuDeviceGet(device)
+        err, self.device = driver.cuDeviceGet(device)
         cuda_error_check(err)
-        err, self.context = cuda.cuDevicePrimaryCtxRetain(device)
+        err, self.context = driver.cuDevicePrimaryCtxRetain(device)
         cuda_error_check(err)
         if CudaFunctions.last_selected_device != device:
-            err = cuda.cuCtxSetCurrent(self.context)
+            err = driver.cuCtxSetCurrent(self.context)
             cuda_error_check(err)
             CudaFunctions.last_selected_device = device
 
         # compute capabilities and device properties
-        err, major = cudart.cudaDeviceGetAttribute(
-            cudart.cudaDeviceAttr.cudaDevAttrComputeCapabilityMajor, device
-        )
+        err, major = runtime.cudaDeviceGetAttribute(runtime.cudaDeviceAttr.cudaDevAttrComputeCapabilityMajor, device)
         cuda_error_check(err)
-        err, minor = cudart.cudaDeviceGetAttribute(
-            cudart.cudaDeviceAttr.cudaDevAttrComputeCapabilityMinor, device
-        )
+        err, minor = runtime.cudaDeviceGetAttribute(runtime.cudaDeviceAttr.cudaDevAttrComputeCapabilityMinor, device)
         cuda_error_check(err)
-        err, self.max_threads = cudart.cudaDeviceGetAttribute(
-            cudart.cudaDeviceAttr.cudaDevAttrMaxThreadsPerBlock, device
+        err, self.max_threads = runtime.cudaDeviceGetAttribute(
+            runtime.cudaDeviceAttr.cudaDevAttrMaxThreadsPerBlock, device
         )
         cuda_error_check(err)
         self.cc = f"{major}{minor}"
@@ -73,20 +104,41 @@ class CudaFunctions(GPUBackend):
         self.current_module = None
         self.func = None
         self.compiler_options = compiler_options or []
-        self.compiler_options_bytes = []
-        for option in self.compiler_options:
-            self.compiler_options_bytes.append(str(option).encode("UTF-8"))
 
         # create a stream and events
-        err, self.stream = cuda.cuStreamCreate(0)
+        err, self.stream = driver.cuStreamCreate(0)
         cuda_error_check(err)
-        err, self.start = cuda.cuEventCreate(0)
+        err, self.start = driver.cuEventCreate(0)
         cuda_error_check(err)
-        err, self.end = cuda.cuEventCreate(0)
+        err, self.end = driver.cuEventCreate(0)
         cuda_error_check(err)
+        self.current_sm_percentage = 100
+        self.green_ctx_cache = {}
+        self.green_ctx = None
 
         # default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
+
+        # collect environment information
+        err, device_properties = runtime.cudaGetDeviceProperties(device)
+        cuda_error_check(err)
+        env = dict()
+        env["uuid"] = str(uuid.UUID(bytes=device_properties.uuid.bytes))
+        env["device_name"] = device_properties.name.decode()
+        env["cuda_version"] = driver.CUDA_VERSION
+        env["compute_capability"] = self.cc
+        env["iterations"] = self.iterations
+        env["compiler_options"] = self.compiler_options
+        env["device_properties"] = str(device_properties).replace("\n", ", ")
+
+        # We must use `cudaDeviceGetPCIBusId` to get the PCI bus string
+        # It returns a series of bytes containing a null byte, not a `str`
+        err, pci_bus = runtime.cudaDeviceGetPCIBusId(32, device) # 32 = length?
+        cuda_error_check(err)
+        env["pci_bus_id"] = pci_bus.decode("ascii").split("\x00", 1)[0]
+
+        self.env = env
+        self.name = env["device_name"]
 
         # setup observers
         self.observers = observers or []
@@ -94,24 +146,85 @@ class CudaFunctions(GPUBackend):
         for observer in self.observers:
             observer.register_device(self)
 
-        # collect environment information
-        err, device_properties = cudart.cudaGetDeviceProperties(device)
-        cuda_error_check(err)
-        env = dict()
-        env["device_name"] = device_properties.name.decode()
-        env["cuda_version"] = cuda.CUDA_VERSION
-        env["compute_capability"] = self.cc
-        env["iterations"] = self.iterations
-        env["compiler_options"] = self.compiler_options
-        env["device_properties"] = str(device_properties).replace("\n", ", ")
-        self.env = env
-        self.name = env["device_name"]
-
     def __del__(self):
+        # Cleanup streams and green contexts, if any
+        if self.green_ctx_cache:
+            for val in self.green_ctx_cache.values():
+                green_ctx, stream, _ = val
+                _check(driver.cuStreamDestroy(stream))
+                _check(driver.cuGreenCtxDestroy(green_ctx))
+
+        # Cleanup
         for device_memory in self.allocations:
-            if isinstance(device_memory, cuda.CUdeviceptr):
-                err = cuda.cuMemFree(device_memory)
-                cuda_error_check(err)
+            if isinstance(device_memory, driver.CUdeviceptr):
+                _check(driver.cuMemFree(device_memory))
+
+
+    def set_sm_percentage(self, sm_percentage):
+        """ Set the active SM percentage
+
+        Create a CUDA green context owning ~`sm_percentage` of the device's SMs
+        and a stream bound to it. Kernels launched afterwards are restricted
+        to that SM partition. Green contexts are cached in self.green_ctx_cache.
+        The actual number of SMs in the partition may not exactly match the
+        requested percentage. An observer may be used to query:
+
+         *   Currently assigned number of SMs: self.assigned_sm_count
+         *   Currently requested SM percentage: self.current_sm_percentage
+
+        Requires: CUDA >= 12.4 and a GPU that supports SM partitioning.
+        """
+
+        if not 0 < sm_percentage <= 100:
+            raise ValueError("sm_percentage must be in (0, 100]")
+
+        # Check if sm_percentage is already applied
+        if sm_percentage == self.current_sm_percentage:
+            return
+
+        # Check if this sm_percentage has been requested before
+        if sm_percentage in self.green_ctx_cache:
+            self.green_ctx, self.stream, self.assigned_sm_count = self.green_ctx_cache[sm_percentage]
+            self.current_sm_percentage = sm_percentage
+            return
+
+        # Get total SMs and desired percentage
+        total_sms = _check(driver.cuDeviceGetAttribute(
+            driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, self.device))
+        want = max(1, round(total_sms * sm_percentage / 100.0))
+
+        # Full SM resource pool of the device.
+        sm_resource = _check(driver.cuDeviceGetDevResource(
+            self.device, driver.CUdevResourceType.CU_DEV_RESOURCE_TYPE_SM))
+
+        # Split off one group of at least `want` SMs. The driver rounds up to the
+        # device's partitioning granularity, so the actual count may be larger.
+        groups, _nb, _remaining = _check(driver.cuDevSmResourceSplitByCount(
+            1,            # number of groups requested
+            sm_resource,  # input resource
+            0,            # useFlags (0 = default)
+            want,         # minCount of SMs per group
+        ))
+        group = groups[0]
+        assigned = group.sm.smCount
+
+        # Descriptor -> green context.
+        desc = _check(driver.cuDevResourceGenerateDesc([group], 1))
+        green_ctx = _check(driver.cuGreenCtxCreate(
+            desc, self.device, driver.CUgreenCtxCreate_flags.CU_GREEN_CTX_DEFAULT_STREAM))
+
+        # A stream from the green context confines launches to its SMs.
+        stream = _check(driver.cuGreenCtxStreamCreate(
+            green_ctx,
+            driver.CUstream_flags.CU_STREAM_NON_BLOCKING,
+            0,  # priority
+        ))
+        self.green_ctx_cache[sm_percentage] = (green_ctx, stream, assigned)
+        self.green_ctx = green_ctx
+        self.stream = stream
+        self.assigned_sm_count = assigned
+        self.current_sm_percentage = sm_percentage
+
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.
@@ -128,7 +241,7 @@ class CudaFunctions(GPUBackend):
         for arg in arguments:
             # if arg is a numpy array copy it to device
             if isinstance(arg, np.ndarray):
-                err, device_memory = cuda.cuMemAlloc(arg.nbytes)
+                err, device_memory = driver.cuMemAlloc(arg.nbytes)
                 cuda_error_check(err)
                 self.allocations.append(device_memory)
                 gpu_args.append(device_memory)
@@ -137,6 +250,7 @@ class CudaFunctions(GPUBackend):
             else:
                 gpu_args.append(arg)
         return gpu_args
+
 
     def compile(self, kernel_instance):
         """Call the CUDA compiler to compile the kernel, return the device function.
@@ -153,49 +267,64 @@ class CudaFunctions(GPUBackend):
         """
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
+        expression_name = str.encode(kernel_name)
+        compiler_options = list(self.compiler_options)
 
-        # mimic pycuda behavior to wrap kernel_string in extern "C" if not in kernel_string already
-        if 'extern "C"' not in kernel_string:
-            kernel_string = 'extern "C" {\n' + kernel_string + "\n}"
+        # Add -std=c++11
+        if not any(opt.startswith(("-std=", "--std=")) for opt in self.compiler_options):
+            compiler_options.append("--std=c++11")
 
-        compiler_options = self.compiler_options_bytes
-        if not any([b"--std=" in opt for opt in compiler_options]):
-            compiler_options.append(b"--std=c++11")
-        if not any(["--std=" in opt for opt in self.compiler_options]):
-            self.compiler_options.append("--std=c++11")
-        if not any([b"--gpu-architecture=" in opt or b"-arch" in opt for opt in compiler_options]):
-            compiler_options.append(
-                f"--gpu-architecture=compute_{to_valid_nvrtc_gpu_arch_cc(self.cc)}".encode("UTF-8")
-            )
-        if not any(["--gpu-architecture=" in opt or "-arch" in opt for opt in self.compiler_options]):
-            self.compiler_options.append(f"--gpu-architecture=compute_{to_valid_nvrtc_gpu_arch_cc(self.cc)}")
+        # Add -arch
+        if not any(opt.startswith(("-arch", "--arch", "--gpu-architecture=")) for opt in self.compiler_options):
+            arch_val = to_valid_nvrtc_gpu_arch_cc(self.cc)
+            compiler_options.append(f"--gpu-architecture=compute_{arch_val}")
 
-        err, program = nvrtc.nvrtcCreateProgram(
-            str.encode(kernel_string), b"CUDAProgram", 0, [], []
-        )
+        # Add CUDA home to include path
+        cuda_home = find_cuda_home()
+        if cuda_home:
+            cuda_include = os.path.join(cuda_home, "include")
+            compiler_options.append(f"-I{cuda_include}")
+
+        # nvrtcCompileProgram requires bytes instead of str
+        compiler_options = [str(opt).encode("UTF-8") for opt in compiler_options]
+
+        err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
         try:
+            # Add the kernel as an expression. This is necessary for templated kernels to ensure that the
+            # compiler actually instantiates the kernel that we want to compile.
             cuda_error_check(err)
-            err = nvrtc.nvrtcCompileProgram(
-                program, len(compiler_options), compiler_options
-            )
+            err = nvrtc.nvrtcAddNameExpression(program, expression_name)
+
+            # Compile the program
+            cuda_error_check(err)
+            err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
+
+            # Get the PTX
             cuda_error_check(err)
             err, size = nvrtc.nvrtcGetPTXSize(program)
             cuda_error_check(err)
             buff = b" " * size
             err = nvrtc.nvrtcGetPTX(program, buff)
             cuda_error_check(err)
-            err, self.current_module = cuda.cuModuleLoadData(np.char.array(buff))
-            if err == cuda.CUresult.CUDA_ERROR_INVALID_PTX:
+
+            # Load the module
+            err, self.current_module = driver.cuModuleLoadData(np.char.array(buff))
+            if err == driver.CUresult.CUDA_ERROR_INVALID_PTX:
                 raise SkippableFailure("uses too much shared data")
             else:
                 cuda_error_check(err)
-            err, self.func = cuda.cuModuleGetFunction(
-                self.current_module, str.encode(kernel_name)
+
+            # First, get the "lowered" name of the kernel (i.e., the name inside the PTX).
+            # After, we can use the lowered name to lookup the kernel in the module.
+            err, lowered_name = nvrtc.nvrtcGetLoweredName(program, expression_name)
+            cuda_error_check(err)
+            err, self.func = driver.cuModuleGetFunction(
+                self.current_module, lowered_name
             )
             cuda_error_check(err)
 
             # get the number of registers per thread used in this kernel
-            num_regs = cuda.cuFuncGetAttribute(cuda.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
+            num_regs = driver.cuFuncGetAttribute(driver.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
             assert num_regs[0] == 0, f"Retrieving number of registers per thread unsuccesful: code {num_regs[0]}"
             self.num_regs = num_regs[1]
 
@@ -210,18 +339,18 @@ class CudaFunctions(GPUBackend):
 
     def start_event(self):
         """Records the event that marks the start of a measurement."""
-        err = cudart.cudaEventRecord(self.start, self.stream)
+        err = runtime.cudaEventRecord(self.start, self.stream)
         cuda_error_check(err)
 
     def stop_event(self):
         """Records the event that marks the end of a measurement."""
-        err = cudart.cudaEventRecord(self.end, self.stream)
+        err = runtime.cudaEventRecord(self.end, self.stream)
         cuda_error_check(err)
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise."""
-        err = cudart.cudaEventQuery(self.end)
-        if err[0] == cudart.cudaError_t.cudaSuccess:
+        err = runtime.cudaEventQuery(self.end)
+        if err[0] == runtime.cudaError_t.cudaSuccess:
             return True
         else:
             return False
@@ -229,7 +358,7 @@ class CudaFunctions(GPUBackend):
     @staticmethod
     def synchronize():
         """Halts execution until device has finished its tasks."""
-        err = cudart.cudaDeviceSynchronize()
+        err = runtime.cudaDeviceSynchronize()
         cuda_error_check(err)
 
     def copy_constant_memory_args(self, cmem_args):
@@ -243,9 +372,9 @@ class CudaFunctions(GPUBackend):
         :type cmem_args: dict( string: numpy.ndarray, ... )
         """
         for k, v in cmem_args.items():
-            err, symbol, _ = cuda.cuModuleGetGlobal(self.current_module, str.encode(k))
+            err, symbol, _ = driver.cuModuleGetGlobal(self.current_module, str.encode(k))
             cuda_error_check(err)
-            err = cuda.cuMemcpyHtoD(symbol, v, v.nbytes)
+            err = driver.cuMemcpyHtoD(symbol, v, v.nbytes)
             cuda_error_check(err)
 
     def copy_shared_memory_args(self, smem_args):
@@ -284,12 +413,12 @@ class CudaFunctions(GPUBackend):
             stream = self.stream
         arg_types = list()
         for arg in gpu_args:
-            if isinstance(arg, cuda.CUdeviceptr):
+            if isinstance(arg, driver.CUdeviceptr):
                 arg_types.append(None)
             else:
                 arg_types.append(np.ctypeslib.as_ctypes_type(arg.dtype))
         kernel_args = (tuple(gpu_args), tuple(arg_types))
-        err = cuda.cuLaunchKernel(
+        err = driver.cuLaunchKernel(
             func,
             grid[0],
             grid[1],
@@ -318,7 +447,7 @@ class CudaFunctions(GPUBackend):
         :type size: int
 
         """
-        err = cudart.cudaMemset(allocation, value, size)
+        err = runtime.cudaMemset(allocation, value, size)
         cuda_error_check(err)
 
     @staticmethod
@@ -331,7 +460,7 @@ class CudaFunctions(GPUBackend):
         :param src: A GPU memory allocation unit
         :type src: cuda.CUdeviceptr
         """
-        err = cuda.cuMemcpyDtoH(dest, src, dest.nbytes)
+        err = driver.cuMemcpyDtoH(dest, src, dest.nbytes)
         cuda_error_check(err)
 
     @staticmethod
@@ -344,7 +473,7 @@ class CudaFunctions(GPUBackend):
         :param src: A numpy array in host memory to store the data
         :type src: numpy.ndarray
         """
-        err = cuda.cuMemcpyHtoD(dest, src, src.nbytes)
+        err = driver.cuMemcpyHtoD(dest, src, src.nbytes)
         cuda_error_check(err)
 
     units = {"time": "ms"}

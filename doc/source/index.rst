@@ -127,3 +127,68 @@ For referencing to Kernel Tuner's capabilities in measuring and optimizing energ
       year = {2022},
       url = {https://arxiv.org/abs/2211.07260}
     }
+
+
+For referencing to Kernel Tuner's capabilities super fast search space generation using constraint satisfaction problem solving, please cite the following:
+
+.. code:: latex
+
+    @inproceedings{willemsen2025efficient,
+      title={Efficient construction of large search spaces for auto-tuning},
+      author={Willemsen, Floris-Jan and van Nieuwpoort, Rob V and van Werkhoven, Ben},
+      booktitle={Proceedings of the 54th International Conference on Parallel Processing},
+      pages={668--677},
+      year={2025}
+    }
+
+
+For referencing to Kernel Tuner's optimization algorithms hyperparameters and their tuning procedure, please cite the following:
+
+.. code:: latex
+
+    @inproceedings{willemsen2025tuning,
+      title={Tuning the Tuner: Introducing Hyperparameter Optimization for Auto-Tuning},
+      author={Willemsen, Floris-Jan and van Nieuwpoort, Rob V and van Werkhoven, Ben},
+      booktitle={2025 IEEE International Conference on eScience (eScience)},
+      pages={213--222},
+      year={2025},
+      organization={IEEE}
+    }
+
+
+For referencing to Kernel Tuner's optimization algorithm's capabilities to work with constrained search spaces, please cite the following:
+
+.. code:: latex
+
+    @inproceedings{willemsen2026constraint,
+      title={Constraint-aware Optimization in Auto-Tuning},
+      author={Willemsen, Floris-Jan and Heldens, Stijn and van Nieuwpoort, Rob V and van Werkhoven, Ben},
+      booktitle={International Workshop on Automatic Performance Tuning (iWAPT)},
+      year={2026}
+    }
+
+
+For referencing to Kernel Tuner's optimization algorithms that were automatically generated using LLMs, please cite the following:
+
+.. code:: latex
+
+    @inproceedings{willemsen2026automated,
+      title={Automated Algorithm Design for Auto-Tuning Optimizers},
+      author={Willemsen, Floris-Jan and van Stein, Niki and van Werkhoven, Ben},
+      booktitle={Ninth Conference on Machine Learning and Systems},
+      year={2026},
+      url={https://openreview.net/forum?id=qKlHJCbY6m}
+    }
+
+
+For referencing to Kernel Tuner's capabilities in accuracy-aware tuning of mixed-precision GPU kernels, please cite the following:
+
+.. code:: latex
+
+    @article{heldens2026accuracy,
+      title={Accuracy-Aware Mixed-Precision GPU Auto-Tuning},
+      author={Heldens, Stijn and van Werkhoven, Ben},
+      journal={IEEE Transactions on Parallel and Distributed Systems},
+      year={2026},
+      publisher={IEEE}
+    }

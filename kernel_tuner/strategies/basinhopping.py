@@ -1,7 +1,7 @@
 """The strategy that uses the basinhopping global optimization method."""
 import scipy.optimize
 
-from kernel_tuner import util
+from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.common import CostFunc, setup_method_arguments, setup_method_options
@@ -31,7 +31,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
     try:
         opt_result = scipy.optimize.basinhopping(cost_func, x0, T=T, stepsize=eps,
                                              minimizer_kwargs=minimizer_kwargs, disp=tuning_options.verbose)
-    except util.StopCriterionReached as e:
+    except StopCriterionReached as e:
         if tuning_options.verbose:
             print(e)
 

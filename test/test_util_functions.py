@@ -1,8 +1,10 @@
+# ruff: noqa
 from __future__ import print_function
 
 import json
 import os
 import warnings
+import datetime
 
 import numpy as np
 import pytest
@@ -35,17 +37,13 @@ def test_get_grid_dimensions1():
     assert grid[1] == 28
     assert grid[2] == 1
 
-    grid = get_grid_dimensions(
-        problem_size, params, (grid_div[0], None, None), block_size_names
-    )
+    grid = get_grid_dimensions(problem_size, params, (grid_div[0], None, None), block_size_names)
 
     assert grid[0] == 25
     assert grid[1] == 1024
     assert grid[2] == 1
 
-    grid = get_grid_dimensions(
-        problem_size, params, (None, grid_div[1], None), block_size_names
-    )
+    grid = get_grid_dimensions(problem_size, params, (None, grid_div[1], None), block_size_names)
 
     assert grid[0] == 1024
     assert grid[1] == 28
@@ -59,6 +57,18 @@ def test_get_grid_dimensions1():
     assert grid[1] == 25
     assert grid[2] == 1
 
+    grid = get_grid_dimensions(problem_size, params, ("41", 37, None), block_size_names)
+
+    assert grid[0] == 25
+    assert grid[1] == 28
+    assert grid[2] == 1
+
+    grid = get_grid_dimensions(problem_size, params, (None, [2, "block_y"], None), block_size_names)
+
+    assert grid[0] == 1024
+    assert grid[1] == 14
+    assert grid[2] == 1
+
 
 def test_get_grid_dimensions2():
     problem_size = (1024, 1024, 1)
@@ -67,9 +77,7 @@ def test_get_grid_dimensions2():
     grid_div_x = ["block_x*8"]
     grid_div_y = ["(block_y+2)/8"]
 
-    grid = get_grid_dimensions(
-        problem_size, params, (grid_div_x, grid_div_y, None), block_size_names
-    )
+    grid = get_grid_dimensions(problem_size, params, (grid_div_x, grid_div_y, None), block_size_names)
 
     assert grid[0] == 4
     assert grid[1] == 256
@@ -83,9 +91,7 @@ def test_get_grid_dimensions3():
     grid_div_y = ["(block_y+2)/8"]
 
     def assert_grid_dimensions(problem_size):
-        grid = get_grid_dimensions(
-            problem_size, params, (grid_div_x, grid_div_y, None), block_size_names
-        )
+        grid = get_grid_dimensions(problem_size, params, (grid_div_x, grid_div_y, None), block_size_names)
         assert grid[0] == 1
         assert grid[1] == 256
         assert grid[2] == 1
@@ -146,16 +152,6 @@ def test_get_thread_block_dimensions():
     assert threads[2] == 1
 
 
-def test_to_valid_nvrtc_gpu_arch_cc():
-    assert to_valid_nvrtc_gpu_arch_cc("89") == "89"
-    assert to_valid_nvrtc_gpu_arch_cc("88") == "87"
-    assert to_valid_nvrtc_gpu_arch_cc("86") == "80"
-    assert to_valid_nvrtc_gpu_arch_cc("40") == "52"
-    assert to_valid_nvrtc_gpu_arch_cc("90b") == "90a"
-    assert to_valid_nvrtc_gpu_arch_cc("91c") == "90a"
-    assert to_valid_nvrtc_gpu_arch_cc("1234") == "52"
-
-
 def test_prepare_kernel_string():
     kernel = "this is a weird kernel"
     grid = (3, 7)
@@ -181,15 +177,13 @@ def test_prepare_kernel_string():
     defines = dict(foo=1, bar="custom", baz=lambda config: config["is"] * 5)
 
     _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", defines)
-    expected = "#define foo 1\n" "#define bar custom\n" "#define baz 40\n" "#line 1\n" "this is a weird kernel"
+    expected = "#define foo 1\n#define bar custom\n#define baz 40\n#line 1\nthis is a weird kernel"
     assert output == expected
 
     # Throw exception on invalid name (for instance, a space in the name)
     invalid_defines = {"invalid name": "1"}
     with pytest.raises(ValueError):
-        prepare_kernel_string(
-            "this", kernel, params, grid, threads, block_size_names, "", invalid_defines
-        )
+        prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "", invalid_defines)
 
 
 def test_prepare_kernel_string_partial_loop_unrolling():
@@ -204,15 +198,14 @@ def test_prepare_kernel_string_partial_loop_unrolling():
     params = dict()
     params["loop_unroll_factor_monkey"] = 8
 
-    _, output = prepare_kernel_string(
-        "this", kernel, params, grid, threads, block_size_names, "CUDA", None
-    )
+    _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "CUDA", None)
     assert "constexpr int loop_unroll_factor_monkey = 8;" in output
 
     params["loop_unroll_factor_monkey"] = 0
     _, output = prepare_kernel_string("this", kernel, params, grid, threads, block_size_names, "CUDA", None)
     assert "constexpr int loop_unroll_factor_monkey" not in output
     assert "#pragma unroll loop_unroll_factor_monkey" not in output
+
 
 def test_replace_param_occurrences():
     kernel = "this is a weird kernel"
@@ -221,9 +214,7 @@ def test_replace_param_occurrences():
     params["weird"] = 14
 
     new_kernel = replace_param_occurrences(kernel, params)
-    assert (
-        new_kernel == "this 8 a 14 kernel"
-    )  # Note: The "is" in "this" should not be replaced
+    assert new_kernel == "this 8 a 14 kernel"  # Note: The "is" in "this" should not be replaced
 
     new_kernel = replace_param_occurrences(kernel, dict())
     assert kernel == new_kernel
@@ -269,7 +260,7 @@ def test_detect_language3():
 
 @skip_if_no_pycuda
 def test_get_device_interface1():
-    lang = "CUDA"
+    lang = "PYCUDA"
     dev = core.DeviceInterface(core.KernelSource("", "", lang=lang))
     assert isinstance(dev, core.DeviceInterface)
     assert isinstance(dev.dev, pycuda.PyCudaFunctions)
@@ -351,9 +342,7 @@ def test_check_argument_list3():
         }
         """
     args = [np.uint16(42), np.float16([3, 4, 6]), np.int32([300])]
-    assert_user_warning(
-        check_argument_list, [kernel_name, kernel_string, args], "at position 2"
-    )
+    assert_user_warning(check_argument_list, [kernel_name, kernel_string, args], "at position 2")
 
 
 def test_check_argument_list4():
@@ -363,9 +352,7 @@ def test_check_argument_list4():
         }
         """
     args = [np.uint16(42), np.float16([3, 4, 6]), np.int64([300]), np.ubyte(32)]
-    assert_user_warning(
-        check_argument_list, [kernel_name, kernel_string, args], "do not match in size"
-    )
+    assert_user_warning(check_argument_list, [kernel_name, kernel_string, args], "do not match in size")
 
 
 def test_check_argument_list5():
@@ -421,6 +408,92 @@ def test_check_argument_list7():
         """
     args = [np.byte(5), np.float64(4.6), np.int32([1, 2, 3]), np.uint64([3, 2, 111])]
     assert_user_warning(check_argument_list, [kernel_name, kernel_string, args])
+
+
+def test_tuning_budget1():
+    budget = TuningBudget()
+    assert budget.get_evaluations_spent() == 0
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+    budget.add_evaluations(9000)
+    assert budget.get_evaluations_spent() == 9000
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+    budget.add_time(seconds=9000)
+    assert budget.get_evaluations_spent() == 9000
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+def test_tuning_budget2():
+    budget = TuningBudget(max_fevals=5)
+    assert budget.get_evaluations_spent() == 0
+    assert budget.get_evaluations_remaining() == 5
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 0.0
+
+    budget.add_evaluations(4)
+    assert budget.get_evaluations_spent() == 4
+    assert budget.get_evaluations_remaining() == 1
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == 4/5
+
+    budget.add_evaluations(1)
+    assert budget.get_evaluations_spent() == 5
+    assert budget.get_evaluations_remaining() == 0
+    assert budget.is_done()
+    assert pytest.raises(StopCriterionReached, budget.raise_exception_if_done)
+    assert budget.get_fraction_consumed() == 1.0
+
+
+def test_tuning_budget3():
+    # Two values are similar if they are within 0.01
+    approx = lambda x: pytest.approx(x, abs=0.01)
+
+    budget = TuningBudget(time_limit=5)
+    assert budget.get_time_spent().total_seconds() == approx(0)
+    assert budget.get_time_remaining().total_seconds() == approx(5)
+    assert budget.get_evaluations_spent() == 0
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == approx(0.0)
+
+    budget.add_evaluations(1)
+    assert budget.get_time_spent().total_seconds() == approx(0)
+    assert budget.get_time_remaining().total_seconds() == approx(5)
+    assert budget.get_evaluations_spent() == 1
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == approx(0.0)
+
+    budget.add_time(seconds=2)
+    assert budget.get_time_spent().total_seconds() == approx(2)
+    assert budget.get_time_remaining().total_seconds() == approx(3)
+    assert budget.get_evaluations_spent() == 1
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert not budget.is_done()
+    budget.raise_exception_if_done() # Should not raise
+    assert budget.get_fraction_consumed() == approx(2/5)
+
+    budget.add_time(seconds=4)
+    assert budget.get_time_spent().total_seconds() == approx(6)
+    assert budget.get_time_remaining().total_seconds() == approx(0)
+    assert budget.get_evaluations_spent() == 1
+    assert budget.get_evaluations_remaining() == float("inf")
+    assert budget.is_done()
+    assert pytest.raises(StopCriterionReached, budget.raise_exception_if_done)
+    assert budget.get_fraction_consumed() == 1.0
 
 
 def test_check_tune_params_list():
@@ -483,18 +556,12 @@ def test_check_block_size_params_names_list():
 
     # check warning does not triger when nondefault block size names are used correctly
     block_size_names = ["block_size_a", "block_size_b"]
-    tune_params = dict(
-        zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3])
-    )
-    test_warnings(
-        check_block_size_params_names_list, [block_size_names, tune_params], 0, None
-    )
+    tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
+    test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 0, None)
 
     # check that a warning is issued when none of the default names are used and no alternative names are specified
     block_size_names = None
-    tune_params = dict(
-        zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3])
-    )
+    tune_params = dict(zip(["block_size_a", "block_size_b", "many_other_things"], [1, 2, 3]))
     test_warnings(
         check_block_size_params_names_list,
         [block_size_names, tune_params],
@@ -504,12 +571,8 @@ def test_check_block_size_params_names_list():
 
     # check that no error is raised when any of the default block size names is being used
     block_size_names = None
-    tune_params = dict(
-        zip(["block_size_x", "several_other_things"], [[1, 2, 3, 4], [2, 4]])
-    )
-    test_warnings(
-        check_block_size_params_names_list, [block_size_names, tune_params], 0, None
-    )
+    tune_params = dict(zip(["block_size_x", "several_other_things"], [[1, 2, 3, 4], [2, 4]]))
+    test_warnings(check_block_size_params_names_list, [block_size_names, tune_params], 0, None)
 
 
 def test_get_kernel_string_func():
@@ -525,10 +588,10 @@ def test_get_kernel_string_func():
 
 def test_get_kernel_string_filename_not_found():
     # when the string looks like a filename, but the file does not exist
-    # assume the string is not a filename after all
+    # check if throws an exception
     bogus_filename = "filename_3456789.cu"
-    answer = get_kernel_string(bogus_filename)
-    assert answer == bogus_filename
+    with pytest.raises(FileNotFoundError):
+        get_kernel_string(bogus_filename)
 
 
 def test_looks_like_a_filename1():
@@ -579,6 +642,15 @@ def test_normalize_verify_function():
     assert v(1, 2, atol=3)
 
 
+class MockRunner:
+    simulation_mode = False
+
+    def __init__(self, dev):
+        self.dev = dev
+
+    def get_device_info(self):
+        return self.dev
+
 def test_process_cache():
     def assert_open_cachefile_is_correctly_parsed(cache):
         with open(cache, "r") as cachefile:
@@ -601,38 +673,47 @@ def test_process_cache():
         simulation_mode=False,
         objective="time",
     )
-    runner = Options(dev=Options(name="test_device"), simulation_mode=False)
+    runner = MockRunner(Options(name="test_device"))
 
     try:
         # call process_cache without pre-existing cache
-        process_cache(cache, kernel_options, tuning_options, runner)
+        tuning_options.cachefile = cache
+        tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
 
         # check if file has been created
         assert os.path.isfile(cache)
         assert_open_cachefile_is_correctly_parsed(cache)
-        assert tuning_options.cachefile == cache
         assert isinstance(tuning_options.cache, dict)
         assert len(tuning_options.cache) == 0
 
         # store one entry in the cache
         params = {"x": 4, "time": np.float32(0.1234)}
-        store_cache("4", params, tuning_options)
+        store_cache("4", params, cache, tuning_options.cache)
         assert len(tuning_options.cache) == 1
+
+        # store another entry in the cache
+        params2 = {"x": 6, "time": InvalidConfig()}
+        store_cache("6", params2, cache, tuning_options.cache)
+        assert len(tuning_options.cache) == 2
 
         # close the cache
         close_cache(cache)
 
         # now test process cache with a pre-existing cache file
-        process_cache(cache, kernel_options, tuning_options, runner)
+        tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert_open_cachefile_is_correctly_parsed(cache)
 
         assert tuning_options.cache["4"]["time"] == params["time"]
+
+        # check if ErrorConfig stored in objective value is converted to __error__
+        print(tuning_options.cache["6"])
+        assert isinstance(tuning_options.cache["6"]["__error__"], ErrorConfig)
 
         # check that exceptions are raised when using a cache file for
         # a different kernel, device, or parameter set
         with pytest.raises(ValueError) as excep:
             kernel_options.kernel_name = "wrong_kernel"
-            process_cache(cache, kernel_options, tuning_options, runner)
+            tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert "kernel" in str(excep.value)
 
         # correct the kernel name from last test
@@ -640,7 +721,7 @@ def test_process_cache():
 
         with pytest.raises(ValueError) as excep:
             runner.dev.name = "wrong_device"
-            process_cache(cache, kernel_options, tuning_options, runner)
+            tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert "device" in str(excep.value)
 
         # correct the device from last test
@@ -648,7 +729,7 @@ def test_process_cache():
 
         with pytest.raises(ValueError) as excep:
             tuning_options.tune_params["y"] = ["a", "b"]
-            process_cache(cache, kernel_options, tuning_options, runner)
+            tuning_options.cache = process_cache(cache, kernel_options, tuning_options, runner)
         assert "parameter" in str(excep.value)
 
     finally:
@@ -691,10 +772,7 @@ def test_process_metrics():
     # assert params["b"] == 15
 
     # test if a metric overrides any existing metrics
-    params = {
-        "x": 15,
-        "b": 12
-    }
+    params = {"x": 15, "b": 12}
     metrics = dict()
     metrics["b"] = "x"
     params = process_metrics(params, metrics)
@@ -704,7 +782,11 @@ def test_process_metrics():
 def test_parse_restrictions():
     tune_params = {"block_size_x": [50, 100], "use_padding": [0, 1]}
     restrict = ["block_size_x != 320"]
-    restrictions = ["block_size_x != 320", "use_padding == 0 or block_size_x % 32 != 0", "50 <= block_size_x * use_padding < 100"]
+    restrictions = [
+        "block_size_x != 320",
+        "use_padding == 0 or block_size_x % 32 != 0",
+        "50 <= block_size_x * use_padding < 100",
+    ]
 
     # test the monolithic parsed function
     parsed = parse_restrictions(restrict, tune_params, monolithic=True)[0]
@@ -712,7 +794,7 @@ def test_parse_restrictions():
     assert expected in parsed[0]
 
     # test the split parsed function
-    parsed_multi = parse_restrictions(restrictions, tune_params, try_to_constraint=False)
+    parsed_multi = parse_restrictions(restrictions, tune_params)
     assert isinstance(parsed_multi, list) and isinstance(parsed_multi[0], tuple)
     assert len(parsed_multi) == 3
     parsed, params = parsed_multi[0]
@@ -725,32 +807,80 @@ def test_parse_restrictions():
     assert restrictions[2] in parsed
     assert all(param in tune_params for param in params)
 
-    # test the conversion to constraints
-    parsed_multi_constraints = parse_restrictions(restrictions, tune_params, try_to_constraint=True)
-    assert isinstance(parsed_multi_constraints, list) and isinstance(parsed_multi_constraints[0], tuple)
-    assert len(parsed_multi_constraints) == 4
-    parsed, params = parsed_multi_constraints[0]
-    assert isinstance(parsed, str)
-    assert params == ["block_size_x"]
-    parsed, params = parsed_multi_constraints[1]
-    assert isinstance(parsed, str)
-    assert all(param in tune_params for param in params)
-    parsed, params = parsed_multi_constraints[2]
-    assert isinstance(parsed, MinProdConstraint)
-    assert all(param in tune_params for param in params)
-    parsed, params = parsed_multi_constraints[3]
-    assert isinstance(parsed, MaxProdConstraint)
-    assert all(param in tune_params for param in params)
 
-    # test the conversion to constraints with a real-world edge-case
-    rw_tune_params = dict()
-    rw_tune_params["tile_size_x"] = [1, 2, 3, 4, 5, 6, 7, 8]
-    rw_tune_params["tile_size_y"] = [1, 2, 3, 4, 5, 6, 7, 8]
-    parsed_constraint, params_constraint = parse_restrictions(["tile_size_x*tile_size_y<30"], rw_tune_params, try_to_constraint=True)[0]
-    assert all(param in rw_tune_params for param in params_constraint)
-    assert isinstance(parsed_constraint, MaxProdConstraint)
-    assert parsed_constraint._maxprod == 29
-    parsed_constraint, params_constraint = parse_restrictions(["30<tile_size_x*tile_size_y"], rw_tune_params, try_to_constraint=True)[0]
-    assert all(param in rw_tune_params for param in params_constraint)
-    assert isinstance(parsed_constraint, MinProdConstraint)
-    assert parsed_constraint._minprod == 31
+def test_check_matching_problem_size():
+    # these should error
+    with pytest.raises(ValueError):
+        check_matching_problem_size(42, 1000)
+    with pytest.raises(ValueError):
+        check_matching_problem_size([42, 1], 42)
+    with pytest.raises(ValueError):
+        check_matching_problem_size([42, 0], 42)
+    with pytest.raises(ValueError):
+        check_matching_problem_size(None, 42)
+    # these should not error
+    check_matching_problem_size(1000, (1000,))
+    check_matching_problem_size([1000], 1000)
+    check_matching_problem_size(1000, 1000)
+    check_matching_problem_size(1000, [1000])
+    check_matching_problem_size(
+        [
+            1000,
+        ],
+        1000,
+    )
+
+
+def test_convert_constraint_lambdas():
+
+    restrictions = [
+        lambda p: 32 <= p["block_size_x"] * p["block_size_y"] <= 1024,
+        "32 <= block_size_x*block_size_y <= 512",
+        lambda p: p["block_size_z"] < 8,
+    ]
+
+    result = convert_constraint_lambdas(restrictions)
+    print(result)
+    expected = [
+        "32 <= block_size_x * block_size_y <= 1024",
+        "block_size_z < 8",
+        "32 <= block_size_x*block_size_y <= 512",
+    ]
+
+    assert sorted(result) == sorted(expected)
+
+    restrictions2 = []
+    restrictions2 += [lambda p: 32 <= p["block_size_x"] * p["block_size_y"] <= 1024]
+    restrictions2 += [lambda p: p["block_size_z"] < 8]
+
+    result2 = convert_constraint_lambdas(restrictions2)
+    print(result2)
+    expected2 = ["block_size_z < 8", "32 <= block_size_x * block_size_y <= 1024"]
+
+    assert sorted(result2) == sorted(expected2)
+
+
+def test_convert_constraint_lambdas_illformatted():
+    """Test a number of different ways to define the restrictions.
+
+    These are currently not supported but we would like to support them in the future.
+    That is why this test expects an exception
+
+    """
+    restrictions = [
+        "32 <= block_size_x*block_size_y <= 512",
+        lambda p: 32 <= p["block_size_x"] * p["block_size_y"] <= 1024,
+        lambda p: p["block_size_z"] < 8,
+    ]
+
+    expected = [
+        "32 <= block_size_x * block_size_y <= 1024",
+        "block_size_z < 8",
+        "32 <= block_size_x*block_size_y <= 512",
+    ]
+
+    try:
+        result = convert_constraint_lambdas(restrictions)
+        print(result)
+    except ValueError:
+        pass

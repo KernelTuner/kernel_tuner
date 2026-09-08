@@ -1,5 +1,8 @@
-from typing import Any, Tuple
+"""Utility functions and classes for handling directives."""
+
 from abc import ABC, abstractmethod
+from typing import Any, Tuple
+
 import numpy as np
 
 # Function templates
@@ -34,73 +37,82 @@ end module kt
 
 
 class Directive(ABC):
-    """Base class for all directives"""
+    """Base class for all directives."""
 
     @abstractmethod
-    def get(self) -> str:
+    def get(self) -> str:  # noqa: D102
         pass
 
 
 class Language(ABC):
-    """Base class for all languages"""
+    """Base class for all languages."""
 
     @abstractmethod
-    def get(self) -> str:
+    def get(self) -> str:  # noqa: D102
         pass
 
 
 class OpenACC(Directive):
-    """Class to represent OpenACC"""
+    """Class to represent OpenACC."""
 
-    def get(self) -> str:
+    def get(self) -> str:  # noqa: D102
         return "openacc"
 
 
-class Cxx(Language):
-    """Class to represent C++ code"""
+class OpenMP(Directive):
+    """Class to represent OpenMP."""
 
-    def get(self) -> str:
+    def get(self) -> str:  # noqa: D102
+        return "openmp"
+
+
+class Cxx(Language):
+    """Class to represent C++ code."""
+
+    def get(self) -> str:  # noqa: D102
         return "cxx"
 
-    def end_string(self) -> str:
+    def end_string(self) -> str:  # noqa: D102
         return "#pragma tuner stop"
 
 
 class Fortran(Language):
-    """Class to represent Fortran code"""
+    """Class to represent Fortran code."""
 
-    def get(self) -> str:
+    def get(self) -> str:  # noqa: D102
         return "fortran"
 
-    def end_string(self) -> str:
+    def end_string(self) -> str:  # noqa: D102
         return "!$tuner stop"
 
 
 class Code(object):
-    """Class to represent the directive and host code of the application"""
+    """Class to represent the directive and host code of the application."""
 
-    def __init__(self, directive: Directive, lang: Language):
+    def __init__(self, directive: Directive, lang: Language):  # noqa: D107
         self.directive = directive
         self.language = lang
 
 
 class ArraySize(object):
-    """Size of an array"""
+    """Size of an array."""
 
-    def __init__(self):
+    def __init__(self):  # noqa: D102, D107
         self.size = list()
 
-    def __iter__(self):
+    def __iter__(self):  # noqa: D105
         for i in self.size:
             yield i
 
-    def __len__(self):
+    def __len__(self):  # noqa: D105
         return len(self.size)
 
     def clear(self):
+        """Clear the size dimensions."""
         self.size.clear()
 
     def get(self) -> int:
+        """Get the total size represented by this ArraySize."""
         length = len(self.size)
         if length == 0:
             return 0
@@ -113,13 +125,13 @@ class ArraySize(object):
             return product
 
     def add(self, dim: int) -> None:
-        # Only allow adding valid dimensions
+        """Only allow adding valid dimensions."""
         if dim >= 1:
             self.size.append(dim)
 
 
 def fortran_md_size(size: ArraySize) -> list:
-    """Format a multidimensional size into the correct Fortran string"""
+    """Format a multidimensional size into the correct Fortran string."""
     md_size = list()
     for dim in size:
         md_size.append(f":{dim}")
@@ -127,22 +139,40 @@ def fortran_md_size(size: ArraySize) -> list:
 
 
 def is_openacc(directive: Directive) -> bool:
-    """Check if a directive is OpenACC"""
+    """Check if a directive is OpenACC."""
     return isinstance(directive, OpenACC)
 
 
+def is_openmp(directive: Directive) -> bool:
+    """Check if a directive is OpenMP."""
+    return isinstance(directive, OpenMP)
+
+
 def is_cxx(lang: Language) -> bool:
-    """Check if language is C++"""
+    """Check if language is C++."""
     return isinstance(lang, Cxx)
 
 
 def is_fortran(lang: Language) -> bool:
-    """Check if language is Fortran"""
+    """Check if language is Fortran."""
     return isinstance(lang, Fortran)
 
 
+def line_contains(line: str, target: str) -> bool:
+    """Generic helper to check if a line contains the target."""
+    return target in line
+
+
+def directive_contains_clause(line: str, clauses: list) -> bool:
+    """Check if a directive contains one clause from a list."""
+    for clause in clauses:
+        if clause in line:
+            return True
+    return False
+
+
 def line_contains_openacc_directive(line: str, lang: Language) -> bool:
-    """Check if line contains an OpenACC directive or not"""
+    """Check if line contains an OpenACC directive or not."""
     if is_cxx(lang):
         return line_contains_openacc_directive_cxx(line)
     elif is_fortran(lang):
@@ -151,17 +181,36 @@ def line_contains_openacc_directive(line: str, lang: Language) -> bool:
 
 
 def line_contains_openacc_directive_cxx(line: str) -> bool:
-    """Check if a line of code contains a C++ OpenACC directive or not"""
+    """Check if a line of code contains a C++ OpenACC directive or not."""
     return line_contains(line, "#pragma acc")
 
 
 def line_contains_openacc_directive_fortran(line: str) -> bool:
-    """Check if a line of code contains a Fortran OpenACC directive or not"""
+    """Check if a line of code contains a Fortran OpenACC directive or not."""
     return line_contains(line, "!$acc")
 
 
+def line_contains_openmp_directive(line: str, lang: Language) -> bool:
+    """Check if line contains an OpenMP directive or not."""
+    if is_cxx(lang):
+        return line_contains_openmp_directive_cxx(line)
+    elif is_fortran(lang):
+        return line_contains_openmp_directive_fortran(line)
+    return False
+
+
+def line_contains_openmp_directive_cxx(line: str) -> bool:
+    """Check if a line of code contains a C++ OpenMP directive or not."""
+    return line_contains(line, "#pragma omp")
+
+
+def line_contains_openmp_directive_fortran(line: str) -> bool:
+    """Check if a line of code contains a Fortran OpenMP directive or not."""
+    return line_contains(line, "!$omp")
+
+
 def line_contains_openacc_parallel_directive(line: str, lang: Language) -> bool:
-    """Check if line contains an OpenACC parallel directive or not"""
+    """Check if line contains an OpenACC parallel directive or not."""
     if is_cxx(lang):
         return line_contains_openacc_parallel_directive_cxx(line)
     elif is_fortran(lang):
@@ -170,36 +219,48 @@ def line_contains_openacc_parallel_directive(line: str, lang: Language) -> bool:
 
 
 def line_contains_openacc_parallel_directive_cxx(line: str) -> bool:
-    """Check if a line of code contains a C++ OpenACC parallel directive or not"""
+    """Check if a line of code contains a C++ OpenACC parallel directive or not."""
     return line_contains(line, "#pragma acc parallel")
 
 
 def line_contains_openacc_parallel_directive_fortran(line: str) -> bool:
-    """Check if a line of code contains a Fortran OpenACC parallel directive or not"""
+    """Check if a line of code contains a Fortran OpenACC parallel directive or not."""
     return line_contains(line, "!$acc parallel")
 
 
-def line_contains(line: str, target: str) -> bool:
-    """Generic helper to check if a line contains the target"""
-    return target in line
-
-
-def openacc_directive_contains_clause(line: str, clauses: list) -> bool:
-    """Check if an OpenACC directive contains one clause from a list"""
-    for clause in clauses:
-        if clause in line:
-            return True
+def line_contains_openmp_target_directive(line: str, lang: Language) -> bool:
+    """Check if line contains an OpenMP target directive or not."""
+    if is_cxx(lang):
+        return line_contains_openmp_target_directive_cxx(line)
+    elif is_fortran(lang):
+        return line_contains_openmp_target_directive_fortran(line)
     return False
 
 
+def line_contains_openmp_target_directive_cxx(line: str) -> bool:
+    """Check if a line of code contains a C++ OpenMP target directive or not."""
+    return line_contains(line, "#pragma omp target")
+
+
+def line_contains_openmp_target_directive_fortran(line: str) -> bool:
+    """Check if a line of code contains a Fortran OpenMP target directive or not."""
+    return line_contains(line, "!$omp target")
+
+
 def openacc_directive_contains_data_clause(line: str) -> bool:
-    """Check if an OpenACC directive contains one data clause"""
+    """Check if an OpenACC directive contains one data clause."""
     data_clauses = ["copy", "copyin", "copyout", "create", "no_create", "present", "device_ptr", "attach"]
-    return openacc_directive_contains_clause(line, data_clauses)
+    return directive_contains_clause(line, data_clauses)
+
+
+def openmp_directive_contains_data_clause(line: str) -> bool:
+    """Check if an OpenMP directive contains one data clause."""
+    data_clauses = ["map"]
+    return directive_contains_clause(line, data_clauses)
 
 
 def create_data_directive_openacc(name: str, size: ArraySize, lang: Language) -> str:
-    """Create a data directive for a given language"""
+    """Create a data directive for a given language."""
     if is_cxx(lang):
         return create_data_directive_openacc_cxx(name, size)
     elif is_fortran(lang):
@@ -208,12 +269,12 @@ def create_data_directive_openacc(name: str, size: ArraySize, lang: Language) ->
 
 
 def create_data_directive_openacc_cxx(name: str, size: ArraySize) -> str:
-    """Create C++ OpenACC code to allocate and copy data"""
+    """Create C++ OpenACC code to allocate and copy data."""
     return f"#pragma acc enter data create({name}[:{size.get()}])\n#pragma acc update device({name}[:{size.get()}])\n"
 
 
 def create_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
-    """Create Fortran OpenACC code to allocate and copy data"""
+    """Create Fortran OpenACC code to allocate and copy data."""
     if len(size) == 1:
         return f"!$acc enter data create({name}(:{size.get()}))\n!$acc update device({name}(:{size.get()}))\n"
     else:
@@ -223,8 +284,31 @@ def create_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
         )
 
 
+def create_data_directive_openmp(name: str, size: ArraySize, lang: Language) -> str:
+    """Create a data directive for a given language."""
+    if is_cxx(lang):
+        return create_data_directive_openmp_cxx(name, size)
+    elif is_fortran(lang):
+        return create_data_directive_openmp_fortran(name, size)
+    return ""
+
+
+def create_data_directive_openmp_cxx(name: str, size: ArraySize) -> str:
+    """Create C++ OpenMP code to allocate and copy data."""
+    return f"#pragma omp target enter data map(to: {name}[:{size.get()}])\n"
+
+
+def create_data_directive_openmp_fortran(name: str, size: ArraySize) -> str:
+    """Create Fortran OpenMP code to allocate and copy data."""
+    if len(size) == 1:
+        return f"!$omp target enter data map(to: {name}(:{size.get()}))\n"
+    else:
+        md_size = fortran_md_size(size)
+        return f"!$omp target enter data map(to: {name}({','.join(md_size)}))\n"
+
+
 def exit_data_directive_openacc(name: str, size: ArraySize, lang: Language) -> str:
-    """Create code to copy data back for a given language"""
+    """Create code to copy data back for a given language."""
     if is_cxx(lang):
         return exit_data_directive_openacc_cxx(name, size)
     elif is_fortran(lang):
@@ -233,12 +317,12 @@ def exit_data_directive_openacc(name: str, size: ArraySize, lang: Language) -> s
 
 
 def exit_data_directive_openacc_cxx(name: str, size: ArraySize) -> str:
-    """Create C++ OpenACC code to copy back data"""
+    """Create C++ OpenACC code to copy back data."""
     return f"#pragma acc exit data copyout({name}[:{size.get()}])\n"
 
 
 def exit_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
-    """Create Fortran OpenACC code to copy back data"""
+    """Create Fortran OpenACC code to copy back data."""
     if len(size) == 1:
         return f"!$acc exit data copyout({name}(:{size.get()}))\n"
     else:
@@ -246,13 +330,36 @@ def exit_data_directive_openacc_fortran(name: str, size: ArraySize) -> str:
         return f"!$acc exit data copyout({name}({','.join(md_size)}))\n"
 
 
+def exit_data_directive_openmp(name: str, size: ArraySize, lang: Language) -> str:
+    """Create code to copy data back for a given language."""
+    if is_cxx(lang):
+        return exit_data_directive_openmp_cxx(name, size)
+    elif is_fortran(lang):
+        return exit_data_directive_openmp_fortran(name, size)
+    return ""
+
+
+def exit_data_directive_openmp_cxx(name: str, size: ArraySize) -> str:
+    """Create C++ OpenMP code to copy back data."""
+    return f"#pragma omp target exit data map(from: {name}[:{size.get()}])\n"
+
+
+def exit_data_directive_openmp_fortran(name: str, size: ArraySize) -> str:
+    """Create Fortran OpenMP code to copy back data."""
+    if len(size) == 1:
+        return f"!$omp target exit data map(from: {name}(:{size.get()}))\n"
+    else:
+        md_size = fortran_md_size(size)
+        return f"!$omp target exit data map(from: {name}({','.join(md_size)}))\n"
+
+
 def correct_kernel(kernel_name: str, line: str) -> bool:
-    """Checks if the line contains the correct kernel name"""
+    """Checks if the line contains the correct kernel name."""
     return f" {kernel_name} " in line or (kernel_name in line and len(line.partition(kernel_name)[2]) == 0)
 
 
 def find_size_in_preprocessor(dimension: str, preprocessor: list) -> int:
-    """Find the dimension of a directive defined value in the preprocessor"""
+    """Find the dimension of a directive defined value in the preprocessor."""
     ret_size = 0
     for line in preprocessor:
         if f"#define {dimension}" in line:
@@ -265,7 +372,7 @@ def find_size_in_preprocessor(dimension: str, preprocessor: list) -> int:
 
 
 def extract_code(start: str, stop: str, code: str, langs: Code, kernel_name: str = None) -> dict:
-    """Extract an arbitrary section of code"""
+    """Extract an arbitrary section of code."""
     found_section = False
     sections = dict()
     tmp_string = list()
@@ -298,7 +405,7 @@ def extract_code(start: str, stop: str, code: str, langs: Code, kernel_name: str
 
 
 def parse_size(size: Any, preprocessor: list = None, dimensions: dict = None) -> ArraySize:
-    """Converts an arbitrary object into an integer representing memory size"""
+    """Converts an arbitrary object into an integer representing memory size."""
     ret_size = ArraySize()
     if type(size) is not int:
         try:
@@ -339,7 +446,7 @@ def parse_size(size: Any, preprocessor: list = None, dimensions: dict = None) ->
 
 
 def wrap_timing(code: str, lang: Language) -> str:
-    """Helper to wrap timing code around the provided code"""
+    """Helper to wrap timing code around the provided code."""
     if is_cxx(lang):
         return end_timing_cxx(start_timing_cxx(code))
     elif is_fortran(lang):
@@ -348,8 +455,7 @@ def wrap_timing(code: str, lang: Language) -> str:
 
 
 def start_timing_cxx(code: str) -> str:
-    """Wrap C++ timing code around the provided code"""
-
+    """Wrap C++ timing code around the provided code."""
     start = "auto kt_timing_start = std::chrono::steady_clock::now();"
     end = "auto kt_timing_end = std::chrono::steady_clock::now();"
     timing = "std::chrono::duration<float, std::milli> elapsed_time = kt_timing_end - kt_timing_start;"
@@ -358,8 +464,7 @@ def start_timing_cxx(code: str) -> str:
 
 
 def wrap_timing_fortran(code: str) -> str:
-    """Wrap Fortran timing code around the provided code"""
-
+    """Wrap Fortran timing code around the provided code."""
     start = "call system_clock(kt_timing_start, kt_rate)"
     end = "call system_clock(kt_timing_end)"
     timing = "timing = (real(kt_timing_end - kt_timing_start) / real(kt_rate)) * 1e3"
@@ -368,28 +473,51 @@ def wrap_timing_fortran(code: str) -> str:
 
 
 def end_timing_cxx(code: str) -> str:
-    """In C++ we need to return the measured time"""
+    """In C++ we need to return the measured time."""
     return "\n".join([code, "return elapsed_time.count();\n"])
 
 
 def wrap_data(code: str, langs: Code, data: dict, preprocessor: list = None, user_dimensions: dict = None) -> str:
-    """Insert data directives before and after the timed code"""
+    """Insert data directives before and after the timed code."""
     intro = str()
     outro = str()
     for name in data.keys():
         if "*" in data[name][0]:
             size = parse_size(data[name][1], preprocessor=preprocessor, dimensions=user_dimensions)
-            if is_openacc(langs.directive) and is_cxx(langs.language):
-                intro += create_data_directive_openacc_cxx(name, size)
-                outro += exit_data_directive_openacc_cxx(name, size)
-            elif is_openacc(langs.directive) and is_fortran(langs.language):
-                intro += create_data_directive_openacc_fortran(name, size)
-                outro += exit_data_directive_openacc_fortran(name, size)
+            temp = []
+            if is_openacc(langs.directive):
+                temp = wrap_data_openacc(name, size, langs)
+            elif is_openmp(langs.directive):
+                temp = wrap_data_openmp(name, size, langs)
+            intro += temp[0]
+            outro += temp[1]
     return "\n".join([intro, code, outro])
 
 
+def wrap_data_openacc(name: str, size: int, langs: Code) -> Tuple[str, str]:
+    """Create language specific data directives."""
+    if is_cxx(langs.language):
+        intro = create_data_directive_openacc_cxx(name, size)
+        outro = exit_data_directive_openacc_cxx(name, size)
+    elif is_fortran(langs.language):
+        intro = create_data_directive_openacc_fortran(name, size)
+        outro = exit_data_directive_openacc_fortran(name, size)
+    return intro, outro
+
+
+def wrap_data_openmp(name: str, size: int, langs: Code) -> Tuple[str, str]:
+    """Create language specific data directives."""
+    if is_cxx(langs.language):
+        intro = create_data_directive_openmp_cxx(name, size)
+        outro = exit_data_directive_openmp_cxx(name, size)
+    elif is_fortran(langs.language):
+        intro = create_data_directive_openmp_fortran(name, size)
+        outro = exit_data_directive_openmp_fortran(name, size)
+    return intro, outro
+
+
 def extract_directive_code(code: str, langs: Code, kernel_name: str = None) -> dict:
-    """Extract explicitly marked directive sections from code"""
+    """Extract explicitly marked directive sections from code."""
     if is_cxx(langs.language):
         start_string = "#pragma tuner start"
     elif is_fortran(langs.language):
@@ -399,7 +527,7 @@ def extract_directive_code(code: str, langs: Code, kernel_name: str = None) -> d
 
 
 def extract_initialization_code(code: str, langs: Code) -> str:
-    """Extract the initialization section from code"""
+    """Extract the initialization section from code."""
     if is_cxx(langs.language):
         start_string = "#pragma tuner initialize"
     elif is_fortran(langs.language):
@@ -413,7 +541,7 @@ def extract_initialization_code(code: str, langs: Code) -> str:
 
 
 def extract_deinitialization_code(code: str, langs: Code) -> str:
-    """Extract the deinitialization section from code"""
+    """Extract the deinitialization section from code."""
     if is_cxx(langs.language):
         start_string = "#pragma tuner deinitialize"
     elif is_fortran(langs.language):
@@ -427,7 +555,7 @@ def extract_deinitialization_code(code: str, langs: Code) -> str:
 
 
 def format_argument_fortran(p_type: str, p_size: int, p_name: str) -> str:
-    """Format the argument for Fortran code"""
+    """Format the argument for Fortran code."""
     argument = ""
     if "float*" in p_type:
         argument = f"real (c_float), dimension({p_size}) :: {p_name}"
@@ -445,8 +573,7 @@ def format_argument_fortran(p_type: str, p_size: int, p_name: str) -> str:
 
 
 def extract_directive_signature(code: str, langs: Code, kernel_name: str = None) -> dict:
-    """Extract the user defined signature for directive sections"""
-
+    """Extract the user defined signature for directive sections."""
     if is_cxx(langs.language):
         start_string = "#pragma tuner start"
     elif is_fortran(langs.language):
@@ -472,7 +599,7 @@ def extract_directive_signature(code: str, langs: Code, kernel_name: str = None)
                     p_type = param[1:-1]
                     p_type = p_type.split(":")[0]
                     if "*" in p_type:
-                        p_type = p_type.replace("*", " * restrict")
+                        p_type = p_type.replace("*", " *")
                     if is_cxx(langs.language):
                         params.append(f"{p_type} {p_name}")
                     elif is_fortran(langs.language):
@@ -480,9 +607,9 @@ def extract_directive_signature(code: str, langs: Code, kernel_name: str = None)
                 if is_cxx(langs.language):
                     signatures[name] = f"float {name}({', '.join(params)})"
                 elif is_fortran(langs.language):
-                    signatures[
-                        name
-                    ] = f"function {name}({', '.join(params)}) result(timing)\nuse iso_c_binding\nimplicit none\n"
+                    signatures[name] = (
+                        f"function {name}({', '.join(params)}) result(timing)\nuse iso_c_binding\nimplicit none\n"
+                    )
                     params = list()
                     for param in tmp_string:
                         if len(param) == 0:
@@ -494,16 +621,15 @@ def extract_directive_signature(code: str, langs: Code, kernel_name: str = None)
                         p_type = p_type.split(":")[0]
                         params.append(format_argument_fortran(p_type, p_size, p_name))
                     signatures[name] += "\n".join(params) + "\n"
-                    signatures[
-                        name
-                    ] += "integer(c_int):: kt_timing_start\nreal(c_float):: kt_rate\ninteger(c_int):: kt_timing_end\nreal(c_float):: timing\n"
+                    signatures[name] += (
+                        "integer(c_int):: kt_timing_start\nreal(c_float):: kt_rate\ninteger(c_int):: kt_timing_end\nreal(c_float):: timing\n"  # noqa: E501
+                    )
 
     return signatures
 
 
 def extract_directive_data(code: str, langs: Code, kernel_name: str = None) -> dict:
-    """Extract the data used in the directive section"""
-
+    """Extract the data used in the directive section."""
     if is_cxx(langs.language):
         start_string = "#pragma tuner start"
     elif is_fortran(langs.language):
@@ -537,7 +663,7 @@ def extract_directive_data(code: str, langs: Code, kernel_name: str = None) -> d
 
 
 def extract_preprocessor(code: str) -> list:
-    """Extract include and define statements from code"""
+    """Extract include and define statements from code."""
     preprocessor = list()
 
     for line in code.replace("\\\n", "").split("\n"):
@@ -557,8 +683,7 @@ def generate_directive_function(
     deinitialization: str = "",
     user_dimensions: dict = None,
 ) -> str:
-    """Generate tunable function for one directive"""
-
+    """Generate tunable function for one directive."""
     if is_cxx(langs.language):
         code = cpp_template
         body = start_timing_cxx(body)
@@ -592,7 +717,7 @@ def generate_directive_function(
 
 
 def allocate_array(p_type: str, size: int) -> np.ndarray:
-    """Allocate a Numpy array"""
+    """Allocate a Numpy array."""
     max_int = 1024
     array = None
     if p_type == "float*":
@@ -608,7 +733,7 @@ def allocate_array(p_type: str, size: int) -> np.ndarray:
 
 
 def allocate_scalar(p_type: str, size: int) -> np.number:
-    """Allocate a Numpy scalar"""
+    """Allocate a Numpy scalar."""
     scalar = None
     if p_type == "float":
         scalar = np.float32(size)
@@ -623,7 +748,7 @@ def allocate_scalar(p_type: str, size: int) -> np.number:
 
 
 def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimensions: dict = None) -> list:
-    """Allocates the data needed by a kernel and returns the arguments array"""
+    """Allocates the data needed by a kernel and returns the arguments array."""
     args = []
 
     for parameter in data.keys():
@@ -638,7 +763,7 @@ def allocate_signature_memory(data: dict, preprocessor: list = None, user_dimens
 
 
 def add_new_line(line: str) -> str:
-    """Adds the new line character to the end of the line if not present"""
+    """Adds the new line character to the end of the line if not present."""
     if line.rfind("\n") != len(line) - 1:
         return line + "\n"
     return line
@@ -647,7 +772,7 @@ def add_new_line(line: str) -> str:
 def add_present_openacc(
     code: str, langs: Code, data: dict, preprocessor: list = None, user_dimensions: dict = None
 ) -> str:
-    """Add the present clause to OpenACC directive"""
+    """Add the present clause to OpenACC directive."""
     new_body = ""
     for line in code.replace("\\\n", "").split("\n"):
         if not line_contains_openacc_parallel_directive(line, langs.language):
@@ -673,12 +798,12 @@ def add_present_openacc(
 
 
 def add_present_openacc_cxx(name: str, size: ArraySize) -> str:
-    """Create present clause for C++ OpenACC directive"""
+    """Create present clause for C++ OpenACC directive."""
     return f" present({name}[:{size.get()}]) "
 
 
 def add_present_openacc_fortran(name: str, size: ArraySize) -> str:
-    """Create present clause for Fortran OpenACC directive"""
+    """Create present clause for Fortran OpenACC directive."""
     if len(size) == 1:
         return f" present({name}(:{size.get()})) "
     else:
@@ -687,7 +812,7 @@ def add_present_openacc_fortran(name: str, size: ArraySize) -> str:
 
 
 def process_directives(langs: Code, source: str, user_dimensions: dict = None) -> Tuple[dict, dict]:
-    """Helper functions to process all the directives in the code and create tunable functions"""
+    """Helper functions to process all the directives in the code and create tunable functions."""
     kernel_strings = dict()
     kernel_args = dict()
     preprocessor = extract_preprocessor(source)

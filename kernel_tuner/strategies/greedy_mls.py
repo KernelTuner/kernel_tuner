@@ -1,5 +1,5 @@
 """A greedy multi-start local search algorithm for parameter search."""
-from kernel_tuner import util
+from kernel_tuner.util import StopCriterionReached
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.strategies import common
 from kernel_tuner.strategies.hillclimbers import base_hillclimb
@@ -24,18 +24,19 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     fevals = 0
 
+    candidate = cost_func.get_start_pos()
+
     #while searching
     while fevals < max_fevals:
-        candidate = searchspace.get_random_sample(1)[0]
-
         try:
-            base_hillclimb(candidate, neighbor, max_fevals, searchspace, tuning_options, cost_func, restart=restart, randomize=randomize, order=order)
-        except util.StopCriterionReached as e:
+            base_hillclimb(candidate, neighbor, max_fevals, searchspace, cost_func, restart=restart, randomize=randomize, order=order)
+        except StopCriterionReached as e:
             if tuning_options.verbose:
                 print(e)
             return cost_func.results
 
-        fevals = len(tuning_options.unique_results)
+        candidate = searchspace.get_random_sample(1)[0]
+        fevals = cost_func.get_num_unique_results()
 
     return cost_func.results
 

@@ -6,7 +6,7 @@ from kernel_tuner import tune_kernel
 from kernel_tuner.backends import hip as kt_hip
 from kernel_tuner.core import KernelInstance, KernelSource
 
-from .context import skip_if_no_pyhip
+from .context import skip_if_no_hip
 
 try:
     from hip import hip, hiprtc
@@ -48,7 +48,7 @@ def env():
 
     return ["vector_add", kernel_string, size, args, tune_params]
 
-@skip_if_no_pyhip
+@skip_if_no_hip
 def test_ready_argument_list():
     size = 1000
     a = np.int32(75)
@@ -67,7 +67,7 @@ def test_ready_argument_list():
     assert gpu_args[1].value == a
     assert gpu_args[3].value == c
 
-@skip_if_no_pyhip
+@skip_if_no_hip
 def test_compile():
     kernel_string = """
     __global__ void vector_add(float *c, float *a, float *b, int n) {
@@ -87,7 +87,7 @@ def test_compile():
     except Exception as e:
         pytest.fail("Did not expect any exception:" + str(e))
 
-@skip_if_no_pyhip
+@skip_if_no_hip
 def test_memset_and_memcpy_dtoh():
     a = [1, 2, 3, 4]
     x = np.array(a).astype(np.int8)
@@ -101,7 +101,7 @@ def test_memset_and_memcpy_dtoh():
 
     assert all(output == np.full(4, 4))
 
-@skip_if_no_pyhip
+@skip_if_no_hip
 def test_memcpy_htod():
     a = [1, 2, 3, 4]
     x = np.array(a).astype(np.float32)
@@ -114,7 +114,7 @@ def test_memcpy_htod():
 
     assert all(output == x)
 
-@skip_if_no_pyhip
+@skip_if_no_hip
 def test_copy_constant_memory_args():
     kernel_string = """
     __constant__ float my_constant_data[100];
@@ -147,7 +147,7 @@ def test_copy_constant_memory_args():
 
     assert (my_constant_data == output).all()
 
-@skip_if_no_pyhip
+@skip_if_no_hip
 def test_smem_args(env):
     result, _ = tune_kernel(*env,
                           smem_args=dict(size="block_size_x*4"),
