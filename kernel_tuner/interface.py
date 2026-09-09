@@ -721,23 +721,19 @@ def tune_kernel(
     logging.debug("device_options: %s", util.get_config_string(device_options))
 
     # check whether the selected strategy and options are valid
+    # (a falsy strategy means the default brute_force strategy is used)
+    strategy = strategy or "brute_force"
     strategy_string = strategy
-    if strategy:
-        if strategy in strategy_map:
-            strategy = strategy_map[strategy]
-        else:
-            # check for user-defined strategy
-            if hasattr(strategy, "tune") and callable(strategy.tune):
-                # user-defined strategy
-                pass
-            else:
-                raise ValueError(f"Unkown strategy {strategy}, must be one of: {', '.join(list(strategy_map.keys()))}")
-
-        # ensure strategy_options is an Options object
-        tuning_options.strategy_options = Options(strategy_options or {})
-    # if no strategy selected
+    if strategy in strategy_map:
+        strategy = strategy_map[strategy]
+    elif hasattr(strategy, "tune") and callable(strategy.tune):
+        # user-defined strategy
+        pass
     else:
-        strategy = strategy_map["brute_force"]
+        raise ValueError(f"Unkown strategy {strategy}, must be one of: {', '.join(list(strategy_map.keys()))}")
+
+    # ensure strategy_options is an Options object
+    tuning_options.strategy_options = Options(strategy_options or {})
 
     # select the runner for this job based on input
     tuning_options.simulated_time = 0
@@ -754,12 +750,21 @@ def tune_kernel(
 
         runner = SimulationRunner(kernelsource, kernel_options, device_options, iterations, observers)
     elif parallel:
-        # Avoid using multiple workers on strategies not supporting parallelism
-        if strategy not in _STRATEGY_PARALLEL:
-            parallel = 1
-        from kernel_tuner.runners.parallel import ParallelRunner
+        if parallel is True:
+            # Number of workers not given explicitly: let ParallelRunner decide,
+            # unless the chosen strategy does not support parallelism.
+            num_workers = None
+            if strategy_string not in _STRATEGY_PARALLEL:
+                logging.warning(
+                    "chosen strategy (%s) does not support parallelism, number of parallel workers set to one",
+                    strategy_string,
+                )
+                num_workers = 1
+        else:
+            # Number of workers given explicitly: always honor the request.
+            num_workers = parallel
 
-        num_workers = None if parallel is True else parallel
+        from kernel_tuner.runners.parallel import ParallelRunner
         runner = ParallelRunner(
             kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers
         )
