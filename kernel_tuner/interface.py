@@ -40,7 +40,7 @@ import kernel_tuner.core as core
 import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
 from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
-_opt_GPyTorch_lean,from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.util import get_objective_defaults
 
 try:
@@ -74,9 +74,7 @@ _STRATEGY_IMPORTS = {
     "adaptive_tabu_greywolf": "kernel_tuner.strategies.gen_adaptive_tabu_greywolf",
     "nsga2": "kernel_tuner.strategies.pymoo_minimize",
     "nsga3": "kernel_tuner.strategies.pymoo_minimize",
-    "bayes_opt_old": bayes_opt_old,
-    "bayes_opt_GPyTorch": bayes_opt_GPyTorch,
-    "bayes_opt_GPyTorch_lean": bayes_opt_GPyTorch_lean,
+    "bayes_opt_new": "kernel_tuner.strategies.bayes_opt_new",
 }
 
 _STRATEGY_PARALLEL = ["brute_force", "random_sample", "diff_evo", "genetic_algorithm", "pso", "firefly_algorithm"]
