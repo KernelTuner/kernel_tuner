@@ -467,7 +467,11 @@ class BayesianOptimization:
             except RuntimeError as e:
                 warnings.warn(str(e), RuntimeWarning)
 
+        # training loop with early stopping if no improvement in loss for a number of iterations
         loss = None
+        best_loss = float('inf')
+        patience = 10
+        no_improve = 0
         for _ in range(training_iter):
             try:
                 _loss = self.optimizer.step(closure)
@@ -480,6 +484,13 @@ class BayesianOptimization:
             except TypeError as e:
                 warnings.warn(str(e), RuntimeWarning)
                 break
+            if loss < best_loss - 1e-5:
+                best_loss = loss
+                no_improve = 0
+            else:
+                no_improve += 1
+                if no_improve >= patience:
+                    break
 
         # set the hyperparams to the new values
         try:
