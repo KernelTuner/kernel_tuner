@@ -8,7 +8,7 @@ import kernel_tuner
 from kernel_tuner.util import InvalidConfig
 from kernel_tuner.interface import strategy_map
 
-from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch, skip_if_no_pyatf, skip_if_no_skopt
+from ..context import skip_if_no_botorch, skip_if_no_gpytorch, skip_if_no_pyatf, skip_if_no_skopt
 
 
 cache_filename =  Path(__file__).parent / "test_cache_file.json"
@@ -46,11 +46,11 @@ for s in strategy_map.keys():
     if 'botorch_alt' in s.lower():
         continue    # TODO issue warning for uninstalled dependencies?
     if 'gpytorch' in s.lower():
-        strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_gpytorch))
+        strategies.append(pytest.param(s, marks=skip_if_no_gpytorch))
     elif 'bayes_opt' in s.lower():
         strategies.append(s)
     elif 'botorch' in s.lower():
-        strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_botorch))
+        strategies.append(pytest.param(s, marks=skip_if_no_botorch))
     elif 'skopt' in s.lower():
         strategies.append(pytest.param(s, marks=skip_if_no_skopt))
     elif 'pyatf' in s.lower():

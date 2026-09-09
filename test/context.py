@@ -67,17 +67,17 @@ try:
     import botorch
     import torch
 
-    bayes_opt_botorch_present = True
+    botorch_present = True
 except ImportError:
-    bayes_opt_botorch_present = False
+    botorch_present = False
 
 try:
     import gpytorch
     import torch
 
-    bayes_opt_gpytorch_present = True
+    gpytorch_present = True
 except ImportError:
-    bayes_opt_gpytorch_present = False
+    gpytorch_present = False
 
 try:
     from skopt import Optimizer as SkOptimizer
@@ -121,11 +121,11 @@ skip_if_no_gfortran = pytest.mark.skipif(not gfortran_present, reason="No gfortr
 skip_if_no_julia = pytest.mark.skipif(not shutil.which("julia") or not julia_present, reason="No Julia on PATH or juliacall not installed")
 skip_if_no_openmp = pytest.mark.skipif(not openmp_present, reason="No OpenMP found")
 skip_if_no_openacc = pytest.mark.skipif(not openacc_present, reason="No nvc++ on PATH")
-skip_if_no_bayesopt_gpytorch = pytest.mark.skipif(
-    not bayes_opt_gpytorch_present, reason="Torch and GPyTorch not installed"
+skip_if_no_gpytorch = pytest.mark.skipif(
+    not gpytorch_present, reason="Torch and GPyTorch not installed"
 )
-skip_if_no_bayesopt_botorch = pytest.mark.skipif(
-    not bayes_opt_botorch_present, reason="Torch and BOTorch not installed"
+skip_if_no_botorch = pytest.mark.skipif(
+    not botorch_present, reason="Torch and BOTorch not installed"
 )
 skip_if_no_skopt = pytest.mark.skipif(
     not skopt_present, reason="scikit-optimize not installed"
