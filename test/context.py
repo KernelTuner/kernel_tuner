@@ -80,6 +80,13 @@ except ImportError:
     bayes_opt_gpytorch_present = False
 
 try:
+    from skopt import Optimizer as SkOptimizer
+
+    skopt_present = True
+except ImportError:
+    skopt_present = False
+
+try:
     import pyatf
 
     pyatf_present = True
@@ -119,6 +126,9 @@ skip_if_no_bayesopt_gpytorch = pytest.mark.skipif(
 )
 skip_if_no_bayesopt_botorch = pytest.mark.skipif(
     not bayes_opt_botorch_present, reason="Torch and BOTorch not installed"
+)
+skip_if_no_skopt = pytest.mark.skipif(
+    not skopt_present, reason="scikit-optimize not installed"
 )
 skip_if_no_hip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")
 skip_if_no_pyatf = pytest.mark.skipif(not pyatf_present, reason="PyATF not installed")

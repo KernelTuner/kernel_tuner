@@ -8,7 +8,7 @@ import kernel_tuner
 from kernel_tuner.util import InvalidConfig
 from kernel_tuner.interface import strategy_map
 
-from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch, skip_if_no_pyatf
+from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch, skip_if_no_pyatf, skip_if_no_skopt
 
 
 cache_filename =  Path(__file__).parent / "test_cache_file.json"
@@ -43,12 +43,16 @@ def vector_add():
 # skip some strategies if their dependencies are not installed
 strategies = []
 for s in strategy_map.keys():
-    if 'gpytorch' in s.lower() or 'botorch_alt' in s.lower():
+    if 'botorch_alt' in s.lower():
         continue    # TODO issue warning for uninstalled dependencies?
     if 'gpytorch' in s.lower():
         strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_gpytorch))
+    elif 'bayes_opt' in s.lower():
+        strategies.append(s)
     elif 'botorch' in s.lower():
         strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_botorch))
+    elif 'skopt' in s.lower():
+        strategies.append(pytest.param(s, marks=skip_if_no_skopt))
     elif 'pyatf' in s.lower():
         strategies.append(pytest.param(s, marks=skip_if_no_pyatf))
     else:
@@ -128,7 +132,7 @@ def test_strategies(vector_add, strategy):
     # check if strategy respects user-specified starting point (x0)
     x0 = [256, 'alg_2', 15, True, 2.45]
     filter_options["x0"] = x0
-    if not strategy in ["brute_force", "random_sample", "bayes_opt", "pyatf_strategies", "adaptive_tabu_greywolf", "hybrid_vndx", "nsga2", "nsga3"]:
+    if not strategy in ["brute_force", "random_sample", "bayes_opt", "bayes_opt_new", "pyatf_strategies", "adaptive_tabu_greywolf", "hybrid_vndx", "nsga2", "nsga3"]:
         results, _ = kernel_tuner.tune_kernel(*vector_add, restrictions=restrictions, strategy=strategy, strategy_options=filter_options,
                                             verbose=False, cache=cache_filename, simulation_mode=True)
         assert results[0]["block_size_x"] == x0[0]
