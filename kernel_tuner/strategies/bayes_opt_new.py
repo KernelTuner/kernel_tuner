@@ -398,6 +398,10 @@ class BayesianOptimization:
 
     def get_middle_index_of_least_evaluated_region(self) -> int:
         """Get the middle index of the region of parameter configurations that is the least visited."""
+        return self.get_middle_index_of_least_evaluated_region_loop()
+
+    def get_middle_index_of_least_evaluated_region_loop(self) -> int:
+        """Get the middle index of the region of parameter configurations that is the least visited."""
         # This uses the largest distance between visited parameter configurations. That means it does not properly take the parameters into account, only the index of the parameter configurations, whereas LHS does. 
         distance_tensor = torch.arange(self.size, device=self.device)
 
@@ -412,6 +416,31 @@ class BayesianOptimization:
         biggest_distance = distance_tensor[biggest_distance_index].item()
         middle_index = biggest_distance_index - round(biggest_distance / 2)
         return middle_index
+
+    def get_middle_index_of_least_evaluated_region_vectorized(self) -> int:
+        """Get the middle index of the region of parameter configurations that is the least visited, vectorized version (avoids Python loop over visited indices)."""
+        indices_visited = torch.where(~self.unvisited_configs)[0]
+        
+        if len(indices_visited) == 0:
+            return self.size // 2
+        
+        # Vectorized: create a mask for all visited indices at once
+        # Use cummax to find distances more efficiently
+        visited_mask = ~self.unvisited_configs
+        # Distance to next visited index (forward)
+        forward_dist = torch.arange(self.size, device=self.device).float()
+        forward_dist[visited_mask] = 0
+        forward_dist = forward_dist.flip(0).cummax(0).values.flip(0)
+        
+        # Distance from previous visited index (backward)  
+        backward_dist = torch.arange(self.size - 1, -1, -1, device=self.device).float()
+        backward_dist[visited_mask] = 0
+        backward_dist = backward_dist.cummax(0).values
+        
+        # Total gap = forward + backward
+        gap = forward_dist + backward_dist
+        biggest_distance_index = gap.argmax()
+        return (biggest_distance_index - (gap[biggest_distance_index] // 2).long()).item()
 
     def train_hyperparams(self, training_iter: int):
         """Optimize the surrogate model hyperparameters iteratively."""
