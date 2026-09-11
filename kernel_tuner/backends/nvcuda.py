@@ -3,6 +3,8 @@
 import numpy as np
 import uuid
 import os
+import subprocess
+import tempfile
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.nvcuda import CudaRuntimeObserver
@@ -48,6 +50,12 @@ except ImportError:
         from cuda import nvrtc as nvrtc
     except ImportError:
         driver = None
+
+try:
+    from cuda.core import Kernel as CudaCoreKernel, launch as cuda_core_launch, LaunchConfig as CudaCoreConfig
+    _cuda_core_available = True
+except ImportError:
+    _cuda_core_available = False
 
 
 class CudaFunctions(GPUBackend):
@@ -102,6 +110,7 @@ class CudaFunctions(GPUBackend):
         self.cc = f"{major}{minor}"
         self.iterations = iterations
         self.current_module = None
+        self.current_library = None
         self.func = None
         self.compiler_options = compiler_options or []
 
@@ -267,47 +276,50 @@ class CudaFunctions(GPUBackend):
         """
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
-        expression_name = str.encode(kernel_name)
         compiler_options = list(self.compiler_options)
 
-        # Add -std=c++11
-        if not any(opt.startswith(("-std=", "--std=")) for opt in self.compiler_options):
-            compiler_options.append("--std=c++11")
+        # Detect Tile kernels: user passes "-enable-tile" (NVRTC flag) as a signal.
+        # Tile kernels are compiled with nvcc -tilecubin rather than NVRTC.
+        is_tile_kernel = any(str(opt).strip() == "-enable-tile" for opt in compiler_options)
 
-        # Add -arch
-        if not any(opt.startswith(("-arch", "--arch", "--gpu-architecture=")) for opt in self.compiler_options):
-            arch_val = to_valid_nvrtc_gpu_arch_cc(self.cc)
-            compiler_options.append(f"--gpu-architecture=compute_{arch_val}")
+        if is_tile_kernel:
+            if not _cuda_core_available:
+                raise RuntimeError("Tile kernels require 'cuda-core' (pip install cuda-core)")
+            self.func = self._compile_tile_kernel_nvcc(kernel_string, kernel_name, compiler_options)
+            self.num_regs = 0
+        else:
+            expression_name = str.encode(kernel_name)
 
-        # Add CUDA home to include path
-        cuda_home = find_cuda_home()
-        if cuda_home:
-            cuda_include = os.path.join(cuda_home, "include")
-            compiler_options.append(f"-I{cuda_include}")
+            # Add -std=c++11
+            if not any(opt.startswith(("-std=", "--std=")) for opt in self.compiler_options):
+                compiler_options.append("--std=c++11")
 
-        # nvrtcCompileProgram requires bytes instead of str
-        compiler_options = [str(opt).encode("UTF-8") for opt in compiler_options]
+            # Add -arch
+            if not any(opt.startswith(("-arch", "--arch", "--gpu-architecture=")) for opt in self.compiler_options):
+                arch_val = to_valid_nvrtc_gpu_arch_cc(self.cc)
+                compiler_options.append(f"--gpu-architecture=compute_{arch_val}")
 
-        err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
-        try:
-            cuda_error_check(err)
-            # Add the kernel as an expression. This is necessary for templated kernels to ensure that the
-            # compiler actually instantiates the kernel that we want to compile.
-            err = nvrtc.nvrtcAddNameExpression(program, expression_name)
-            cuda_error_check(err)
+            # Add CUDA home to include path
+            cuda_home = find_cuda_home()
+            if cuda_home:
+                cuda_include = os.path.join(cuda_home, "include")
+                compiler_options.append(f"-I{cuda_include}")
 
-            # Compile the program
-            err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
-            cuda_error_check(err)
+            # nvrtcCompileProgram requires bytes instead of str
+            compiler_options = [str(opt).encode("UTF-8") for opt in compiler_options]
 
-            if b"-enable-tile" in compiler_options:
-                # Get the Tile IR
-                err, size = nvrtc.nvrtcGetTileIRSize(program)
+            err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
+            try:
                 cuda_error_check(err)
-                buff = b" " * size
-                err = nvrtc.nvrtcGetTileIR(program, buff)
+                # Add the kernel as an expression. This is necessary for templated kernels to ensure that the
+                # compiler actually instantiates the kernel that we want to compile.
+                err = nvrtc.nvrtcAddNameExpression(program, expression_name)
                 cuda_error_check(err)
-            else:
+
+                # Compile the program
+                err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
+                cuda_error_check(err)
+
                 # Get the PTX
                 err, size = nvrtc.nvrtcGetPTXSize(program)
                 cuda_error_check(err)
@@ -315,59 +327,123 @@ class CudaFunctions(GPUBackend):
                 err = nvrtc.nvrtcGetPTX(program, buff)
                 cuda_error_check(err)
 
-            # Load the module
-            err, self.current_module = _load_module_with_logs(np.char.array(buff))
+                # Load the module
+                err, self.current_module = _load_module_with_logs(buff)
 
-            # It the compile succeeded, but loading the PTX failed it is most likely
-            # that the kernel uses too much shared memory
-            if err == driver.CUresult.CUDA_ERROR_INVALID_PTX:
-                raise SkippableFailure("uses too much shared data")
-            else:
-                cuda_error_check(err)
+                # If the compile succeeded but loading the PTX failed it is most likely
+                # that the kernel uses too much shared memory
+                if err == driver.CUresult.CUDA_ERROR_INVALID_PTX:
+                    raise SkippableFailure("uses too much shared data")
+                else:
+                    cuda_error_check(err)
 
-            # Get the lowered name (resolves C++ mangling for both regular and Tile kernels).
-            err, lowered_name = nvrtc.nvrtcGetLoweredName(program, expression_name)
-            cuda_error_check(err)
-
-            if b"-enable-tile" in compiler_options:
-                # For Tile kernels the entry point name in the module is the lowered name
-                # plus encoded Tile template parameters. Enumerate all functions in the
-                # loaded module and find the one whose name contains the kernel name.
-                err, func_count = driver.cuModuleGetFunctionCount(self.current_module)
+                # Get the lowered name (resolves C++ mangling) and look up the function
+                err, lowered_name = nvrtc.nvrtcGetLoweredName(program, expression_name)
                 cuda_error_check(err)
-                err, functions = driver.cuModuleEnumerateFunctions(func_count, self.current_module)
-                cuda_error_check(err)
-                self.func = None
-                for func in functions:
-                    err, func_name = driver.cuFuncGetName(func)
-                    if err != driver.CUresult.CUDA_SUCCESS:
-                        continue
-                    if isinstance(func_name, bytes):
-                        func_name = func_name.decode()
-                    if kernel_name in func_name:
-                        self.func = func
-                        break
-                if self.func is None:
-                    raise RuntimeError(f"Could not find Tile kernel '{kernel_name}' in compiled module")
-            else:
                 err, self.func = driver.cuModuleGetFunction(self.current_module, lowered_name)
                 if err == driver.CUresult.CUDA_ERROR_NOT_FOUND:
                     err, self.func = driver.cuModuleGetFunction(self.current_module, expression_name)
                 cuda_error_check(err)
 
-            # get the number of registers per thread used in this kernel
-            num_regs = driver.cuFuncGetAttribute(driver.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
-            assert num_regs[0] == 0, f"Retrieving number of registers per thread unsuccesful: code {num_regs[0]}"
-            self.num_regs = num_regs[1]
+                # get the number of registers per thread used in this kernel
+                num_regs = driver.cuFuncGetAttribute(driver.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
+                assert num_regs[0] == 0, f"Retrieving number of registers per thread unsuccesful: code {num_regs[0]}"
+                self.num_regs = num_regs[1]
 
-        except RuntimeError as re:
-            _, n = nvrtc.nvrtcGetProgramLogSize(program)
-            log = b" " * n
-            nvrtc.nvrtcGetProgramLog(program, log)
-            print(log.decode("utf-8"))
-            raise re
+            except RuntimeError as re:
+                _, n = nvrtc.nvrtcGetProgramLogSize(program)
+                log = b" " * n
+                nvrtc.nvrtcGetProgramLog(program, log)
+                print(log.decode("utf-8"))
+                raise re
 
         return self.func
+
+    def _compile_tile_kernel_nvcc(self, kernel_string, kernel_name, compiler_options):
+        """Compile a CUDA Tile kernel using nvcc -tilecubin and load it via cuda.core.
+
+        Tile kernels cannot be compiled to PTX via NVRTC and loaded as regular
+        modules. Instead, nvcc produces a 'tile cubin' that can be loaded by
+        cuda.core.ObjectCode.from_cubin and launched with cuda.core.launch.
+
+        Returns a cuda.core.Kernel that must be launched with block=1.
+        """
+        from cuda.core import ObjectCode
+
+        nvcc = os.environ.get("KERNEL_TUNER_NVCC", "nvcc")
+
+        # Determine arch: translate --gpu-architecture=compute_XX or -arch=compute_XX
+        # to -arch=sm_XX (required for cubin output).
+        arch_flag = f"-arch=sm_{self.cc}"
+        for opt in compiler_options:
+            s = str(opt).strip()
+            for prefix in ("--gpu-architecture=compute_", "--gpu-architecture=sm_",
+                           "-arch=compute_", "-arch=sm_"):
+                if s.startswith(prefix):
+                    suffix = s[len(prefix):]
+                    arch_flag = f"-arch=sm_{suffix}"
+                    break
+
+        # Build the nvcc command, forwarding safe options and skipping NVRTC-only ones.
+        _skip = {"-enable-tile"}
+        _skip_prefixes = ("--gpu-architecture=", "-arch=")
+        nvcc_opts = []
+        for opt in compiler_options:
+            s = str(opt).strip()
+            if s in _skip or any(s.startswith(p) for p in _skip_prefixes):
+                continue
+            nvcc_opts.append(s)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cu_file = os.path.join(tmpdir, "kernel.cu")
+            cubin_file = os.path.join(tmpdir, "kernel.cubin")
+
+            with open(cu_file, "w") as f:
+                f.write(kernel_string)
+
+            cmd = [nvcc, "-tilecubin", "--tile-only", arch_flag] + nvcc_opts + ["-o", cubin_file, cu_file]
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError(
+                    f"nvcc Tile kernel compilation failed:\n{e.stderr}"
+                ) from e
+
+            cubin_bytes = open(cubin_file, "rb").read()
+
+        # Find the mangled kernel name by loading the cubin as a module and
+        # enumerating its functions (same approach as TileGym).
+        err, mod = driver.cuModuleLoadData(cubin_bytes)
+        cuda_error_check(err)
+        err, func_count = driver.cuModuleGetFunctionCount(mod)
+        cuda_error_check(err)
+        err, functions = driver.cuModuleEnumerateFunctions(func_count, mod)
+        cuda_error_check(err)
+        # Strip template args (e.g. "vector_add_tile<8>" -> "vector_add_tile") before
+        # searching mangled names, since template args are encoded in mangled form.
+        base_name = kernel_name.split('<')[0].strip()
+        mangled_name = None
+        for func in functions:
+            err2, name_bytes = driver.cuFuncGetName(func)
+            if err2 != driver.CUresult.CUDA_SUCCESS:
+                continue
+            name = name_bytes.decode() if isinstance(name_bytes, bytes) else name_bytes
+            if base_name in name:
+                mangled_name = name
+                break
+        if mangled_name is None and func_count > 0:
+            _, name_bytes = driver.cuFuncGetName(functions[0])
+            mangled_name = name_bytes.decode() if isinstance(name_bytes, bytes) else name_bytes
+        driver.cuModuleUnload(mod)
+        if mangled_name is None:
+            raise RuntimeError(f"Could not find Tile kernel '{kernel_name}' in compiled cubin")
+
+        # Load the cubin via cuda.core and retrieve the Kernel object.
+        # Store the ObjectCode as self.current_library to keep it alive for the
+        # duration of the kernel's use (the Kernel handle is only valid while the
+        # ObjectCode/library is alive).
+        self.current_library = ObjectCode.from_cubin(cubin_bytes)
+        return self.current_library.get_kernel(mangled_name)
 
     def start_event(self):
         """Records the event that marks the start of a measurement."""
@@ -450,20 +526,36 @@ class CudaFunctions(GPUBackend):
             else:
                 arg_types.append(np.ctypeslib.as_ctypes_type(arg.dtype))
         kernel_args = (tuple(gpu_args), tuple(arg_types))
-        err = driver.cuLaunchKernel(
-            func,
-            grid[0],
-            grid[1],
-            grid[2],
-            threads[0],
-            threads[1],
-            threads[2],
-            self.smem_size,
-            stream,
-            kernel_args,
-            0,
-        )
-        cuda_error_check(err)
+        if _cuda_core_available and isinstance(func, CudaCoreKernel):
+            # Tile kernels are launched via cuda.core.launch with block=1;
+            # the Tile runtime handles the thread-to-tile mapping internally.
+            from cuda.core import Stream as CudaCoreStream
+            tile_args = []
+            for arg in gpu_args:
+                if isinstance(arg, driver.CUdeviceptr):
+                    tile_args.append(np.uint64(int(arg)))
+                else:
+                    tile_args.append(arg)
+            # Stream.from_handle takes the raw integer CUstream handle value,
+            # the same convention as torch_stream.cuda_stream in PyTorch.
+            core_stream = CudaCoreStream.from_handle(int(stream))
+            config = CudaCoreConfig(grid=(grid[0], grid[1], grid[2]), block=1, shmem_size=self.smem_size)
+            cuda_core_launch(core_stream, config, func, *tile_args)
+        else:
+            err = driver.cuLaunchKernel(
+                func,
+                grid[0],
+                grid[1],
+                grid[2],
+                threads[0],
+                threads[1],
+                threads[2],
+                self.smem_size,
+                stream,
+                kernel_args,
+                0,
+            )
+            cuda_error_check(err)
 
     @staticmethod
     def memset(allocation, value, size):
