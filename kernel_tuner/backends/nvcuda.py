@@ -18,7 +18,7 @@ def preload_python_nvrtc():
     # search site-packages for nvidia-cuda-nvrtc wheels
     site_packages = sysconfig.get_paths()["purelib"]
     nvidia_path = os.path.join(site_packages, "nvidia", "nvrtc", "lib")
-    
+
     # fall back to CUDA_HOME / CUDA_PATH if present
     cuda_home = os.environ.get("CUDA_HOME") or os.environ.get("CUDA_PATH")
     cuda_home_lib = os.path.join(cuda_home, "lib64") if cuda_home else None
@@ -290,38 +290,70 @@ class CudaFunctions(GPUBackend):
 
         err, program = nvrtc.nvrtcCreateProgram(str.encode(kernel_string), b"CUDAProgram", 0, [], [])
         try:
+            cuda_error_check(err)
             # Add the kernel as an expression. This is necessary for templated kernels to ensure that the
             # compiler actually instantiates the kernel that we want to compile.
-            cuda_error_check(err)
             err = nvrtc.nvrtcAddNameExpression(program, expression_name)
+            cuda_error_check(err)
 
             # Compile the program
-            cuda_error_check(err)
             err = nvrtc.nvrtcCompileProgram(program, len(compiler_options), compiler_options)
+            cuda_error_check(err)
 
-            # Get the PTX
-            cuda_error_check(err)
-            err, size = nvrtc.nvrtcGetPTXSize(program)
-            cuda_error_check(err)
-            buff = b" " * size
-            err = nvrtc.nvrtcGetPTX(program, buff)
-            cuda_error_check(err)
+            if b"-enable-tile" in compiler_options:
+                # Get the Tile IR
+                err, size = nvrtc.nvrtcGetTileIRSize(program)
+                cuda_error_check(err)
+                buff = b" " * size
+                err = nvrtc.nvrtcGetTileIR(program, buff)
+                cuda_error_check(err)
+            else:
+                # Get the PTX
+                err, size = nvrtc.nvrtcGetPTXSize(program)
+                cuda_error_check(err)
+                buff = b" " * size
+                err = nvrtc.nvrtcGetPTX(program, buff)
+                cuda_error_check(err)
 
             # Load the module
-            err, self.current_module = driver.cuModuleLoadData(np.char.array(buff))
+            err, self.current_module = _load_module_with_logs(np.char.array(buff))
+
+            # It the compile succeeded, but loading the PTX failed it is most likely
+            # that the kernel uses too much shared memory
             if err == driver.CUresult.CUDA_ERROR_INVALID_PTX:
                 raise SkippableFailure("uses too much shared data")
             else:
                 cuda_error_check(err)
 
-            # First, get the "lowered" name of the kernel (i.e., the name inside the PTX).
-            # After, we can use the lowered name to lookup the kernel in the module.
+            # Get the lowered name (resolves C++ mangling for both regular and Tile kernels).
             err, lowered_name = nvrtc.nvrtcGetLoweredName(program, expression_name)
             cuda_error_check(err)
-            err, self.func = driver.cuModuleGetFunction(
-                self.current_module, lowered_name
-            )
-            cuda_error_check(err)
+
+            if b"-enable-tile" in compiler_options:
+                # For Tile kernels the entry point name in the module is the lowered name
+                # plus encoded Tile template parameters. Enumerate all functions in the
+                # loaded module and find the one whose name contains the kernel name.
+                err, func_count = driver.cuModuleGetFunctionCount(self.current_module)
+                cuda_error_check(err)
+                err, functions = driver.cuModuleEnumerateFunctions(func_count, self.current_module)
+                cuda_error_check(err)
+                self.func = None
+                for func in functions:
+                    err, func_name = driver.cuFuncGetName(func)
+                    if err != driver.CUresult.CUDA_SUCCESS:
+                        continue
+                    if isinstance(func_name, bytes):
+                        func_name = func_name.decode()
+                    if kernel_name in func_name:
+                        self.func = func
+                        break
+                if self.func is None:
+                    raise RuntimeError(f"Could not find Tile kernel '{kernel_name}' in compiled module")
+            else:
+                err, self.func = driver.cuModuleGetFunction(self.current_module, lowered_name)
+                if err == driver.CUresult.CUDA_ERROR_NOT_FOUND:
+                    err, self.func = driver.cuModuleGetFunction(self.current_module, expression_name)
+                cuda_error_check(err)
 
             # get the number of registers per thread used in this kernel
             num_regs = driver.cuFuncGetAttribute(driver.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
@@ -479,3 +511,44 @@ class CudaFunctions(GPUBackend):
     units = {"time": "ms"}
 
     last_selected_device = None
+
+
+
+def _load_module_with_logs(image: bytes, log_size: int = 8192):
+    """Load a PTX/cubin/Tile IR image via cuModuleLoadDataEx with
+    error/info log capture. Raises RuntimeError with the compiler's
+    own diagnostic text on failure, instead of a bare CUresult."""
+
+    error_log = bytearray(log_size)
+    info_log = bytearray(log_size)
+
+    options = [
+        driver.CUjit_option.CU_JIT_ERROR_LOG_BUFFER,
+        driver.CUjit_option.CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES,
+        driver.CUjit_option.CU_JIT_INFO_LOG_BUFFER,
+        driver.CUjit_option.CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES,
+        driver.CUjit_option.CU_JIT_LOG_VERBOSE,
+    ]
+    option_values = [
+        error_log,
+        log_size,
+        info_log,
+        log_size,
+        1,  # verbose logging on
+    ]
+
+    result = driver.cuModuleLoadDataEx(
+        image, len(options), options, option_values
+    )
+
+    if result[0] != driver.CUresult.CUDA_SUCCESS:
+        err_text = error_log.split(b"\x00", 1)[0].decode(errors="replace")
+        info_text = info_log.split(b"\x00", 1)[0].decode(errors="replace")
+        raise RuntimeError(
+            f"cuModuleLoadDataEx failed: {result[0]}\n"
+            f"--- error log ---\n{err_text}\n"
+            f"--- info log ---\n{info_text}"
+        )
+
+    (module,) = result[1:]
+    return result[0], module
