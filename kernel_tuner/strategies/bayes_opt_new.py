@@ -1,6 +1,7 @@
 """Lean implementation of Bayesian Optimization with GPyTorch, using the Searchspace object."""
 # python
 import ast  # for casting strings to dict
+import sys
 import warnings
 from copy import deepcopy
 from math import ceil
@@ -13,6 +14,8 @@ from numpy.random import default_rng
 
 from kernel_tuner.runners.runner import Runner
 from kernel_tuner.searchspace import Searchspace
+from kernel_tuner.strategies.common import CostFunc
+from kernel_tuner.util import StopCriterionReached
 
 # optional
 try:
@@ -31,6 +34,8 @@ try:
                 self.covar_module = gpytorch.kernels.MaternKernel(nu=cov_kernel_lengthscale)
             elif cov_kernel_name == 'matern_scalekernel':
                 self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.MaternKernel(nu=cov_kernel_lengthscale))
+            elif cov_kernel_name == 'rbf':
+                self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
 
         def forward(self, x):
             mean_x = self.mean_module(x)
@@ -139,6 +144,8 @@ class BayesianOptimization:
                  device) -> None:
         self.animate = False    # TODO remove
 
+        self.cost_func = CostFunc(searchspace, tuning_options, runner)
+
         # store the searchspace object
         self.searchspace = searchspace
 
@@ -193,14 +200,15 @@ class BayesianOptimization:
         self.results_std = torch.ones(self.size, dtype=self.dtype).to(device)
 
         # set optimization settings
-        self.invalid_value = 1e20
         self.optimization_direction = optimization_direction
         if self.optimization_direction == 'min':
+            self.invalid_value = sys.float_info.max
             self.is_better_than = lambda a, b: a < b
             self.inf_value = np.inf
             self.opt = torch.min
             self.argopt = torch.argmin
         elif self.optimization_direction == 'max':
+            self.invalid_value = sys.float_info.min
             self.is_better_than = lambda a, b: a > b
             self.inf_value = np.NINF
             self.opt = torch.max
@@ -470,7 +478,7 @@ class BayesianOptimization:
         # training loop with early stopping if no improvement in loss for a number of iterations
         loss = None
         best_loss = float('inf')
-        patience = 10
+        patience = 5
         no_improve = 0
         for _ in range(training_iter):
             try:
@@ -484,7 +492,7 @@ class BayesianOptimization:
             except TypeError as e:
                 warnings.warn(str(e), RuntimeWarning)
                 break
-            if loss < best_loss - 1e-5:
+            if loss < best_loss - 1e-4:
                 best_loss = loss
                 no_improve = 0
             else:
@@ -512,6 +520,90 @@ class BayesianOptimization:
         self.model.eval()
         self.likelihood.eval()
 
+    # def train_hyperparams(self, training_iter: int):
+    #     """Optimize the surrogate model hyperparameters iteratively."""
+    #     self.model.train()
+    #     self.likelihood.train()
+
+    #     def closure():
+    #         self.optimizer.zero_grad()
+    #         output = self.model(self.train_x)    # get model output
+    #         try:
+    #             loss = -self.mll(output, self.train_y)    # calculate loss and backprop gradients
+    #             loss.backward()
+    #             # large sudden increase in loss signals numerical instability
+    #             with warnings.catch_warnings():
+    #                 warnings.simplefilter("ignore", category=RuntimeWarning)
+    #                 no_nan_losses = self.hyperparams_means['loss'][~np.isnan(self.hyperparams_means['loss'])]
+    #                 if len(no_nan_losses) > 1 and loss.item() > np.mean(no_nan_losses) * 2:
+    #                     warnings.warn("Avoiding loss surge, aborting training", AvoidedLossSurgeWarning)
+    #                     return np.nan
+    #             return loss
+    #         except gpytorch.utils.errors.NotPSDError:
+    #             warnings.warn("Matrix not positive definite during training", NotPSDTrainingWarning)
+    #             return np.nan
+    #         except RuntimeError as e:
+    #             warnings.warn(str(e), RuntimeWarning)
+
+    #     loss = None
+    #     for _ in range(training_iter):
+    #         try:
+    #             _loss = self.optimizer.step(closure)
+    #             if _loss is np.nan:
+    #                 break
+    #             loss = _loss
+    #         except gpytorch.utils.errors.NanError:
+    #             warnings.warn("PSD_safe_Cholesky failed due to too many NaN", NaNTrainingWarning)
+    #             break
+    #         except TypeError as e:
+    #             warnings.warn(str(e), RuntimeWarning)
+    #             break
+
+    #     # # training loop with early stopping if no improvement in loss for a number of iterations
+    #     # loss = None
+    #     # best_loss = float('inf')
+    #     # patience = 100   # TODO turn this into a hyperparameter?
+    #     # no_improve = 0
+    #     # for _ in range(training_iter):
+    #     #     try:
+    #     #         _loss = self.optimizer.step(closure)
+    #     #         if _loss is np.nan:
+    #     #             break
+    #     #         loss = _loss
+    #     #     except gpytorch.utils.errors.NanError:
+    #     #         warnings.warn("PSD_safe_Cholesky failed due to too many NaN", NaNTrainingWarning)
+    #     #         break
+    #     #     except TypeError as e:
+    #     #         warnings.warn(str(e), RuntimeWarning)
+    #     #         break
+    #     #     if loss < best_loss - 1e-8:
+    #     #         best_loss = loss
+    #     #         no_improve = 0
+    #     #     else:
+    #     #         no_improve += 1
+    #     #         if no_improve >= patience:
+    #     #             break
+
+    #     # set the hyperparams to the new values
+    #     try:
+    #         lengthscale = float(self.model.covar_module.lengthscale.item())
+    #     except AttributeError:
+    #         lengthscale = float(self.model.covar_module.base_kernel.lengthscale.item())
+    #     loss = float(loss.item()) if loss is not None else np.nan
+    #     noise = float(self.model.likelihood.noise.mean().detach())
+    #     self.hyperparams = {
+    #         'loss': loss,
+    #         'lengthscale': lengthscale,
+    #         'noise': noise,
+    #     }
+    #     self.hyperparams_means['loss'] = np.append(self.hyperparams_means['loss'], loss)
+    #     self.hyperparams_means['lengthscale'] = np.append(self.hyperparams_means['lengthscale'], lengthscale)
+    #     self.hyperparams_means['noise'] = np.append(self.hyperparams_means['noise'], noise)
+
+    #     # get into evaluation (predictive posterior) mode
+    #     self.model.eval()
+    #     self.likelihood.eval()
+
     def optimize(self, max_fevals: int) -> List[dict]:    #NOSONAR
         """Optimize the objective."""
         predictions_tuple = None
@@ -519,76 +611,90 @@ class BayesianOptimization:
         last_invalid = False
         report_multiple_minima = ceil(round(self.size / 10))    # if more than 10% of the space is minima, print a warning
         use_contextual_variance = self.af_params['explorationfactor'] == 'CV'
-        while self.fevals < max_fevals:
-            if last_invalid:
-                # remove the invalid prediction from the list
-                predictions_tuple = self.remove_from_predict_list(predictions_tuple, short_param_config_index)
-            else:
-                predictions_tuple = self.predict_list()
-            # if there are NaN or all of the predicted std are the same, take from the least evaluated region
-            mean_has_NaN = bool(torch.any(torch.isnan(predictions_tuple[0])).item())
-            std_has_NaN = bool(torch.any(torch.isnan(predictions_tuple[1])).item())
-            if mean_has_NaN or std_has_NaN or torch.all(predictions_tuple[1] == predictions_tuple[1][0]):
-                least_evaluated_region_index = self.get_middle_index_of_least_evaluated_region()
-                param_config_index = least_evaluated_region_index
-                short_param_config_index = -1
-                if mean_has_NaN:
-                    warning_reason = "there were NaN in the predicted mean"
-                elif std_has_NaN:
-                    warning_reason = "there were NaN in the predicted std"
+        try:
+            # while self.fevals < max_fevals:
+            while True:
+                if last_invalid:
+                    # remove the invalid prediction from the list
+                    predictions_tuple = self.remove_from_predict_list(predictions_tuple, short_param_config_index)
                 else:
-                    warning_reason = "all STDs were the same"
-                warnings.warn(
-                    f"After {self.fevals}/{max_fevals} fevals, {warning_reason}, picking one from the least evaluated region and resetting the surrogate model",
-                    ResetModelWarning)
-                self.initialize_model(take_initial_sample=False, train_hyperparams=True)
-            else:
-                # otherwise, optimize the acquisition function to find the next candidate
-                hyperparam = self.contextual_variance(predictions_tuple[0], predictions_tuple[1]) if use_contextual_variance else None
-                acquisition_values = self.acquisition_function(predictions_tuple, hyperparam)
-                short_param_config_index = self.argopt(acquisition_values)
+                    predictions_tuple = self.predict_list()
                 
-                # Convert short index (index in unvisited) to full index
-                unvisited_indices = torch.where(self.unvisited_configs)[0]
-                param_config_index = unvisited_indices[short_param_config_index].item()
+                if len(predictions_tuple[0]) == 0:
+                    assert len(self.unvisited_configs) == 0, "There are still unvisited configurations but the predictions list is empty"
+                    break   # no more unvisited configurations to evaluate
 
-                # if there are multiple minima in the acquisition function values, we want to take one from the least evaluated region
-                min_acquisition_function_value = acquisition_values[short_param_config_index]
-                indices_where_min = (acquisition_values <= min_acquisition_function_value).nonzero(as_tuple=True)[0]
-                if len(indices_where_min) > 1:
-                    # first get the true index for the minima
-                    true_indices_where_min = unvisited_indices[indices_where_min]
-                    # then get the index of the least evaluated region
+                # if there are NaN or all of the predicted std are the same, take from the least evaluated region
+                mean_has_NaN = bool(torch.any(torch.isnan(predictions_tuple[0])).item())
+                std_has_NaN = bool(torch.any(torch.isnan(predictions_tuple[1])).item())
+                if mean_has_NaN or std_has_NaN or torch.all(predictions_tuple[1] == predictions_tuple[1][0]):
                     least_evaluated_region_index = self.get_middle_index_of_least_evaluated_region()
-                    # now find the minima closest to the least evaluated region
-                    param_config_index = self.find_nearest(least_evaluated_region_index, true_indices_where_min).item()
-                    short_param_config_index = -1    # invalidate the short_param_config_index because we bypassed it
-                    if len(indices_where_min) > report_multiple_minima:
-                        warnings.warn(
-                            f"After {self.fevals}/{max_fevals} fevals, there were multiple minima in the acquisition values ({len(indices_where_min)}), picking one based on the least evaluated region",
-                            MultipleMinimaWarning)
+                    param_config_index = least_evaluated_region_index
+                    short_param_config_index = -1
+                    if mean_has_NaN:
+                        warning_reason = "there were NaN in the predicted mean"
+                    elif std_has_NaN:
+                        warning_reason = "there were NaN in the predicted std"
+                    else:
+                        warning_reason = "all STDs were the same"
+                    warnings.warn(
+                        f"After {self.fevals}/{max_fevals} fevals, {warning_reason}, picking one from the least evaluated region and resetting the surrogate model",
+                        ResetModelWarning)
+                    self.initialize_model(take_initial_sample=False, train_hyperparams=True)
+                else:
+                    # otherwise, optimize the acquisition function to find the next candidate
+                    hyperparam = self.contextual_variance(predictions_tuple[0], predictions_tuple[1]) if use_contextual_variance else None
+                    acquisition_values = self.acquisition_function(predictions_tuple, hyperparam)
+                    short_param_config_index = self.argopt(acquisition_values)
+                    
+                    # Convert short index (index in unvisited) to full index
+                    unvisited_indices = torch.where(self.unvisited_configs)[0]
+                    param_config_index = unvisited_indices[short_param_config_index].item()
 
-            # evaluate and register the result
-            result = self.evaluate_config(param_config_index)
-            if result == self.invalid_value and short_param_config_index > -1:
-                last_invalid = True
-            else:
-                last_invalid = False
-                self.model.set_train_data(self.train_x, self.train_y, strict=False)
-                # do not train if there are multiple minima, because it introduces numerical instability or insolvability
-                if self.training_after_iter > 0 and (self.fevals % self.training_after_iter == 0):
-                    self.train_hyperparams(training_iter=1)
-                # set the current optimum
-                self.current_optimum = self.opt(self.train_y).item()
-            if self.animate:
-                self.visualize()
+                    # if there are multiple minima in the acquisition function values, we want to take one from the least evaluated region
+                    min_acquisition_function_value = acquisition_values[short_param_config_index]
+                    indices_where_min = (acquisition_values <= min_acquisition_function_value).nonzero(as_tuple=True)[0]
+                    if len(indices_where_min) > 1:
+                        # first get the true index for the minima
+                        true_indices_where_min = unvisited_indices[indices_where_min]
+                        # then get the index of the least evaluated region
+                        least_evaluated_region_index = self.get_middle_index_of_least_evaluated_region()
+                        # now find the minima closest to the least evaluated region
+                        param_config_index = self.find_nearest(least_evaluated_region_index, true_indices_where_min).item()
+                        short_param_config_index = -1    # invalidate the short_param_config_index because we bypassed it
+                        if len(indices_where_min) > report_multiple_minima:
+                            warnings.warn(
+                                f"After {self.fevals}/{max_fevals} fevals, there were multiple minima in the acquisition values ({len(indices_where_min)}), picking one based on the least evaluated region",
+                                MultipleMinimaWarning)
+
+                # evaluate and register the result
+                result = self.evaluate_config(param_config_index)
+                if result == self.invalid_value and short_param_config_index > -1:
+                    last_invalid = True
+                else:
+                    last_invalid = False
+                    self.model.set_train_data(self.train_x, self.train_y, strict=False)
+                    # do not train if there are multiple minima, because it introduces numerical instability or insolvability
+                    if self.training_after_iter > 0 and (self.fevals % self.training_after_iter == 0):
+                        self.train_hyperparams(training_iter=1)
+                    # set the current optimum
+                    self.current_optimum = self.opt(self.train_y).item()
+                if self.animate:
+                    self.visualize()
+
+        except StopCriterionReached:
+            if self.tuning_options.verbose:
+                print(f"Stop criterion reached: {self.fevals+1}")
+        # raise ValueError(f"Evaluating configuration {self.fevals + 1}/{max_fevals} (current optimum: {self.current_optimum:.6f})")
 
         return self.all_results
 
     def objective_function(self, param_config: tuple) -> dict:
         """Run a single parameter configuration and return the result dict."""
         results = self.runner.run([param_config], self.tuning_options)
-        return results[0] if results else {}
+        if results[0] is None:
+            raise ValueError(results[0], self.cost_func(param_config) )
+        return results[0] if results and results[0] else {}
 
     def evaluate_config(self, param_config_index: int) -> float:
         """Evaluates a parameter configuration, returns the time."""
@@ -610,7 +716,7 @@ class BayesianOptimization:
         # set the results Tensors
         last_result = result
         self.all_results.append(last_result)
-        if last_result.get('time', self.invalid_value) != self.invalid_value:
+        if last_result.get('time', self.invalid_value) != self.invalid_value and isinstance(last_result['time'], (int, float)):
             self.valid_configs[param_config_index] = True
             self.results[param_config_index] = last_result['time']
             self.results_std[param_config_index] = max(np.std(last_result['times']), self.min_std)
@@ -627,7 +733,7 @@ class BayesianOptimization:
         """Updates the unique results dictionary."""
         record = self.all_results[-1]
         # make a unique string by taking every value in a result, if it already exists, it is overwritten
-        self.unique_results.update({",".join([str(v) for k, v in record.items() if k in self.tuning_options.tune_params]): record["time"]})
+        self.unique_results.update({",".join([str(v) for k, v in record.items() if k in self.tuning_options.tune_params]): record.get('time', self.invalid_value)})
 
     def predict_list(self) -> Tuple[Tensor, Tensor]:
         """Returns the means and standard deviations predicted by the surrogate model for the unvisited parameter configurations."""
