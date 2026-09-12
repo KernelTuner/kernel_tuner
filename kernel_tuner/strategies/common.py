@@ -199,7 +199,8 @@ class CostFunc:
             # get numerical return value, taking optimization direction into account
             return_value = util.get_result_cost(result,
                 self.tuning_options.objective,
-                self.tuning_options.objective_higher_is_better
+                self.tuning_options.objective_higher_is_better,
+                self.invalid_return_value
             )
 
             if len(return_value) == 1:

@@ -85,11 +85,11 @@ class NpEncoder(json.JSONEncoder):
         return super(NpEncoder, self).default(obj)
 
 
-def get_result_cost(result: dict, objectives: list[str], objective_higher_is_better: list[bool]) -> list[float]:
+def get_result_cost(result: dict, objectives: list[str], objective_higher_is_better: list[bool], invalid_value) -> list[float]:
     """Returns the cost of a result, taking the objective directions into account."""
     # return the highest cost for invalid results
     if "__error__" in result:
-        return [sys.float_info.max] * len(objectives)
+        return [invalid_value] * len(objectives)
 
     cost_vec = list()
     for objective, is_maximizer in zip(objectives, objective_higher_is_better):
