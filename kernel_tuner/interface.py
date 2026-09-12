@@ -75,6 +75,7 @@ _STRATEGY_IMPORTS = {
     "nsga2": "kernel_tuner.strategies.pymoo_minimize",
     "nsga3": "kernel_tuner.strategies.pymoo_minimize",
     "bayes_opt_new": "kernel_tuner.strategies.bayes_opt_new",
+    "bayes_opt_new_improved": "kernel_tuner.strategies.bayes_opt_new_improved",
 }
 
 _STRATEGY_PARALLEL = ["brute_force", "random_sample", "diff_evo", "genetic_algorithm", "pso", "firefly_algorithm"]
