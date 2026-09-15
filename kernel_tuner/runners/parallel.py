@@ -358,7 +358,7 @@ class ParallelRunner(Runner):
             ) / 1000
 
             # only compute metrics on configs that have not errored
-            if not isinstance(result.get(objective), ErrorConfig):
+            if "__error__" not in result:
                 result = process_metrics(result, metrics)
             else:
                 logging.error(
