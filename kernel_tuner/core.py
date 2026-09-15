@@ -336,6 +336,7 @@ class DeviceInterface(object):
             from kernel_tuner.backends.pycuda import PyCudaFunctions
 
             backend = PyCudaFunctions
+            lang = "PYCUDA"
         elif lang.upper() == "CUPY":
             from kernel_tuner.backends.cupy import CupyFunctions
 
@@ -782,7 +783,7 @@ class DeviceInterface(object):
         )
 
         # check for templated kernel
-        if kernel_source.lang in ["CUDA"] and "<" in name and ">" in name:
+        if kernel_source.lang == "PYCUDA" and "<" in name and ">" in name:
             kernel_string, name = wrap_templated_kernel(kernel_string, name)
 
         # Preprocess GPU arguments. Require for handling `Tunable` arguments
