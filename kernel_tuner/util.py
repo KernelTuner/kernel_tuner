@@ -2,6 +2,7 @@
 
 import ast
 import errno
+import gzip
 import json
 import logging
 import os
@@ -1380,6 +1381,13 @@ def check_matching_problem_size(cached_problem_size, problem_size):
         )
 
 
+def open_cachefile(cachefile, mode):
+    """ Open a cachefile for reading or writing (depending on mode) """
+    if cachefile[-3:] == ".gz":
+        return gzip.open(cachefile, mode)
+    return open(cachefile, mode)
+
+
 def process_cache(cachefile, kernel_options, tuning_options, runner):
     """Cache file for storing tuned configurations.
 
@@ -1391,7 +1399,8 @@ def process_cache(cachefile, kernel_options, tuning_options, runner):
           kernel_name: "name of kernel"
           problem_size: (int, int, int)
           tune_params_keys: list
-          tune_params:
+          tune_params: dict
+          objective: string
           cache: {
             "x1,x2,..xN": {"block_size_x": x1, ..., time=0.234342},
             "y1,y2,..yN": {"block_size_x": y1, ..., time=0.134233},
@@ -1427,7 +1436,7 @@ def process_cache(cachefile, kernel_options, tuning_options, runner):
         contents = json.dumps(c, cls=NpEncoder, indent="")[:-3]  # except the last "}\n}"
 
         # write the header to the cachefile
-        with open(cachefile, "w") as f:
+        with open_cachefile(cachefile, "wt") as f:
             f.write(contents)
 
         return {}
@@ -1471,7 +1480,7 @@ def process_cache(cachefile, kernel_options, tuning_options, runner):
 
 def correct_open_cache(cachefile, open_cache=True):
     """If cache file was not properly closed, pretend it was properly closed."""
-    with open(cachefile, "r") as f:
+    with open_cachefile(cachefile, "rt") as f:
         filestr = f.read().strip()
 
     # if file was not properly closed, pretend it was properly closed
@@ -1484,7 +1493,7 @@ def correct_open_cache(cachefile, open_cache=True):
     else:
         if open_cache:
             # if it was properly closed, open it for appending new entries
-            with open(cachefile, "w") as f:
+            with open_cachefile(cachefile, "wt") as f:
                 f.write(filestr[:-3] + ",")
 
     return filestr
@@ -1519,12 +1528,12 @@ def close_cache(cachefile):
     if not os.path.isfile(cachefile):
         raise ValueError("close_cache expects cache file to exist")
 
-    with open(cachefile, "r") as fh:
+    with open_cachefile(cachefile, "rt") as fh:
         contents = fh.read()
 
     # close to file to make sure it can be read by JSON parsers
     if contents[-1] == ",":
-        with open(cachefile, "w") as fh:
+        with open_cachefile(cachefile, "wt") as fh:
             fh.write(contents[:-1] + "}\n}")
 
 
@@ -1542,14 +1551,14 @@ def store_cache(key, params, cachefile, cache):
                     output_params[k] = str(v)
 
             if cachefile:
-                with open(cachefile, "a") as f:
+                with open_cachefile(cachefile, "at") as f:
                     f.write("\n" + json.dumps({key: output_params}, cls=NpEncoder)[1:-1] + ",")
 
 
 def dump_cache(obj: str, tuning_options):
     """Dumps a string in the cache, this omits the several checks of store_cache() to speed up the process - with great power comes great responsibility!"""
     if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
-        with open(tuning_options.cachefile, "a") as cachefile:
+        with open(tuning_options.cachefile, "at") as cachefile:
             cachefile.write(obj)
 
 
