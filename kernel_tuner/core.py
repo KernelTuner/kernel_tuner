@@ -433,7 +433,7 @@ class DeviceInterface(object):
 
         # convert juliacall arrays to numpy arrays where necessary
         if answer is not None:
-            answer = [None if a is None else np.array(a) for a in util.possible_julia_vector_to_list(answer)]
+            answer = [np.array(a) if util.is_julia_array(a) else a for a in util.possible_julia_vector_to_list(answer)]
         for i, arg in enumerate(instance.arguments):
             if util.is_julia_array(arg) and isinstance(answer[i], np.ndarray):
                 instance.arguments[i] = np.array(arg, dtype=answer[i].dtype)
@@ -883,7 +883,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                 else np
             )
             expected_nan = lib.isnan(expected)
-            output_test = lib.allclose(expected, result, atol=atol, equal_nan=expected_nan.any())
+            output_test = lib.allclose(expected, result, atol=atol, equal_nan=bool(expected_nan.any()))
             if expected_nan.any():
                 warn(
                     f"Answer contains {expected_nan.sum()} NaNs. NaN values will now be considered equal in comparison."
