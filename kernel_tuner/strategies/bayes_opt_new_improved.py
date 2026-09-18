@@ -427,7 +427,7 @@ class BayesianOptimization:
         if len(param_configs_indices) < n_samples / 2:
             warnings.warn(
                 str(f"{n_samples - len(param_configs_indices)} out of the {n_samples} LHS samples were duplicates or -1." +
-                    f"This might be because you have few initial samples ({n_samples}) relative to the number of parameters ({num_params})." +
+                    f"This might be because you have few initial samples ({n_samples}) relative to the number of parameters ({self.searchspace.num_params})." +
                     "Perhaps try something other than LHS."))
         return param_configs_indices
 

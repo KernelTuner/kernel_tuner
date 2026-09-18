@@ -1069,13 +1069,13 @@ def tune_kernel_T1(
             for attribute in inputs["Search"]["Attributes"]:
                 strategy_options[attribute["Name"]] = attribute["Value"]
     if "Budget" in inputs:
-        budget = inputs["Budget"][0]
-        if budget["Type"] == "ConfigurationCount":
-            strategy_options["max_fevals"] = budget["BudgetValue"]
-        elif budget["Type"] == "TuningDuration":
-            strategy_options["time_limit"] = budget["BudgetValue"]  # both are in seconds
-        else:
-            raise NotImplementedError(f"Budget type in {budget} is not supported")
+        for budget in inputs["Budget"]:
+            if budget["Type"] == "ConfigurationCount":
+                strategy_options["max_fevals"] = budget["BudgetValue"]
+            elif budget["Type"] == "TuningDuration":
+                strategy_options["time_limit"] = budget["BudgetValue"]  # both are in seconds
+            else:
+                raise NotImplementedError(f"Budget type in {budget} is not supported")
 
     # check if the strategy is a path
     if "custom_search_method_path" in strategy_options:
