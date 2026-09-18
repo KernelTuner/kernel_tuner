@@ -67,7 +67,7 @@ supported_optimizers = ['LBFGS', 'Adam', 'AdamW', 'Adagrad', 'ASGD']
 def default_optimizer_learningrates(key):
     defaults = {
         'LBFGS': 1,
-        'Adam': 0.001,
+        'Adam': 0.05,
         'AdamW': 0.001,
         'ASGD': 0.01,
         'Adagrad': 0.01
@@ -103,22 +103,15 @@ def tune(searchspace: Searchspace, runner: Runner, tuning_options):
     if "x0" in tuning_options.strategy_options:
         raise ValueError("Strategy bayes_opt_GPyTorch_lean_ss does not support user-specified starting point (x0)")
 
-    # set CUDA availability
-    use_cuda = False
-    cuda_available = torch.cuda.is_available() and use_cuda
-    device = torch.device("cuda:0" if cuda_available else "cpu")
-    if cuda_available:
-        print(f"CUDA is available, device: {torch.cuda.get_device_name(device)}")
+    # enabling scaling will unscale and snap inputs on evaluation, more efficient to scale all at once and keep unscaled values
+    tuning_options["snap"] = False
+    tuning_options["scaling"] = False
 
     # retrieve options with defaults
     options = tuning_options.strategy_options
     optimization_direction = options.get("optimization_direction", 'min')
     num_initial_samples = int(options.get("popsize", 20))
     max_fevals = int(options.get("max_fevals", 220))
-
-    # enabling scaling will unscale and snap inputs on evaluation, more efficient to scale all at once and keep unscaled values
-    tuning_options["snap"] = False
-    tuning_options["scaling"] = False
 
     # limit max_fevals to max size of the parameter space
     max_fevals = min(searchspace.size, max_fevals)
@@ -127,8 +120,22 @@ def tune(searchspace: Searchspace, runner: Runner, tuning_options):
             f"Maximum number of function evaluations ({max_fevals}) can not be lower than or equal to the number of initial samples ({num_initial_samples}), you might as well brute-force."
         )
 
-    # initialize the tensorspace with the correct dtype/device
-    dtype = torch.float if options.get("precision", "float") == "float" else torch.double
+    # set acceleration availability
+    dtype = torch.float if options.get("precision", "float") != "double" else torch.double
+    use_gpu = options.get("allow_gpu_acceleration", False)
+    cuda_available = use_gpu and torch.cuda.is_available()
+    metal_available = use_gpu and torch.backends.mps.is_available() and torch.backends.mps.is_built()
+    device = torch.device("cuda:0" if cuda_available else "mps" if metal_available else "cpu")
+    if cuda_available:
+        print(f"CUDA GPU is used for BO acceleration, device: {torch.cuda.get_device_name(device)}")
+    if metal_available:
+        print("Metal GPU is used for BO acceleration")
+    if use_gpu and dtype != torch.float:
+        warnings.warn("float precision is recommended with GPU acceleration")
+    if use_gpu:
+        warnings.warn("Using GPU acceleration for Bayesian Optimization is experimental and usually does not yield better performance.")
+
+    # initialize the tensorspace
     searchspace.initialize_tensorspace(dtype=dtype, device=device)
 
     # execute Bayesian Optimization
