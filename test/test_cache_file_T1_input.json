@@ -39,7 +39,7 @@
         "GridDivY": [
             "block_size_y"
         ],
-        "ProblemSize": [],
+        "ProblemSize": 100,
         "SharedMemory": 0,
         "Stream": null,
         "Arguments": [

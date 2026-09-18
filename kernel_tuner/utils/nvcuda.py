@@ -62,6 +62,15 @@ def cuda_error_check(error):
             raise RuntimeError(f"NVRTC error: {desc.decode()}")
 
 
+def _check(call_result):
+    """Unwrap a cuda-python (CUresult, ...) return tuple and raise on error."""
+    err, *rest = call_result
+    cuda_error_check(err)
+    if not rest:
+        return None
+    return rest[0] if len(rest) == 1 else tuple(rest)
+
+
 def to_valid_nvrtc_gpu_arch_cc(compute_capability: str) -> str:
     """Returns a valid Compute Capability for NVRTC `--gpu-architecture=`, as per https://docs.nvidia.com/cuda/nvrtc/index.html#group__options."""
     return max(NVRTC_VALID_CC[NVRTC_VALID_CC <= compute_capability], default="75")

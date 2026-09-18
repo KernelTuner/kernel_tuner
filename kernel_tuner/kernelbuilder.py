@@ -93,7 +93,7 @@ class PythonKernel(object):
         :type args: list(np.ndarray or np.generic)
         """
         self.update_gpu_args(args)
-        self.dev.run_kernel_check(self.func, self.gpu_args, self.kernel_instance)
+        self.dev.run_kernel(self.func, self.gpu_args, self.kernel_instance)
         return self.get_gpu_result(args)
 
     def __call__(self, *args):

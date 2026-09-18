@@ -156,7 +156,7 @@ class KernelSourceStr(KernelSource):
         if suffix is not None:
             return suffix
 
-        _suffixes = {Language.CUDA: ".cu", Language.OPENCL: ".cl", Language.C: ".c"}
+        _suffixes = {Language.CUDA: ".cu", Language.OPENCL: ".cl", Language.C: ".c", Language.JULIA: ".jl"}
         try:
             return _suffixes[self.lang]
         except KeyError:
@@ -169,6 +169,25 @@ class KernelSourceStr(KernelSource):
         """
         for i, f in enumerate(self.kernel_sources):
             if not callable(f):
-                util.check_argument_list(kernel_name, self.get_kernel_string(i), arguments)
+                util.check_argument_list(kernel_name, self.get_kernel_string(i), arguments, lang=self.lang)
             else:
                 logging.debug("Checking of arguments list not supported yet for code generators.")
+
+    def infer_julia_backend(self):
+        """Infer the Julia backend from the kernel source."""
+        backend = None
+        if self.lang.upper() != "JULIA":
+            return backend
+
+        kernel_string = self.get_kernel_string(0)
+        if kernel_string.find("using CUDA") != -1:
+            backend = "cuda"
+        elif kernel_string.find("using ROCBackend") != -1:
+            backend = "amd"
+        elif kernel_string.find("using oneAPI") != -1:
+            backend = "intel"
+        elif kernel_string.find("using Metal") != -1:
+            backend = "metal"
+        else:
+            raise ValueError("Could not infer Julia backend from kernel source, provide it as a `compiler_option`")
+        return backend

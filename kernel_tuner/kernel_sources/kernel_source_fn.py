@@ -5,7 +5,6 @@ import uuid
 import sys
 import logging
 
-import astor
 import tempfile
 import importlib.util
 
@@ -126,7 +125,7 @@ class KernelSourceFn(KernelSource):
         
         # Fix locations and generate source
         ast.fix_missing_locations(new_module)
-        new_source = astor.to_source(new_module)
+        new_source = ast.unparse(new_module)
 
         #print(new_source)
         

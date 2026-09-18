@@ -21,6 +21,8 @@ def fake_runner():
     }
     runner = Mock()
     runner.run.return_value = [fake_result]
+    runner.config_eval_count = 0
+    runner.infeasable_config_eval_count = 0
     return runner
 
 
@@ -31,7 +33,7 @@ def test_cost_func():
     x = [1, 4]
     tuning_options = Options(tune_params=tune_params, budget=TuningBudget(),
                              restrictions=None, strategy_options={}, cache={}, unique_results={},
-                             objective="time", objective_higher_is_better=False, metrics=None)
+                             objective=["time"], objective_higher_is_better=[False], metrics=None)
     runner = fake_runner()
 
     time = CostFunc(Searchspace(tune_params, None, 1024), tuning_options, runner)(x)
@@ -43,8 +45,8 @@ def test_cost_func():
     tuning_options = Options(tune_params=tune_params, budget=TuningBudget(),
                              restrictions=restrictions, strategy_options={},
                              verbose=True, cache={}, unique_results={},
-                             objective="time", objective_higher_is_better=False, metrics=None)
-    
+                             objective=["time"], objective_higher_is_better=[False], metrics=None)
+
     time = CostFunc(Searchspace(tune_params, restrictions, 1024), tuning_options, runner)(x)
     assert time == sys.float_info.max
 

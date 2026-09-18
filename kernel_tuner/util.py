@@ -1,6 +1,6 @@
 """Module for kernel tuner utility functions."""
+
 import ast
-from datetime import timedelta
 import errno
 import json
 import logging
@@ -11,7 +11,12 @@ import tempfile
 import textwrap
 import time
 import warnings
+from datetime import timedelta
 from inspect import getsource, signature
+from math import (
+    ceil,  # noqa: F401
+    floor,  # noqa: F401
+)  # importing here to make available for eval in restrictions / metrics / problem size etc.
 from pathlib import Path
 from types import FunctionType
 from typing import Union
@@ -35,12 +40,14 @@ from constraint import (
 
 from kernel_tuner.accuracy import Tunable
 
+
 def _get_cupy():
     try:
         import cupy as _cp
     except ImportError:
         return None
     return _cp
+
 
 # number of special values to insert when a configuration cannot be measured
 
@@ -76,6 +83,28 @@ class NpEncoder(json.JSONEncoder):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super(NpEncoder, self).default(obj)
+
+
+def get_result_cost(result: dict, objectives: list[str], objective_higher_is_better: list[bool], invalid_value) -> list[float]:
+    """Returns the cost of a result, taking the objective directions into account."""
+    # return the highest cost for invalid results
+    if "__error__" in result:
+        return [invalid_value] * len(objectives)
+
+    cost_vec = list()
+    for objective, is_maximizer in zip(objectives, objective_higher_is_better):
+        objective_value = result[objective]
+        cost = -objective_value if is_maximizer else objective_value
+        cost_vec.append(cost)
+
+    return cost_vec
+
+
+def check_result_type(r):
+    """Check if the result has the right format."""
+    if "__error__" in r:
+        return isinstance(r["__error__"], ErrorConfig)
+    return True
 
 
 class TorchPlaceHolder:
@@ -131,58 +160,53 @@ def check_argument_type(dtype, kernel_argument):
     return False  # unknown dtype. do not throw exception to still allow kernel to run.
 
 
-def check_argument_list(kernel_name, kernel_string, args):
+def check_argument_list(kernel_name, kernel_string, args, lang=None):
     """Raise an exception if kernel arguments do not match host arguments."""
     if kernel_string is None:
-        return 
+        return
 
-    cp = _get_cupy()
-    cupy_ndarray = (cp.ndarray,) if cp is not None else ()
     kernel_arguments = list()
     collected_errors = list()
 
+    # Find all kernel argument lists in the kernel string
+    if lang and lang.upper() == "JULIA":
+        # for Julia, multiple kernels may be specified in one file, and remove the normally included tunable parameters
+        kernel_string = kernel_string.split(kernel_name)[1]
+        kernel_string = kernel_name + kernel_string
+        kernel_string = kernel_string.split("::Val")[0].rstrip()
     for iterator in re.finditer(kernel_name + "[ \n\t]*" + r"\(", kernel_string):
         kernel_start = iterator.end()
-        kernel_end = kernel_string.find(")", kernel_start)
+        # for Julia, search until the last ',' as there may be e.g. `@Const(Min)` arguments
+        kernel_end = kernel_string.find(r".*(\,)" if lang and lang.upper() == "JULIA" else ")", kernel_start)
         if kernel_start != 0:
             kernel_arguments.append(kernel_string[kernel_start:kernel_end].split(","))
 
+    # Check each set of kernel arguments
     for arguments_set, arguments in enumerate(kernel_arguments):
+        # check arguments and signature lengths
+        if lang and lang.upper() == "JULIA" and len(arguments) > len(args):
+            # for Julia additional parameters may be passed
+            continue
         collected_errors.append(list())
         if len(arguments) != len(args):
-            collected_errors[arguments_set].append("Kernel and host argument lists do not match in size.")
+            collected_errors[arguments_set].append(
+                f"Kernel ({len(arguments)}) and host argument ({len(args)}) lists do not match in size."
+            )
             continue
 
+        # skip checking for Julia, as types are commonly not specified in the kernel arguments
+        if lang and lang.upper() == "JULIA":
+            collected_errors.pop(arguments_set)
+            continue
+
+        # Check each argument in the kernel argument list
         for i, arg in enumerate(args):
             kernel_argument = arguments[i]
-
-            # Handle tunable arguments
-            if isinstance(arg, Tunable):
-                continue
-
-            # Handle numpy arrays and other array types
-            if not isinstance(arg, (np.ndarray, np.generic, torch.Tensor, DeviceArray) + cupy_ndarray):
-                raise TypeError(
-                    f"Argument at position {i} of type: {type(arg)} should be of type "
-                    "np.ndarray, numpy scalar, or HIP Python DeviceArray type"
+            correct, str_dtype = check_individual_arguments(i, arg, kernel_argument)
+            if not correct:
+                collected_errors[arguments_set].append(
+                    f"Argument at position {str(i)} of dtype: {str_dtype} does not match {kernel_argument}."
                 )
-
-            correct = True
-            if isinstance(arg, np.ndarray):
-                if "*" not in kernel_argument:
-                    correct = False
-
-            if isinstance(arg, DeviceArray):
-                str_dtype = str(np.dtype(arg.typestr))
-            else:
-                str_dtype = str(arg.dtype)
-
-            if correct and check_argument_type(str_dtype, kernel_argument):
-                continue
-
-            collected_errors[arguments_set].append(
-                f"Argument at position {i} of dtype: {str_dtype} does not match {kernel_argument}."
-            )
 
         if not collected_errors[arguments_set]:
             # We assume that if there is a possible list of arguments that matches with the provided one
@@ -193,8 +217,43 @@ def check_argument_list(kernel_name, kernel_string, args):
         warnings.warn(errors[0], UserWarning)
 
 
+def check_individual_arguments(i, arg, kernel_argument):
+    """Check whether the host argument matches the kernel argument."""
+    correct = True
+    cp = _get_cupy()
+    cupy_ndarray = (cp.ndarray,) if cp is not None else ()
+
+    # Handle tunable arguments
+    if isinstance(arg, Tunable):
+        return correct, ""
+
+    # Handle numpy arrays and other array types
+    if not isinstance(arg, (np.ndarray, np.generic, torch.Tensor, DeviceArray) + cupy_ndarray):
+        if is_julia_array(arg):
+            # skip for Julia, types are commonly not specified in the kernel arguments
+            return correct, ""
+        raise TypeError(
+            f"Argument at position {i} of type: {type(arg)} should be of type "
+            "np.ndarray, numpy scalar, HIP Python DeviceArray, Julia VectorValue type"
+        )
+
+    if isinstance(arg, np.ndarray) and "*" not in kernel_argument:
+        correct = False
+
+    if isinstance(arg, DeviceArray):
+        str_dtype = str(np.dtype(arg.typestr))
+    else:
+        str_dtype = str(arg.dtype)
+
+    if correct:
+        return check_argument_type(str_dtype, kernel_argument), str_dtype
+
+    return False, str_dtype
+
+
 class Timer:
     """Measures elapsed wall-clock time."""
+
     def __init__(self):
         self.reset()
 
@@ -226,7 +285,6 @@ class Timer:
             result = f"{elapsed / 60:.2f} min"
         else:
             result = f"{elapsed / 3600:.2f} h"
-
         return result
 
 
@@ -308,6 +366,7 @@ def check_tune_params_list(tune_params, observers, simulation_mode=False):
             raise ValueError("Tune parameter " + name + " with value " + str(param) + " has a forbidden name!")
     if any("nvml_" in param for param in tune_params):
         from kernel_tuner.observers.nvml import NVMLObserver
+
         if not simulation_mode and (not observers or not any(isinstance(obs, NVMLObserver) for obs in observers)):
             raise ValueError("Tune parameters starting with nvml_ require an NVMLObserver!")
 
@@ -316,11 +375,15 @@ def check_block_size_names(block_size_names):
     if block_size_names is not None:
         # do some type checks for the user input
         if not isinstance(block_size_names, list):
-            raise ValueError("block_size_names should be a list of strings!")
+            raise ValueError("block_size_names should be a list of strings!", block_size_names, type(block_size_names))
         if len(block_size_names) > 3:
-            raise ValueError("block_size_names should not contain more than 3 names!")
+            raise ValueError("block_size_names should not contain more than 3 names!", block_size_names)
         if not all([isinstance(name, "".__class__) for name in block_size_names]):
-            raise ValueError("block_size_names should contain only strings!")
+            raise ValueError(
+                "block_size_names should contain only strings!",
+                block_size_names,
+                [type(name) for name in block_size_names],
+            )
 
 
 def append_default_block_size_names(block_size_names):
@@ -356,11 +419,13 @@ def check_block_size_params_names_list(block_size_names, tune_params):
     return block_size_names
 
 
-
 def check_restriction(restrict, params: dict) -> bool:
     """Check whether a configuration meets a search space restriction."""
+    # if it's a function python-constraint it can be called directly
+    if isinstance(restrict, FunctionConstraint):
+        return restrict._func(*params.values())
     # if it's a python-constraint, convert to function and execute
-    if isinstance(restrict, Constraint):
+    elif isinstance(restrict, Constraint):
         restrict = convert_constraint_restriction(restrict)
         return restrict(list(params.values()))
     # if it's a string, fill in the parameters and evaluate
@@ -496,10 +561,13 @@ def delete_temp_file(filename):
 
 def detect_language(kernel_string):
     """Attempt to detect language from the kernel_string."""
+    kernel_string = kernel_string.lower().strip()
     if "__global__" in kernel_string:
         lang = "CUDA"
     elif "__kernel" in kernel_string:
         lang = "OpenCL"
+    elif any(token in kernel_string for token in ["@cuda", "@kernel", "@device_code"]):
+        lang = "Julia"
     else:
         lang = "C"
     return lang
@@ -511,9 +579,37 @@ def get_best_config(results, objective, objective_higher_is_better=False):
     ignore_val = sys.float_info.max if not objective_higher_is_better else -sys.float_info.max
     best_config = func(
         results,
-        key=lambda x: x[objective] if isinstance(x[objective], float) else ignore_val,
+        key=lambda x: x[objective] if "__error__" not in x and isinstance(x[objective], float) else ignore_val,
     )
     return best_config
+
+
+def get_pareto_results(
+    results: list[dict], objectives: list[str], objective_higher_is_better: list[bool], mark_optima=True
+):
+    from pymoo.util.nds.non_dominated_sorting import find_non_dominated
+
+    assert isinstance(results, list)
+    assert isinstance(objectives, list)
+
+    n_rows = len(results)
+    n_cols = len(objectives)
+    Y = np.empty((n_rows, n_cols), dtype=float)
+    for row_idx, result in enumerate(results):
+        if "__error__" in result:
+            Y[row_idx, :] = sys.float_info.max
+            continue
+        for col_idx, (objective_name, higher_is_better) in enumerate(zip(objectives, objective_higher_is_better)):
+            y = result[objective_name]
+            # negate for maximizers to optimize through minimization
+            Y[row_idx, col_idx] = -y if higher_is_better else y
+
+    pf_indices = find_non_dominated(Y)
+    pf = [results[idx] for idx in pf_indices]
+    if mark_optima:
+        for p in pf:
+            p["optimal"] = True
+    return pf
 
 
 # specifies for a number of pre-defined objectives whether
@@ -589,7 +685,9 @@ def get_grid_dimensions(current_problem_size, params, grid_div, block_size_names
             for div in divisor:
                 divisor_num *= get_dimension_divisor(div, 1, params)
         else:
-            raise ValueError("Error: unrecognized type in grid divisor list, should be any of int, str, callable, or iterable")
+            raise ValueError(
+                "Error: unrecognized type in grid divisor list, should be any of int, str, callable, or iterable"
+            )
 
         return divisor_num
 
@@ -778,9 +876,7 @@ def get_smem_args(smem_args, params):
 
 def get_temp_filename(suffix=None):
     """Return a string in the form of temp_X, where X is a large integer."""
-    tmp_file = tempfile.mkstemp(
-        suffix=suffix or "", prefix="temp_", dir=os.getcwd()
-    )  # or "" for Python 2 compatibility
+    tmp_file = tempfile.mkstemp(suffix=suffix, prefix="temp_", dir=os.getcwd())
     os.close(tmp_file[0])
     return tmp_file[1]
 
@@ -798,7 +894,8 @@ def get_thread_block_dimensions(params, block_size_names=None):
 
 def copy_without_benchmark_timings(result: dict) -> dict:
     """Returns a new dict where all the timing information related
-    to benchmarking a single configurations have been disable. """
+    to benchmarking a single configurations have been disable.
+    """
     result = dict(result)  # Copy
     result["compile_time"] = 0
     result["verification_time"] = 0
@@ -817,6 +914,7 @@ def get_total_timings(results, env, overhead_time):
         for result in results:
             if (
                 "framework_time" not in result
+                or "benchmark_time" not in result
                 or "strategy_time" not in result
                 or "compile_time" not in result
                 or "verification_time" not in result
@@ -921,8 +1019,8 @@ def looks_like_a_filename(kernel_source):
         for s in ["__global__ ", "__kernel ", "void ", "float "]:
             if s in kernel_source:
                 result = False
-        # string must contain substring ".c", ".opencl", or ".F"
-        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F")])
+        # string must contain substring ".c", ".opencl", ".F", ".jl"
+        result = result and any([s in kernel_source for s in (".c", ".opencl", ".F", ".jl")])
     logging.debug("kernel_source is a filename: %s" % str(result))
     return result
 
@@ -1013,12 +1111,18 @@ def prepare_kernel_string(kernel_name, kernel_string, params, grid, threads, blo
                 kernel_string = re.sub(r"\n\s*#pragma\s+unroll\s+" + k, "\n", kernel_string)  # + r"[^\S]*"
             else:
                 kernel_prefix += f"constexpr int {k} = {v};\n"
+        elif lang.upper() == "JULIA":
+            # kernel_prefix += f"const {k} = {v}\n"
+            # in Julia, we can't redefine constants like this, so we skip it and give it as arguments on the kernel launch
+            pass
         else:
             kernel_prefix += f"#define {k} {v}\n"
 
     # since we insert defines above the original kernel code, the line numbers will be incorrect
     # the following preprocessor directive informs the compiler that lines should be counted from 1
-    if kernel_prefix:
+    if lang.upper() == "JULIA":
+        kernel_prefix += "\n"
+    elif kernel_prefix:
         kernel_prefix += "#line 1\n"
 
     # Also replace parameter occurrences inside the kernel name
@@ -1253,7 +1357,7 @@ def get_all_lambda_asts(func):
         if not res:
             raise ValueError(f"No lambda node found in the source {source}.")
     except SyntaxError:
-        """ Ignore syntax errors on the lambda """
+        """Ignore syntax errors on the lambda"""
         return res
     except OSError:
         raise ValueError("Could not retrieve source. Is this defined interactively or dynamically?")
@@ -1264,15 +1368,18 @@ class ConstraintLambdaTransformer(ast.NodeTransformer):
     """Replaces any `NAME['string']` subscript with just `'string'`, if `NAME`
     matches the lambda argument name.
     """
+
     def __init__(self, dict_arg_name):
         self.dict_arg_name = dict_arg_name
 
     def visit_Subscript(self, node):
         # We only replace subscript expressions of the form <dict_arg_name>['some_string']
-        if (isinstance(node.value, ast.Name)
-                and node.value.id == self.dict_arg_name
-                and isinstance(node.slice, ast.Constant)
-                and isinstance(node.slice.value, str)):
+        if (
+            isinstance(node.value, ast.Name)
+            and node.value.id == self.dict_arg_name
+            and isinstance(node.slice, ast.Constant)
+            and isinstance(node.slice.value, str)
+        ):
             # Replace `dict_arg_name['some_key']` with the string used as key
             return ast.Name(node.slice.value)
         return self.generic_visit(node)
@@ -1308,7 +1415,7 @@ def convert_constraint_lambdas(restrictions):
             try:
                 lambda_asts = get_all_lambda_asts(c)
             except ValueError:
-                res.append(c)   # it's just a plain function, not a lambda
+                res.append(c)  # it's just a plain function, not a lambda
                 continue
 
             for lambda_ast in lambda_asts:
@@ -1317,7 +1424,9 @@ def convert_constraint_lambdas(restrictions):
 
     result = list(set(res))
     if not len(result) == len(restrictions):
-        raise ValueError("An error occured when parsing restrictions. If you mix lambdas and string-based restrictions, please define the lambda first.")
+        raise ValueError(
+            "An error occured when parsing restrictions. If you mix lambdas and string-based restrictions, please define the lambda first."
+        )
 
     return result
 
@@ -1366,12 +1475,16 @@ def compile_restrictions(
             noncompiled_restrictions.append((r, [], r))
     return noncompiled_restrictions + compiled_restrictions
 
+
 def check_matching_problem_size(cached_problem_size, problem_size):
     """Check the if requested problem size matches the problem size in the cache."""
     cached_problem_size_arr = np.array(cached_problem_size)
     problem_size_arr = np.array(problem_size)
     if cached_problem_size_arr.size != problem_size_arr.size or not (cached_problem_size_arr == problem_size_arr).all():
-        raise ValueError(f"Cannot load cache which contains results for different problem_size, cache: {cached_problem_size}, requested: {problem_size}")
+        raise ValueError(
+            f"Cannot load cache which contains results for different problem_size, cache: {cached_problem_size}, requested: {problem_size}"
+        )
+
 
 def process_cache(cachefile, kernel_options, tuning_options, runner):
     """Cache file for storing tuned configurations.
@@ -1488,6 +1601,7 @@ def read_cache(cachefile, open_cache=True):
     filestr = correct_open_cache(cachefile, open_cache)
 
     error_configs = {
+        "ErrorConfig": ErrorConfig(),
         "InvalidConfig": InvalidConfig(),
         "CompilationFailedConfig": CompilationFailedConfig(),
         "RuntimeFailedConfig": RuntimeFailedConfig(),
@@ -1496,9 +1610,13 @@ def read_cache(cachefile, open_cache=True):
     # replace strings with ErrorConfig instances
     cache_data = json.loads(filestr)
     for element in cache_data["cache"].values():
+        error = None
         for k, v in element.items():
             if isinstance(v, str) and v in error_configs:
-                element[k] = error_configs[v]
+                # This makes sure the old cache file format can still be used.
+                error = error_configs[v]
+        if error is not None:
+            element["__error__"] = error
 
     return cache_data
 
@@ -1539,3 +1657,62 @@ def dump_cache(obj: str, tuning_options):
     if isinstance(tuning_options.cache, dict) and tuning_options.cachefile:
         with open(tuning_options.cachefile, "a") as cachefile:
             cachefile.write(obj)
+
+
+def possible_julia_vector_to_list(obj):
+    """Convert a Julia vector to a Python list if needed."""
+    if "VectorValue" in str(type(obj)):
+        l = list(obj)
+        l = [possible_julia_vector_to_list(e) for e in l]
+        return l
+    return obj
+
+
+def is_julia_array(obj):
+    """Check if an object is a Julia array."""
+    return any([name in str(type(obj)) for name in ["ArrayValue", "VectorValue", "MatrixValue"]])
+
+
+def julia_list_of_pairs_to_dict(params):
+    if isinstance(params, dict) or "DictValue" in str(type(params)):
+        raise ValueError(
+            f"params {params} should not be a Julia dict, because it does not preserve order. Use a list of pairs instead."
+        )
+    params = [tuple([k, possible_julia_vector_to_list(tp)]) for k, tp in params]
+    params = dict(params)
+    return params
+
+
+def infer_restrictions_from_cache(cache: dict):
+    param_names = cache["tune_params_keys"]
+    valid_param_config_set = set(
+        tuple(result[param_name] for param_name in param_names)
+        for result in cache["cache"].values()
+        if "__error__" not in result
+    )
+
+    def restrictions_func(*param_values) -> bool:
+        nonlocal valid_param_config_set
+        return param_values in valid_param_config_set
+
+    return FunctionConstraint(restrictions_func)
+
+
+def infer_args_from_cache(cache: dict) -> dict:
+    prob_size = cache["problem_size"]
+    if isinstance(prob_size, str):
+        raise ValueError(
+            "Inferring kernel arguments from cache file that used callable for problem size is not possible"
+        )
+    elif isinstance(prob_size, int):
+        prob_size = (prob_size,)
+
+    inferred_args = dict(
+        kernel_name=cache["kernel_name"],
+        kernel_source="",
+        problem_size=tuple(prob_size),
+        arguments=[],
+        tune_params=cache["tune_params"],
+    )
+
+    return inferred_args

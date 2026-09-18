@@ -62,17 +62,11 @@ class CupyFunctions(GPUBackend):
         # default dynamically allocated shared memory size, can be overwritten using smem_args
         self.smem_size = 0
 
-        # setup observers
-        self.observers = observers or []
-        self.observers.append(CupyRuntimeObserver(self))
-        for obs in self.observers:
-            obs.register_device(self)
-
         # collect environment information
         env = dict()
         cupy_info = str(get_runtime_info()).split("\n")[:-1]
         info_dict = {
-            s.split(":")[0].strip(): s.split(":")[1].strip() for s in cupy_info
+            s.split(":", 1)[0].strip(): s.split(":", 1)[1].strip() for s in cupy_info
         }
         env["device_name"] = info_dict[f"Device {device} Name"]
         env["pci_bus_id"] = info_dict[f"Device {device} PCI Bus ID"]
@@ -88,6 +82,12 @@ class CupyFunctions(GPUBackend):
 
         self.env = env
         self.name = env["device_name"]
+
+        # setup observers
+        self.observers = observers or []
+        self.observers.append(CupyRuntimeObserver(self))
+        for obs in self.observers:
+            obs.register_device(self)
 
     def ready_argument_list(self, arguments):
         """Ready argument list to be passed to the kernel, allocates gpu mem.

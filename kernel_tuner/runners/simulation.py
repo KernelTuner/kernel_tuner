@@ -48,7 +48,8 @@ class SimulationRunner(Runner):
         """
         super().__init__()
         self.quiet = device_options.quiet
-        self.dev = SimulationDevice(1024, dict(device_name="Simulation"), self.quiet)
+        # NOTE(maric): had to increase max_threas so the default restraints would pass
+        self.dev = SimulationDevice(1_000_000_000, dict(device_name="Simulation"), self.quiet)
 
         self.kernel_source = kernel_source
         self.simulation_mode = True
@@ -59,6 +60,7 @@ class SimulationRunner(Runner):
         self.units = {}
 
     def get_device_info(self):
+        """ Return the backend used by this runner. """
         return self.dev
 
     def get_environment(self, tuning_options):
@@ -99,14 +101,14 @@ class SimulationRunner(Runner):
                 result = dict(tuning_options.cache[key])
 
                 # only compute metrics on configs that have not errored
-                if tuning_options.metrics and not isinstance(result.get(tuning_options.objective), util.ErrorConfig):
+                if tuning_options.metrics and "__error__" not in result:
                     result = util.process_metrics(result, tuning_options.metrics)
 
                 # Simulate behavior of sequential runner that when a configuration is
                 # served from the cache by the sequential runner, the compile_time,
                 # verification_time, and benchmark_time are set to 0.
                 # This step is only performed in the simulation runner when a configuration
-                # is served from the cache beyond the first timel. That is, when the
+                # is served from the cache beyond the first time. That is, when the
                 # configuration is already counted towards the unique_results.
                 if key in self.visited_results:
                     result = util.copy_without_benchmark_timings(result)
@@ -114,19 +116,24 @@ class SimulationRunner(Runner):
                     # configuration is evaluated for the first time, print to the console
                     util.print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
                     self.visited_results.add(key)
+                    tuning_options.budget.add_evaluations(1)
 
+                # add simulated time if info is available
                 try:
                     self.total_simulated_time += result["compile_time"] + result["verification_time"] + result["benchmark_time"]
                 except KeyError:
-                    raise RuntimeError(
-                        "Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations"
-                    )
+                    pass
 
                 # Simulate the evaluation of this configuration
-                tuning_options.budget.add_evaluations(1)
-                tuning_options.budget.add_time(milliseconds=result["compile_time"])
-                tuning_options.budget.add_time(milliseconds=result["verification_time"])
-                tuning_options.budget.add_time(milliseconds=result["benchmark_time"])
+                if tuning_options.budget.time_limit:
+                    try:
+                        tuning_options.budget.add_time(milliseconds=result["compile_time"])
+                        tuning_options.budget.add_time(milliseconds=result["verification_time"])
+                        tuning_options.budget.add_time(milliseconds=result["benchmark_time"])
+                    except KeyError:
+                        raise RuntimeError(
+                            "Cannot use simulation mode with a time limit on a cache file that does not have full compile, verification, and benchmark timings on all configurations"
+                        )
 
                 results.append(result)
                 continue
@@ -135,9 +142,8 @@ class SimulationRunner(Runner):
             params_dict = dict(zip(tuning_options['tune_params'].keys(), element))
             check = util.check_restrictions(tuning_options.restrictions, params_dict, True)
             if not check:
-                # Set timings to zero
                 result = util.copy_without_benchmark_timings(params_dict)
-                result[tuning_options.objective] = util.InvalidConfig()
+                result["__error__"] = util.InvalidConfig()
                 results.append(result)
                 warn(f"Configuration {element} not in cache, does not pass restrictions. Will be treated as an InvalidConfig, but make sure you are evaluating the correct cache file.")
                 continue

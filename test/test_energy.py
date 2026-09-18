@@ -2,11 +2,11 @@ import os
 
 from kernel_tuner.energy import energy
 
-from .context import skip_if_no_pycuda, skip_if_no_pynvml
+from .context import skip_if_no_cuda, skip_if_no_pynvml
 
 cache_filename = os.path.dirname(os.path.realpath(__file__)) + "/synthetic_fp32_cache_NVIDIA_RTX_A4000.json"
 
-@skip_if_no_pycuda
+@skip_if_no_cuda
 @skip_if_no_pynvml
 def test_create_power_frequency_model():
 

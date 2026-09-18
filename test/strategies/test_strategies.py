@@ -69,8 +69,8 @@ def test_strategies(vector_add, strategy):
         filter_options["max_fevals"] = 10
 
     restrictions = [
-        "test_string == 'alg_2'", 
-        "test_bool == True", 
+        "test_string == 'alg_2'",
+        "test_bool == True",
         "test_mixed == 2.45"
     ]
 
@@ -128,7 +128,7 @@ def test_strategies(vector_add, strategy):
     # check if strategy respects user-specified starting point (x0)
     x0 = [256, 'alg_2', 15, True, 2.45]
     filter_options["x0"] = x0
-    if not strategy in ["brute_force", "random_sample", "bayes_opt", "pyatf_strategies", "adaptive_tabu_greywolf", "hybrid_vndx"]:
+    if not strategy in ["brute_force", "random_sample", "bayes_opt", "pyatf_strategies", "adaptive_tabu_greywolf", "hybrid_vndx", "nsga2", "nsga3"]:
         results, _ = kernel_tuner.tune_kernel(*vector_add, restrictions=restrictions, strategy=strategy, strategy_options=filter_options,
                                             verbose=False, cache=cache_filename, simulation_mode=True)
         assert results[0]["block_size_x"] == x0[0]

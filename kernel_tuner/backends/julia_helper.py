@@ -1,0 +1,134 @@
+"""Helper functions for Julia backend detection and interaction.
+
+We might want to consider moving this to a utility module or Julia package as it can be useful.
+"""
+
+import subprocess
+from json import JSONDecodeError
+from json import loads as json_loads
+from re import search as regex_search
+from warnings import warn
+
+# Map name → Julia module and device-selection calls
+backend_map = {
+    "CUDA": {
+        "pkg": "CUDA",
+        "module": "CUDA",
+        "module_backend": "CUDABackend",
+        "device_select": lambda d: f"CUDA.device!({d})",
+        "name": "CUDA.name(CUDA.device())",
+        "max_threads": "CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)",
+        "capability": "CUDA.capability(CUDA.device())",
+        "GPUArrayType": "CuArray",
+    },
+    "AMD": {
+        "pkg": "AMDGPU",
+        "module": "AMDGPU",
+        "module_backend": "ROCBackend",
+        "device_select": lambda d: f"AMDGPU.device!(AMDGPU.devices()[{d}])",
+        "name": "AMDGPU.HIP.name(AMDGPU.HIP.device())",
+        "max_threads": "AMDGPU.HIP.attribute(AMDGPU.HIP.device(), AMDGPU.HIP.hipDeviceAttributeMaxThreadsPerBlock)",
+        "capability": None,
+        "GPUArrayType": "ROCArray",
+    },
+    "INTEL": {
+        "pkg": "oneAPI",
+        "module": "oneAPI",
+        "module_backend": "oneAPIBackend",
+        "device_select": lambda d: f"device!(devices(first(drivers()))[{d}])",
+        "name": "oneAPI.name(oneAPI.device())",
+        "max_threads": "oneAPI.compute_properties(oneAPI.device()).maxTotalGroupSize",
+        "capability": None,
+        "GPUArrayType": "oneArray",
+    },
+    "METAL": {
+        "pkg": "Metal",
+        "module": "Metal",
+        "module_backend": "MetalBackend",
+        "device_select": lambda d: "Metal.device!(Metal.device())",  # only single device support in Metal.jl
+        "name": "Metal.device().name",
+        "max_threads": "Int(Metal.device().maxThreadsPerThreadgroup.width)",
+        "capability": None,
+        "GPUArrayType": "MtlArray",
+    },
+    "CPU": {
+        "pkg": None,
+        "module": "CPU",
+        "module_backend": "CPU",
+        "device_select": lambda d: "nothing",
+        "name": "CPU",
+        "max_threads": "1024", # arbitrary as CPU doesn't have a max threads per block concept
+        "capability": None,
+        "GPUArrayType": "Array",
+    },
+}
+
+
+def detect_julia_gpu_backends():
+    """Detect the Julia backends available."""
+    available_backends = []
+    if julia_backend_available_cuda():
+        available_backends.append("CUDA")
+    if julia_backend_available_amd():
+        available_backends.append("AMD")
+    if julia_backend_available_metal():
+        available_backends.append("METAL")
+    if len(available_backends) == 0:
+        # this can give false positives for other backends too, so skip if we've already detected another backend
+        if julia_backend_available_intel():
+            available_backends.append("INTEL")
+
+    available_backends.append("CPU")  # always add CPU backend last
+    return available_backends
+
+
+def julia_backend_available_cuda():
+    """Check if CUDA backend is available."""
+    try:
+        subprocess.check_output("nvidia-smi")
+        return True
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return False
+
+
+def julia_backend_available_amd():
+    """Check if AMD backend is available."""
+    try:
+        subprocess.check_output("rocm-smi")
+        return True
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return False
+
+
+def julia_backend_available_metal():
+    """Check if Metal backend is available."""
+    try:
+        output = subprocess.check_output("system_profiler -json SPDisplaysDataType".split())
+        json_output = json_loads(output)["SPDisplaysDataType"]
+    except (FileNotFoundError, subprocess.CalledProcessError, JSONDecodeError):
+        return False
+    for gpu in json_output:
+        if "spdisplays_mtlgpufamilysupport" in gpu:
+            supported = gpu["spdisplays_mtlgpufamilysupport"].lower()
+            if "metal" in supported:
+                version = regex_search(r".*metal([\d.]+)", supported).group(1)
+                if float(version) < 3:
+                    warn(
+                        f"Metal backend detected, but {supported} < 3. "
+                        "Metal.jl requires Metal version 3 or higher."
+                    )
+                else:
+                    return True
+    return False
+
+
+def julia_backend_available_intel():
+    """Check if Intel backend is available. May give false positives if other backends are present."""
+    try:
+        # not a perfect check but should work in most cases
+        subprocess.check_output(
+            "ls /dev/dri/by-path/".split()
+        )
+        return True
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return False
