@@ -4,6 +4,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 - Fix `np.shuffle` crash and wrong return type in `Searchspace` distributed random and LHS samplers
+- Add support for tuning kernels written in Python DSLs, such as Triton, Numba, Warp, Taichi, Tilus, TileLang, and CuTe, using `lang="generic_python"` and a `call_function`
+- Add support for PyTorch tensors and other objects implementing the CUDA Array Interface as kernel arguments in the cuda-python (nvcuda) backend
+- Change PyCUDA backend to copy PyTorch CUDA tensors to a separate device allocation, the user's tensors are no longer modified by the kernel
+- Fix output verification failing for PyTorch tensors as expected answers
+- Fix outputs not being reset between kernel runs for PyTorch tensors in the PyCUDA backend
 
 ## [1.5.0] - 2026-08-20
 - Kernel Tuner can now be used from Julia, [see KernelTuner.jl](https://github.com/KernelTuner/KernelTuner.jl)

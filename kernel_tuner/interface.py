@@ -1061,7 +1061,8 @@ def run_kernel(
             if numpy.isscalar(arg):
                 results.append(arg)
             elif isinstance(arg, torch.Tensor):
-                results.append(arg.cpu())
+                results.append(torch.empty(arg.shape, dtype=arg.dtype, device="cpu"))
+                dev.memcpy_dtoh(results[-1], gpu_args[i])
             else:
                 results.append(numpy.zeros_like(arg))
                 dev.memcpy_dtoh(results[-1], gpu_args[i])

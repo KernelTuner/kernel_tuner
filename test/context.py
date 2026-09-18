@@ -134,7 +134,7 @@ skip_if_no_torch = pytest.mark.skipif(not gen_python_torch_present, reason="Torc
 
 
 def skip_backend(backend: str):
-    if backend.upper() == "CUDA" and not pycuda_present:
+    if backend.upper() in ("CUDA", "PYCUDA") and not pycuda_present:
         pytest.skip("PyCuda not installed or no CUDA device detected")
     elif backend.upper() == "CUPY" and not cupy_present:
         pytest.skip("CuPy not installed or no CUDA device detected")

@@ -3,6 +3,35 @@ from __future__ import print_function
 
 from abc import ABC, abstractmethod
 
+import numpy as np
+
+
+def get_device_array(arg):
+    """Return (device pointer, size in bytes) if arg implements the CUDA Array Interface, None otherwise.
+
+    This covers for example PyTorch CUDA tensors, CuPy arrays, and Numba device arrays,
+    without having to import any of these libraries.
+    """
+    # CPU tensors raise AttributeError on this property, which getattr turns into None
+    cai = getattr(arg, "__cuda_array_interface__", None)
+    if cai is None:
+        return None
+    shape = tuple(cai["shape"])
+    itemsize = np.dtype(cai["typestr"]).itemsize
+    strides = cai.get("strides")
+    if strides is not None:
+        contiguous = tuple(int(np.prod(shape[i + 1 :])) * itemsize for i in range(len(shape)))
+        if tuple(strides) != contiguous:
+            raise ValueError("Device arrays passed as kernel arguments must be C-contiguous")
+    return cai["data"][0], int(np.prod(shape)) * itemsize
+
+
+def is_host_array(arg):
+    """Return True if arg is a numpy array or a host array that converts to one, such as a CPU PyTorch tensor."""
+    if isinstance(arg, np.ndarray):
+        return True
+    return hasattr(arg, "__array__") and get_device_array(arg) is None and not np.isscalar(arg)
+
 
 class Backend(ABC):
     """Base class for kernel_tuner backends."""

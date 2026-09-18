@@ -754,13 +754,13 @@ class DeviceInterface(object):
             if isinstance(arg, (np.ndarray,) + cupy_ndarray) or util.is_julia_array(arg):
                 result_host.append(np.zeros_like(arg))
                 self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
-            elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
-                if not answer[i].is_cuda:
-                    # if the answer is on the host, copy gpu output to host as well
-                    result_host.append(torch.zeros_like(answer[i]))
-                    self.dev.memcpy_dtoh(result_host[-1], gpu_args[i].tensor)
-                else:
-                    result_host.append(gpu_args[i].tensor)
+            elif isinstance(arg, torch.Tensor):
+                result = torch.empty(arg.shape, dtype=arg.dtype, device="cpu")
+                self.dev.memcpy_dtoh(result, gpu_args[i])
+                # verification compares on the device of the answer
+                if answer is not None and isinstance(answer[i], torch.Tensor) and answer[i].is_cuda:
+                    result = result.to(answer[i].device)
+                result_host.append(result)
             else:
                 # We should sync this argument, but we do not know how to transfer this type of argument
                 # What do we do? Should we throw an error?

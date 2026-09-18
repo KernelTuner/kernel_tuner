@@ -6,10 +6,10 @@ import logging
 
 import numpy as np
 
-from kernel_tuner.backends.backend import GPUBackend
+from kernel_tuner.backends.backend import GPUBackend, get_device_array, is_host_array
 from kernel_tuner.observers.nvml import nvml  # noqa F401
 from kernel_tuner.observers.pycuda import PyCudaRuntimeObserver
-from kernel_tuner.util import SkippableFailure, TorchPlaceHolder
+from kernel_tuner.util import SkippableFailure
 
 # embedded in try block to be able to generate documentation
 # and run tests without pycuda installed
@@ -20,8 +20,7 @@ try:
 except ImportError:
 
     class PyCudaPlaceHolder:
-        def __init__(self):
-            self.PointerHolderBase = object
+        pass
 
     drv = PyCudaPlaceHolder()
     pycuda_available = False
@@ -34,23 +33,6 @@ try:
     from pycuda.compiler import DynamicSourceModule
 except ImportError:
     DynamicSourceModule = None
-
-try:
-    import torch
-except ImportError:
-    torch = TorchPlaceHolder()
-
-
-class Holder(drv.PointerHolderBase):
-    """class to interoperate torch device memory allocations with PyCUDA."""
-
-    def __init__(self, tensor):
-        super(Holder, self).__init__()
-        self.tensor = tensor
-        self.gpudata = tensor.data_ptr()
-
-    def get_pointer(self):
-        return self.t.data_ptr()
 
 
 class PyCudaFunctions(GPUBackend):
@@ -157,6 +139,8 @@ class PyCudaFunctions(GPUBackend):
         :param arguments: List of arguments to be passed to the kernel.
             The order should match the argument list on the CUDA kernel.
             Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.
+            Device arrays that implement the CUDA Array Interface (e.g. PyTorch CUDA tensors,
+            CuPy arrays) and CPU PyTorch tensors are also supported.
         :type arguments: list(numpy objects)
 
         :returns: A list of arguments that can be passed to an CUDA kernel.
@@ -164,17 +148,14 @@ class PyCudaFunctions(GPUBackend):
         """
         gpu_args = []
         for arg in arguments:
-            # if arg i is a numpy array copy to device
-            if isinstance(arg, np.ndarray):
-                alloc = drv.mem_alloc(arg.nbytes)
+            # arrays are copied to a new device allocation, so the kernel never modifies the user's data
+            device_array = get_device_array(arg)
+            if device_array is not None or is_host_array(arg):
+                nbytes = device_array[1] if device_array is not None else np.asarray(arg).nbytes
+                alloc = drv.mem_alloc(nbytes)
                 self.allocations.append(alloc)
                 gpu_args.append(alloc)
-                drv.memcpy_htod(gpu_args[-1], arg)
-            elif isinstance(arg, torch.Tensor):
-                if arg.is_cuda:
-                    gpu_args.append(Holder(arg))
-                else:
-                    gpu_args.append(Holder(arg.cuda()))
+                self.memcpy_htod(alloc, arg)
             # pycuda does not support bool, convert to uint8 instead
             elif isinstance(arg, np.bool_):
                 gpu_args.append(arg.astype(np.uint8))
@@ -366,32 +347,31 @@ class PyCudaFunctions(GPUBackend):
         drv.memset_d8(allocation, value, size)
 
     def memcpy_dtoh(self, dest, src):
-        print("dtoh called")
         """Perform a device to host memory copy.
 
-        :param dest: A numpy array in host memory to store the data
+        :param dest: A numpy array (or CPU PyTorch tensor) in host memory to store the data
         :type dest: numpy.ndarray
 
         :param src: A GPU memory allocation unit
         :type src: pycuda.driver.DeviceAllocation
         """
-        if isinstance(src, drv.DeviceAllocation):
-            drv.memcpy_dtoh(dest, src)
-        elif isinstance(src, torch.Tensor):
-            dest[:] = src
+        drv.memcpy_dtoh(np.asarray(dest), src)
 
     def memcpy_htod(self, dest, src):
-        print("htod called")
         """Perform a host to device memory copy.
 
         :param dest: A GPU memory allocation unit
         :type dest: pycuda.driver.DeviceAllocation
 
-        :param src: A numpy array in host memory to store the data
+        :param src: A numpy array (or CPU PyTorch tensor) in host memory, or a device array
+            that implements the CUDA Array Interface
         :type src: numpy.ndarray
         """
-        if isinstance(dest, drv.DeviceAllocation):
-            drv.memcpy_htod(dest, src)
+        device_array = get_device_array(src)
+        if device_array is not None:
+            drv.memcpy_dtod(dest, *device_array)
+        else:
+            drv.memcpy_htod(dest, np.asarray(src))
 
     units = {"time": "ms", "power": "s,mW", "energy": "J"}
 
