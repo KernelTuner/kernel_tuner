@@ -76,7 +76,7 @@ def tune(searchspace: Searchspace, runner, tuning_options):
         print(f"Asked optimizer for {num_initial} points: {batch}")
 
     # Create cost function
-    cost_func = CostFunc(searchspace, tuning_options, runner)
+    cost_func = CostFunc(searchspace, tuning_options, runner, invalid_value=1e20)   # set to 1e20 because sys.float_info.max is too large for skopt to handle
     x0 = cost_func.get_start_pos()
 
     # Add x0 if the user has requested it
@@ -85,23 +85,26 @@ def tune(searchspace: Searchspace, runner, tuning_options):
 
     try:
         while eval_count < max_fevals:
-            if not batch:
-                optimizer.tell(xs, ys)
-                batch = optimizer.ask(batch_size, lie_strategy)
-                xs, ys = [], []
+            try:
+                if not batch:
+                    optimizer.tell(xs, ys)
+                    batch = optimizer.ask(batch_size, lie_strategy)
+                    xs, ys = [], []
 
-                if tuning_options.verbose:
-                    print(f"Asked optimizer for {batch_size} points: {batch}")
+                    if tuning_options.verbose:
+                        print(f"Asked optimizer for {batch_size} points: {batch}")
 
-            x = batch.pop(0)
-            y = cost_func(searchspace.get_param_config_from_param_indices(x))
-            eval_count += 1
+                x = batch.pop(0)
+                y = cost_func(searchspace.get_param_config_from_param_indices(x))
+                eval_count += 1
 
-            xs.append(x)
-            ys.append(y)
+                xs.append(x)
+                ys.append(y)
 
-            if opt_result is None or y < opt_result:
-                opt_config, opt_result = x, y
+                if opt_result is None or y < opt_result:
+                    opt_config, opt_result = x, y
+            except ValueError as e:
+                raise ValueError(f"Invalid configuration: {xs=}, {ys=}, {e=}") from e
 
     except StopCriterionReached as e:
         if tuning_options.verbose:
