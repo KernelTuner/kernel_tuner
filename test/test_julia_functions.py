@@ -5,6 +5,7 @@ import pytest
 from kernel_tuner import tune_kernel
 from kernel_tuner.backends.julia import JuliaFunctions
 from kernel_tuner.core import KernelInstance, KernelSource
+from kernel_tuner.observers.metal import MetalObserver, SUPPORTED_OBSERVABLES
 
 from .test_runners import env  # noqa: F401
 from .context import skip_if_no_julia
@@ -71,3 +72,34 @@ def test_tune_kernel(env):
     result, _ = tune_kernel(*env, lang="julia", verbose=True)
 
     assert len(result) > 0
+    for r in result:
+        if '__error__' in r:
+            continue  # Skip configurations that failed to compile or run
+        assert "time" in r
+        assert r["time"] > 0
+
+@skip_if_no_julia
+def test_tune_kernel_observers(env):
+    """Run a minimal Julia kernel tuner example with observers."""
+    env[0] = kernel_name
+    env[1] = kernel_string
+    env[4] = list(env[4].items()) # convert from a dict to a list of tuples to preserve order
+
+    observers = [MetalObserver(observables=SUPPORTED_OBSERVABLES)]
+
+    result, _ = tune_kernel(*env, observers=observers, lang="julia", verbose=True)
+
+    assert len(result) > 0
+    for r in result:
+        if '__error__' in r:
+            continue  # Skip configurations that failed to compile or run
+        assert "time" in r
+        assert r["time"] > 0
+        assert "metal_power" in r
+        assert "metal_freq_hz" in r
+        assert "metal_occupancy" in r
+        assert "metal_energy" in r
+        assert r["metal_power"] > 0
+        assert r["metal_freq_hz"] > 0
+        assert r["metal_occupancy"] > 0
+        assert r["metal_energy"] > 0
