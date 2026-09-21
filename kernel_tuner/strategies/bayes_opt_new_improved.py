@@ -215,7 +215,7 @@ class BayesianOptimization:
             self.opt = torch.min
             self.argopt = torch.argmin
         elif self.optimization_direction == 'max':
-            self.invalid_value = sys.float_info.min
+            self.invalid_value = -sys.float_info.max
             self.is_better_than = lambda a, b: a > b
             self.inf_value = np.NINF
             self.opt = torch.max

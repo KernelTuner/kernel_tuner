@@ -1,7 +1,6 @@
 """Lean implementation of Bayesian Optimization with GPyTorch, using the Searchspace object. With improvements for convergence / early stopping."""
 # python
 import ast  # for casting strings to dict
-import sys
 import warnings
 from copy import deepcopy
 from math import ceil
