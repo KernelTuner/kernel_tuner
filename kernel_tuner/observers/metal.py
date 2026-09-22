@@ -1,4 +1,5 @@
 import subprocess
+from warnings import warn
 import plistlib
 import logging
 import time
@@ -22,12 +23,7 @@ class MetalDevice:
         self.interval_ms = interval_ms
         self.process = None
         self._buffer = b""
-
-    def start_sampling(self):
-        """Start the powermetrics process for continuous sampling."""
-        cmd = [
-            "sudo",
-            "powermetrics",
+        self.cmd_powermetrics_options = [
             "-i",
             str(self.interval_ms),
             "--samplers",
@@ -37,20 +33,63 @@ class MetalDevice:
             "-f",
             "plist",
         ]
-        self.process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
+        self.has_noninteractive_permissions = self.check_permissions()
+
+    def check_permissions(self) -> bool:
+        """Check if the user has non-interactive sudo permissions to run powermetrics."""
+        try:
+            # check if we have non-interactive sudo rights on powermetrics
+            cmd_check = [
+                "sudo",
+                "-n",
+                "powermetrics",
+                "-n",
+                "1",
+                *self.cmd_powermetrics_options
+            ]
+            subprocess.run(
+                cmd_check, 
+                capture_output=True, 
+                text=True, 
+                check=True
+            )
+        except subprocess.CalledProcessError as e:
+            if "password is required" in e.stderr:
+                logger.warning(f"Metal observers ideally have non-interactive sudo privileges for powermetrics; {e}, {e.stderr}")
+                warn("Metal observers ideally have non-interactive sudo privileges for powermetrics. Please run `sudo visudo` and add to the bottom: `your_username ALL=(ALL) NOPASSWD: /usr/bin/powermetrics`")
+                return False
+        return True
+
+    def start_sampling(self):
+        """Start the powermetrics process for continuous sampling."""
+
+        # execute the powermetrics command
+        cmd = [
+            "sudo",
+            "powermetrics",
+            *self.cmd_powermetrics_options
+        ]
+        try:
+            self.process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        except Exception as e:
+            logger.error(f"Failed to start powermetrics: {e}")
+            raise e
         self._buffer = b""
         # Give it a moment to start and produce first sample
-        time.sleep(self.interval_ms / 1000.0 * 2)
+        time.sleep((self.interval_ms / 1e3) * 2)
 
     def stop_sampling(self):
         """Stop the powermetrics process."""
         if self.process:
             self.process.terminate()
-            self.process.wait(timeout=2)
+            try:
+                self.process.wait(timeout=(self.interval_ms / 1e3) * 3)
+            except subprocess.TimeoutExpired:
+                logger.warning("powermetrics process did not terminate in time")
             self.process = None
 
     def read_sample(self):
