@@ -15,6 +15,7 @@ Notes:
 from pathlib import Path
 from warnings import warn
 from dataclasses import dataclass
+from time import perf_counter
 
 import numpy as np
 
@@ -69,11 +70,15 @@ class JuliaFunctions(GPUBackend):
         self.current_kernel = None
         self.smem_size = 0
 
+        # Event tracking for async kernel launches
+        self._start_event = None
+        self._end_event = None
+
         # Initialize Julia backend
         self.backend = None
         self.start_evt = None
         self.end_evt = None
-        self.host_time = None
+        self.launch_kernel_time = None
         self.initialize_backend(device, backend_name=backend_name)
 
         # setup observers
@@ -246,7 +251,7 @@ class JuliaFunctions(GPUBackend):
         kernel_code = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
         self.kernel_source = kernel_instance.kernel_source
-        self.host_time = None  # reset host time for this kernel instance
+        self.launch_kernel_time = None  # reset host time for this kernel instance
 
         # Extract all 'using' statements and check for required packages
         uses = []
@@ -310,7 +315,7 @@ end
 
         # run the kernel
         try:
-            self.host_time = self.launch_kernel(
+            self.launch_kernel_time = self.launch_kernel(
                 julia_func,
                 args_tuple,
                 params,
@@ -328,46 +333,88 @@ end
                 raise SkippableFailure(f"Julia kernel launch failed for {params=}: {e}")
 
     def start_event(self):
-        """Records the event that marks the start of a measurement."""
+        """Records the event that marks the start of a measurement (non-blocking)."""
+        self._host_start_time = perf_counter()
         if self.backend_mod_name == "CUDA":
             evt = self.start_evt()
             self.backend_mod.record(evt, self.stream)
-            self.backend_mod.synchronize(evt)
+            self._start_event = evt
             return evt
         elif self.backend_mod_name == "AMDGPU":
             evt = self.start_evt(self.stream, do_record=False, timing=True)
             self.backend_mod.HIP.record(evt)
-            self.backend_mod.HIP.synchronize(evt)
+            self._start_event = evt
             return evt
         elif self.backend_mod_name == "Metal":
-            # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
-            # Normally you would just use one command buffer for the actual kernel and take GPUEndTime - GPUStartTime.
-            jl.start_buf = self.create_metal_buffer()
+            # Create a new command buffer for timing (non-blocking)
+            buf = self.create_metal_buffer()
+            # Pass buffer to Julia and commit it
+            jl.start_buf = buf
             jl.seval("Metal.commit!(start_buf)")
-            self.backend_mod.wait_completed(jl.start_buf)
-            return float(jl.start_buf.GPUEndTime)
+            self._start_event = buf
+            return buf
+        elif self.backend_mod_name in ("INTEL", "CPU"):
+            # No hardware events, use host timing
+            self._start_event = None
+            return None
 
     def stop_event(self):
-        """Records the event that marks the end of a measurement."""
+        """Records the event that marks the end of a measurement (non-blocking)."""
+        ret_val = None
         if self.backend_mod_name == "CUDA":
             evt = self.end_evt()
             self.backend_mod.record(evt, self.stream)
-            self.backend_mod.synchronize(evt)
-            return evt
+            self._end_event = evt
+            ret_val = evt
         elif self.backend_mod_name == "AMDGPU":
             evt = self.end_evt(self.stream, do_record=False, timing=True)
             self.backend_mod.HIP.record(evt)
-            self.backend_mod.HIP.synchronize(evt)
-            return evt
+            self._end_event = evt
+            ret_val = evt
         elif self.backend_mod_name == "Metal":
-            jl.end_buf = self.create_metal_buffer()
+            buf = self.create_metal_buffer()
+            # Pass buffer to Julia and commit it
+            jl.end_buf = buf
             jl.seval("Metal.commit!(end_buf)")
-            self.backend_mod.wait_completed(jl.end_buf)
-            return float(jl.end_buf.GPUStartTime)
+            self._end_event = buf
+            ret_val = buf
+        elif self.backend_mod_name in ("INTEL", "CPU"):
+            # No hardware events, use host timing
+            self._end_event = None
+            self.synchronize()  # ensure all work is done
+        self._host_stop_time = perf_counter()
+        return ret_val
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise."""
-        return True  # JuliaCall synchronizes on record
+        if self.backend_mod_name == "CUDA":
+            if self._end_event is not None:
+                return bool(self.backend_mod.isdone(self._end_event))
+            return True
+        elif self.backend_mod_name == "AMDGPU":
+            if self._end_event is not None:
+                # AMDGPU.HIP.hipEventQuery returns (hipError_t, bool)
+                result = self.backend_mod.HIP.hipEventQuery(self._end_event)
+                if isinstance(result, tuple) and len(result) >= 2:
+                    return bool(result[1])
+                return bool(result)
+            return True
+        elif self.backend_mod_name == "Metal":
+            if self._end_event is not None:
+                try:
+                    status = str(self._end_event.status)
+                    if "MTLCommandBufferStatusError" in status:
+                        raise RuntimeError(f"Metal command buffer encountered an error: {self._end_event.error=}, {self._end_event.status=}. ({self._start_event.status=})")
+                    return "MTLCommandBufferStatusCompleted" in status
+                except RuntimeError as e:
+                    raise e
+                except Exception:
+                    return False
+            return True
+        elif self.backend_mod_name in ("INTEL", "CPU"):
+            # No hardware events
+            return True
+        return True
 
     # @staticmethod
     def synchronize(self):

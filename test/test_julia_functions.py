@@ -85,10 +85,13 @@ def test_tune_kernel_observers(env):
     env[1] = kernel_string
     env[4] = list(env[4].items()) # convert from a dict to a list of tuples to preserve order
 
+    # create a MetalObserver with all supported observables
     observers = [MetalObserver(observables=SUPPORTED_OBSERVABLES)]
 
+    # run the kernel tuner with the observers
     result, _ = tune_kernel(*env, observers=observers, lang="julia", verbose=True)
 
+    # check that the results contain the expected observables
     assert len(result) > 0
     for r in result:
         if '__error__' in r:

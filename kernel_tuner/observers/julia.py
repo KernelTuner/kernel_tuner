@@ -36,67 +36,57 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         self.start = start_event
         self.end = end_event
         self.times = []
-        self.t0 = None
-
-        if self.name == "cuda":
-            # initialize events for this instance of the observer
-            self.stream = self.backend_mod.stream()
-            self.start = self.start()
-            self.end = self.end()
-        elif self.name == "amdgpu":
-            self.stream = self.backend_mod.stream()
-            self.start = self.start(self.stream, do_record=False, timing=True)
-            self.end = self.end(self.stream, do_record=False, timing=True)
 
     def before_start(self):
-        if self.start is not None:
-            if self.name == "metal":
-                self.t0 = self.start()
-            elif self.name == "cuda":
-                # the events are recorded in the julia_helper kernel launch code
-                pass
-            elif self.name == "amdgpu":
-                # the events are recorded in the julia_helper kernel launch code
-                pass
-            else:
-                raise ValueError(f"Unsupported backend for timing: {self.name}")
-        else:
-            # fallback: host-side timestamp
-            self.t0 = perf_counter()
+        # Events are now recorded in the backend's start_event() method
+        pass
 
     def after_finish(self):
         ms = None
-        if self.end is not None:
-            if self.name == "metal":
-                ms_observer = float((self.end() - self.t0) * 1000.0)
-                ms_helper = self.kt_backend.host_time
-                # take the minimum of the two measurements to mitigate overhead of command buffer timing
-                ms = min(
-                    ms_observer, ms_helper
-                )
-            elif self.name == "cuda":
-                # the events are recorded in the julia_helper kernel launch code
-                ms = float(self.backend_mod.elapsed(self.start, self.end) * 1000.0)
-            elif self.name == "amdgpu":
-                # the events are recorded in the julia_helper kernel launch code
-                ms = float(self.backend_mod.HIP.elapsed(self.start, self.end) * 1000.0)
-            else:
-                raise ValueError(f"Unsupported backend for timing: {self.name}")
-        else:
-            self.kernelabstractions.synchronize(self.backend)
-            dt = perf_counter() - self.t0
-            ms = dt * 1000.0
-            warn(f"Using host-side timing for Julia {self.name} backend; results may be less accurate.")
+        ms_hostside = None
+        if self.name == "metal":
+            # Metal: backend's start_event/stop_event created command buffers
+            # The end command buffer was committed in stop_event()
+            # We need to wait for it and compute the time
+            if self.kt_backend._end_event is not None:
+                end_buf = self.kt_backend._end_event
+                # Wait for command buffer to complete
+                self.backend_mod.wait_completed(end_buf)
+                if self.kt_backend._start_event is not None:
+                    start_buf = self.kt_backend._start_event
+                    ms = float((end_buf.GPUStartTime - start_buf.GPUEndTime) * 1000.0)
+        elif self.name == "cuda":
+            # CUDA: use events stored in backend
+            if self.kt_backend._start_event is not None and self.kt_backend._end_event is not None:
+                ms = float(self.backend_mod.elapsed(self.kt_backend._start_event, self.kt_backend._end_event) * 1000.0)
+        elif self.name == "amdgpu":
+            # AMD: use events stored in backend
+            if self.kt_backend._start_event is not None and self.kt_backend._end_event is not None:
+                ms = float(self.backend_mod.HIP.elapsed(self.kt_backend._start_event, self.kt_backend._end_event) * 1000.0)
+        elif self.name in ("intel", "cpu"):
+            # uses host-side timing
+            pass
+        
+        if self.kt_backend._host_start_time is not None and self.kt_backend._host_stop_time is not None:
+            ms_hostside = (self.kt_backend._host_stop_time - self.kt_backend._host_start_time) * 1000.0
 
-        if ms > self.kt_backend.host_time:
-            if ms < 1 and (ms > 1.5 * self.kt_backend.host_time and self.end is not None):
+        # If GPU timing failed or not available, fall back to host-side timing if available
+        if ms is None and ms_hostside is not None:
+            ms = ms_hostside
+            warn(f"Using host-side timing for Julia {self.name} backend; results may be less accurate.")
+        if ms is None:
+            raise RuntimeError(f"Failed to measure GPU time for Julia {self.name} backend; no timing information available.")
+
+        # If both GPU and host timing are available, check for discrepancies
+        if ms is not None and ms_hostside is not None and ms > ms_hostside and ms_hostside > 0.0:
+            if ms < 1 and (ms > 1.5 * ms_hostside):
                 warn(
-                    f"Measured GPU time {ms:.3f} ms is greater than host time {self.kt_backend.host_time:.3f} ms; "
+                    f"Measured GPU time {ms:.3f} ms is greater than host time {ms_hostside:.3f} ms; "
                     "this may happen with very short execution times."
                 )
-            elif ms > 1.5 * self.kt_backend.host_time and self.end is not None:
+            elif ms > 1.5 * ms_hostside:
                 warn(
-                    f"Measured GPU time {ms:.3f} ms is substantially greater than host time {self.kt_backend.host_time:.3f} ms; "
+                    f"Measured GPU time {ms:.3f} ms is substantially greater than host time {ms_hostside:.3f} ms; "
                     "this may indicate an issue with the timing measurement."
                 )
 
