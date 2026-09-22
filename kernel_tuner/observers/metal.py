@@ -97,11 +97,17 @@ class MetalDevice:
         if not self.process:
             return None
 
+        # Send SIGIO to the process to request a sample
+        try:
+            self.process.send_signal(subprocess.signal.SIGIO)
+        except Exception as e:
+            logger.error(f"Failed to send SIGIO to powermetrics: {e}")
+            return None
+
         # Read available data
         data = self.process.stdout.read1(4096)
         if not data:
             return None
-
         self._buffer += data
 
         # Try to extract complete plist documents from buffer
