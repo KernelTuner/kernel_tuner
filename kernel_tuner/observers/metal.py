@@ -115,9 +115,8 @@ class MetalDevice:
                 data = plistlib.loads(plist_data)
                 return self._parse_sample(data)
             except (plistlib.InvalidFileException, KeyError) as e:
-                logger.debug(f"Failed to parse powermetrics output: {e}")
-                # continue
-                raise e
+                logger.error(f"Failed to parse powermetrics output: {e}")
+                continue
 
         return None
 
@@ -125,10 +124,10 @@ class MetalDevice:
         """Parse a single powermetrics plist sample."""
         gpu_data = data.get("gpu", {})
         return {
-            "gpu_energy_uj": gpu_data.get("gpu_energy", 0),  # microjoules over interval
-            "freq_hz": gpu_data.get("freq_hz", 0) * 1e6,  # Convert MHz to Hz
+            "gpu_energy_mj": gpu_data.get("gpu_energy"),  # milijoules over interval
+            "freq_hz": gpu_data.get("freq_hz") * 1e6,  # Convert MHz to Hz
             "elapsed_ms": data.get("elapsed_ns", self.interval_ms * 1e6) / 1e6,
-            "idle_ratio": gpu_data.get("idle_ratio", 1.0),
+            "idle_ratio": gpu_data.get("idle_ratio", np.nan),
         }
 
     def get_power_metrics(self):
@@ -137,18 +136,18 @@ class MetalDevice:
         if not sample:
             return None
 
-        # gpu_energy is energy in microjoules over the elapsed interval
-        # Power (W) = energy (uJ) / elapsed_ms * 1e3
-        power_w = sample["gpu_energy_uj"] / (sample["elapsed_ms"] * 1e3)
+        # gpu_energy is energy in milijoules over the elapsed interval
+        # Power (mW) = energy (mJ) / elapsed_ms * 1e3
+        power_w = sample["gpu_energy_mj"] / (sample["elapsed_ms"] * 1e3)
 
         # Energy (J) for this interval
-        energy_j = sample["gpu_energy_uj"] * 1e-6
+        energy_j = sample["gpu_energy_mj"] * 1e-3
 
         return {
             "power": power_w,
             "energy": energy_j,
             "freq_hz": sample["freq_hz"],
-            "occupancy": 1.0 - sample["idle_ratio"],
+            "occupancy": 1.0 - sample["idle_ratio"] if not np.isnan(sample["idle_ratio"]) else np.nan,
         }
 
 
@@ -236,7 +235,7 @@ class MetalObserver(BenchmarkObserver):
         :param observables: List of metrics to monitor. Defaults to just energy.
         :param device_id: Not used for Metal (single GPU), kept for API compatibility.
         :param prefix: Prefix used for name in the metrics. Defaults to "metal".
-        :param use_continuous_observer: Whether to use continuous observer for longer kernels.
+        :param use_continuous_observer: Whether to use continuous observer.
         :param continuous_duration: Duration in seconds for continuous observation.
         :param interval_ms: Sampling interval in milliseconds for powermetrics. Going below 100ms may cause instability issues.
         """
@@ -267,7 +266,7 @@ class MetalObserver(BenchmarkObserver):
         self.device.start_sampling()
         self.sample_timestamps = []
         self.sample_values = {k: [] for k in self.results_per_iteration}
-        self.collect_sample()   # Call during to collect initial sample after starting
+        self.collect_sample()
 
     def during(self):
         """Sample metrics during kernel execution."""
