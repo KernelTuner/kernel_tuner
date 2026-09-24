@@ -415,7 +415,7 @@ class DeviceInterface(object):
 
         # Take list of observers from self.dev because Backends tend to add their own observer
         self.benchmark_observers = [
-            obs for obs in self.dev.observers if not isinstance(obs, (ContinuousObserver, PrologueObserver))
+            obs for obs in self.dev.observers if (not isinstance(obs, (ContinuousObserver, PrologueObserver)) and not obs.passthrough_observer)
         ]
 
         self.iterations = iterations

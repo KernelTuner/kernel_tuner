@@ -251,6 +251,7 @@ class MetalObserver(BenchmarkObserver):
         self.device_id = device_id
         self.device = None
         self.use_continuous_observer = use_continuous_observer
+        self.passthrough_observer = use_continuous_observer  # This observer is only used as a passthrough for the continuous observer
         self.continuous_duration = continuous_duration
         self.interval_ms = interval_ms
         self.min_load = min_load

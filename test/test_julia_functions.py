@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from kernel_tuner import tune_kernel
+from kernel_tuner.backends.julia_helper import detect_julia_gpu_backends
 from kernel_tuner.backends.julia import JuliaFunctions
 from kernel_tuner.core import KernelInstance, KernelSource
 from kernel_tuner.observers.metal import MetalObserver, SUPPORTED_OBSERVABLES
@@ -85,8 +86,13 @@ def test_tune_kernel_observers(env):
     env[1] = kernel_string
     env[4] = list(env[4].items()) # convert from a dict to a list of tuples to preserve order
 
-    # create a MetalObserver with all supported observables
-    observers = [MetalObserver(observables=SUPPORTED_OBSERVABLES)]
+    # create an observer based on the backend
+    backend = detect_julia_gpu_backends()[0]
+    if backend.lower() == "metal":
+        # create a MetalObserver with all supported observables
+        observers = [MetalObserver(observables=SUPPORTED_OBSERVABLES)]
+    else:
+        observers = []
 
     # run the kernel tuner with the observers
     result, _ = tune_kernel(*env, observers=observers, lang="julia", verbose=True)
@@ -100,9 +106,9 @@ def test_tune_kernel_observers(env):
         assert r["time"] > 0
         assert "metal_power" in r
         assert "metal_freq_hz" in r
-        assert "metal_occupancy" in r
+        assert "metal_load" in r
         assert "metal_energy" in r
         assert r["metal_power"] > 0
         assert r["metal_freq_hz"] > 0
-        assert r["metal_occupancy"] > 0
+        assert r["metal_load"] > 0
         assert r["metal_energy"] > 0

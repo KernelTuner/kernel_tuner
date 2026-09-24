@@ -54,6 +54,9 @@ end
 
 function synchronize_gpu(launch_time_start)
     Main.KernelAbstractions.synchronize(kt_julia_backend)
+    if launch_time_start === nothing
+        return nothing
+    end
     return float((time_ns() - launch_time_start) / 1e6)
 end
 

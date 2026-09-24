@@ -4,6 +4,7 @@ import numpy as np
 
 class BenchmarkObserver(ABC):
     """Base class for Benchmark Observers"""
+    passthrough_observer = False    # do not execute as a benchmark observer, only used as a passthrough for other observers
 
     def register_device(self, dev):
         """Sets self.dev, for inspection by the observer at various points during benchmarking"""
