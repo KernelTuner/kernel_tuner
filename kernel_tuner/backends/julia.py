@@ -79,6 +79,7 @@ class JuliaFunctions(GPUBackend):
         self.start_evt = None
         self.end_evt = None
         self.launch_kernel_time = None
+        self.launch_kernel_time_start = None
         self.initialize_backend(device, backend_name=backend_name)
 
         # setup observers
@@ -108,6 +109,7 @@ class JuliaFunctions(GPUBackend):
                     using KernelAbstractions
                     const kt_julia_backend = CPU()
                     const GPUArrayType = {self.GPUArrayType}
+                    global_metal_buffer = nothing
                     include("{str(Path(__file__).parent / "julia_helper.jl")}")
                 end
                 """
@@ -120,13 +122,24 @@ class JuliaFunctions(GPUBackend):
                     using {self.backend_mod_name}
                     const kt_julia_backend = {self.backend_mod_instname}()
                     const GPUArrayType = {self.GPUArrayType}
+                    global_metal_buffer = nothing
                     include("{str(Path(__file__).parent / "julia_helper.jl")}")
                 end
                 """
             )
 
-        self.to_gpuarray = jl.KernelTunerHelper.to_gpuarray
         self.launch_kernel = jl.KernelTunerHelper.launch_kernel
+        self.synchronize_gpu = jl.KernelTunerHelper.synchronize_gpu
+        self.to_gpuarray = jl.KernelTunerHelper.to_gpuarray
+
+        # Metal specific functions
+        self.use_metal_buffer = self.backend_mod_name == "Metal"
+        self.metal_create_buffer = jl.KernelTunerHelper.metal_create_buffer
+        self.metal_create_global_buffer = jl.KernelTunerHelper.metal_create_global_buffer
+        self.metal_get_global_buffer = jl.KernelTunerHelper.metal_get_global_buffer
+        self.metal_reset_global_buffer = jl.KernelTunerHelper.metal_reset_global_buffer
+        self.metal_commit_buffer = jl.KernelTunerHelper.metal_commit_buffer
+        self.metal_buffer_is_completed = jl.KernelTunerHelper.metal_buffer_is_completed
 
         # env info
         self.env = {
@@ -213,7 +226,7 @@ class JuliaFunctions(GPUBackend):
         #         f"ZeCommandQueue(ZeContext(first(drivers())), devices(first(drivers()))[{int(device) + 1}]))"
         #     )
         elif backend_name == "METAL":
-            self.contextqueue = self.backend_mod.MTLCommandQueue(self.backend_device)
+            self.contextqueue = self.backend_mod.global_queue(self.backend_device)
 
         self.setup_streams(backend_name)
 
@@ -251,7 +264,6 @@ class JuliaFunctions(GPUBackend):
         kernel_code = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
         self.kernel_source = kernel_instance.kernel_source
-        self.launch_kernel_time = None  # reset host time for this kernel instance
 
         # Extract all 'using' statements and check for required packages
         uses = []
@@ -291,6 +303,11 @@ end
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """Launch a compiled Julia kernel."""
+        if self.use_metal_buffer:
+            # immediately reset Metal global buffer to avoid using old buffers and prevent early termination in continous observer
+            self.metal_reset_global_buffer()
+        self.launch_kernel_time = None  # reset host time for this kernel instance
+        self.launch_kernel_time_start = None
         if func is None or not isinstance(func, JuliaKernel):
             raise RuntimeError("No Julia kernel compiled or provided.")
 
@@ -315,7 +332,7 @@ end
 
         # run the kernel
         try:
-            self.launch_kernel_time = self.launch_kernel(
+            self.launch_kernel_time, self.launch_kernel_time_start = self.launch_kernel(
                 julia_func,
                 args_tuple,
                 params,
@@ -325,6 +342,7 @@ end
                 self.observers[-1].start,
                 self.observers[-1].end,
                 self.observers[-1].stream,
+                self.use_metal_buffer,
             )
         except JuliaError as e:
             if self.raise_errors:
@@ -339,51 +357,33 @@ end
             evt = self.start_evt()
             self.backend_mod.record(evt, self.stream)
             self._start_event = evt
-            return evt
         elif self.backend_mod_name == "AMDGPU":
             evt = self.start_evt(self.stream, do_record=False, timing=True)
             self.backend_mod.HIP.record(evt)
             self._start_event = evt
-            return evt
         elif self.backend_mod_name == "Metal":
-            # Create a new command buffer for timing (non-blocking)
-            buf = self.create_metal_buffer()
-            # Pass buffer to Julia and commit it
-            jl.start_buf = buf
-            jl.seval("Metal.commit!(start_buf)")
-            self._start_event = buf
-            return buf
+            # Metal command buffer is handled in julia_helper for much better performance
+            pass
         elif self.backend_mod_name in ("INTEL", "CPU"):
             # No hardware events, use host timing
             self._start_event = None
-            return None
 
     def stop_event(self):
         """Records the event that marks the end of a measurement (non-blocking)."""
-        ret_val = None
         if self.backend_mod_name == "CUDA":
             evt = self.end_evt()
             self.backend_mod.record(evt, self.stream)
             self._end_event = evt
-            ret_val = evt
         elif self.backend_mod_name == "AMDGPU":
             evt = self.end_evt(self.stream, do_record=False, timing=True)
             self.backend_mod.HIP.record(evt)
             self._end_event = evt
-            ret_val = evt
         elif self.backend_mod_name == "Metal":
-            buf = self.create_metal_buffer()
-            # Pass buffer to Julia and commit it
-            jl.end_buf = buf
-            jl.seval("Metal.commit!(end_buf)")
-            self._end_event = buf
-            ret_val = buf
+            # Metal command buffer is handled in julia_helper for much better performance
+            pass
         elif self.backend_mod_name in ("INTEL", "CPU"):
             # No hardware events, use host timing
             self._end_event = None
-            self.synchronize()  # ensure all work is done
-        self._host_stop_time = perf_counter()
-        return ret_val
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise."""
@@ -400,17 +400,7 @@ end
                 return bool(result)
             return True
         elif self.backend_mod_name == "Metal":
-            if self._end_event is not None:
-                try:
-                    status = str(self._end_event.status)
-                    if "MTLCommandBufferStatusError" in status:
-                        raise RuntimeError(f"Metal command buffer encountered an error: {self._end_event.error=}, {self._end_event.status=}. ({self._start_event.status=})")
-                    return "MTLCommandBufferStatusCompleted" in status
-                except RuntimeError as e:
-                    raise e
-                except Exception:
-                    return False
-            return True
+            return self.metal_buffer_is_completed()
         elif self.backend_mod_name in ("INTEL", "CPU"):
             # No hardware events
             return True
@@ -419,7 +409,8 @@ end
     # @staticmethod
     def synchronize(self):
         try:
-            jl.Main.KernelAbstractions.synchronize(self.backend)
+            self._host_time_julia = self.synchronize_gpu(self.launch_kernel_time_start)
+            self._host_stop_time = perf_counter()
         except JuliaError as e:
             raise RuntimeError(f"Julia synchronize failed: {e}")
 
@@ -492,14 +483,6 @@ end
                 raise ImportError(
                     f'{package} not found in your Julia environment. Run `using Pkg; Pkg.add(\"{package}\")` to install it.'
                 ) from e
-
-    def create_metal_buffer(self):
-        """Create a Metal buffer in the command queue."""
-        try:
-            buf = self.contextqueue.commandBuffer()
-        except Exception:
-            buf = self.backend_mod.MTLCommandBuffer(self.contextqueue)
-        return buf
 
     def setup_streams(self, backend_name: str):
         """Set up stream and event attributes for observers."""

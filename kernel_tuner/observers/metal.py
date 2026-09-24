@@ -12,14 +12,21 @@ SUPPORTED_OBSERVABLES = [
     "energy",
     "power",
     "freq_hz",
-    "occupancy",
+    "load",
 ]
+
+FIELD_TYPE_MAP = {
+    "energy": float,
+    "power": float,
+    "freq_hz": int,
+    "load": float,
+}
 
 
 class MetalDevice:
     """Wrapper for Metal GPU device metrics via powermetrics."""
 
-    def __init__(self, interval_ms=100):
+    def __init__(self, interval_ms=50):
         self.interval_ms = interval_ms
         self.process = None
         self._buffer = b""
@@ -79,8 +86,9 @@ class MetalDevice:
             logger.error(f"Failed to start powermetrics: {e}")
             raise e
         self._buffer = b""
+
         # Give it a moment to start and produce first sample
-        time.sleep((self.interval_ms / 1e3) * 2)
+        self.process.stdout.read1(-1)
 
     def stop_sampling(self):
         """Stop the powermetrics process."""
@@ -105,14 +113,15 @@ class MetalDevice:
             return None
 
         # Read available data
-        data = self.process.stdout.read1(4096)
+        data = self.process.stdout.read1(-1)
         if not data:
             return None
         self._buffer += data
 
         # Try to extract complete plist documents from buffer
-        # plist documents end with </plist>
         while b"</plist>" in self._buffer:
+            start_idx = self._buffer.index(b"<plist")
+            self._buffer = self._buffer[start_idx:]
             end_idx = self._buffer.index(b"</plist>") + len(b"</plist>")
             plist_data = self._buffer[:end_idx]
             self._buffer = self._buffer[end_idx:]
@@ -121,7 +130,7 @@ class MetalDevice:
                 data = plistlib.loads(plist_data)
                 return self._parse_sample(data)
             except (plistlib.InvalidFileException, KeyError) as e:
-                logger.error(f"Failed to parse powermetrics output: {e}")
+                logger.error(f"Failed to parse powermetrics output: {e}, {plist_data}")
                 continue
 
         return None
@@ -129,6 +138,7 @@ class MetalDevice:
     def _parse_sample(self, data):
         """Parse a single powermetrics plist sample."""
         gpu_data = data.get("gpu", {})
+        # units are documented in: https://docs.rs/pumas/latest/src/pumas/modules/powermetrics/plist_parsing.rs.html
         return {
             "gpu_energy_mj": gpu_data.get("gpu_energy"),  # milijoules over interval
             "freq_hz": gpu_data.get("freq_hz") * 1e6,  # Convert MHz to Hz
@@ -142,29 +152,29 @@ class MetalDevice:
         if not sample:
             return None
 
-        # gpu_energy is energy in milijoules over the elapsed interval
-        # Power (mW) = energy (mJ) / elapsed_ms * 1e3
-        power_w = sample["gpu_energy_mj"] / (sample["elapsed_ms"] * 1e3)
+        elapsed_sec = sample["elapsed_ms"] / 1000.0
 
         # Energy (J) for this interval
         energy_j = sample["gpu_energy_mj"] * 1e-3
+
+        # gpu_energy is energy in joules over the elapsed interval in seconds
+        power_w = energy_j / elapsed_sec
 
         return {
             "power": power_w,
             "energy": energy_j,
             "freq_hz": sample["freq_hz"],
-            "occupancy": 1.0 - sample["idle_ratio"] if not np.isnan(sample["idle_ratio"]) else np.nan,
+            "load": 1.0 - sample["idle_ratio"] if not np.isnan(sample["idle_ratio"]) else np.nan,
         }
 
 
 class MetalContinuousObserver(ContinuousObserver):
     """Continuous observer for Metal that wraps a parent observer."""
 
-    def __init__(self, parent, continuous_duration=1.0, interval_ms=100):
+    def __init__(self, parent, continuous_duration=1.0, interval_ms=50):
         self.parent = parent
         self.continuous_duration = continuous_duration
         self.interval_ms = interval_ms
-        self.warmup_time = min(0.1, continuous_duration / 2)
 
         # This assigned by Kernel Tuner's core
         self.results = None
@@ -173,31 +183,16 @@ class MetalContinuousObserver(ContinuousObserver):
         self.parent.before_start()
 
     def after_start(self):
-        self.warmup_completed = False
-        self.start_time = time.perf_counter() + self.warmup_time
+        self.parent.after_start()
+        self.start_time = time.perf_counter()
 
     def during(self):
-        now = time.perf_counter()
-
-        if not self.warmup_completed:
-            if now < self.start_time:
-                return
-
-            # Only call `after_start` once warmup time has passed
-            self.start_time = now
-            self.warmup_completed = True
-            self.parent.after_start()
-
         self.parent.during()
 
     def after_finish(self):
-        if self.warmup_completed:
-            self.parent.after_finish()
+        self.parent.after_finish()
 
     def get_results(self):
-        if not self.warmup_completed:
-            return dict()
-
         elapsed_sec = time.perf_counter() - self.start_time
         time_sec = self.results["time"] * 1e-3
         ratio = time_sec / elapsed_sec
@@ -212,7 +207,7 @@ class MetalContinuousObserver(ContinuousObserver):
         energy_field = self.parent.field_name("energy")
 
         if energy_field in results:
-            results[energy_field] = results[energy_field] * ratio
+            results[energy_field] = FIELD_TYPE_MAP["energy"](results[energy_field] * ratio)
 
         return results
 
@@ -220,30 +215,32 @@ class MetalContinuousObserver(ContinuousObserver):
 class MetalObserver(BenchmarkObserver):
     """
     BenchmarkObserver that uses powermetrics to monitor Apple Metal GPUs and measure
-    energy usage (`energy`), power (`power`), GPU frequency (`freq_hz`), and occupancy (`occupancy`).
+    energy usage (`energy`), power (`power`), GPU frequency (`freq_hz`), and load (`load`).
     """
 
     def __init__(
         self,
-        observables=["energy"],
+        observables=SUPPORTED_OBSERVABLES,
         *,
         device_id=None,
         prefix="metal",
         use_continuous_observer=True,
         continuous_duration=1.0,
-        interval_ms=100,
+        interval_ms=50,
+        min_load=0.05,
     ):
         """
         Initialize the MetalObserver.
 
-        Supported observables are: `energy`, `power`, `freq_hz`, and `occupancy`.
+        Supported observables are: `energy`, `power`, `freq_hz`, and `load`.
 
-        :param observables: List of metrics to monitor. Defaults to just energy.
+        :param observables: List of metrics to monitor. Defaults to all as there is no performance penalty for monitoring all metrics.
         :param device_id: Not used for Metal (single GPU), kept for API compatibility.
         :param prefix: Prefix used for name in the metrics. Defaults to "metal".
         :param use_continuous_observer: Whether to use continuous observer.
         :param continuous_duration: Duration in seconds for continuous observation.
-        :param interval_ms: Sampling interval in milliseconds for powermetrics. Going below 100ms may cause instability issues.
+        :param interval_ms: Sampling interval in milliseconds for powermetrics. Default 50ms as per https://arxiv.org/html/2511.07885v6. Going below 50ms may cause instability issues.
+        :param min_load: Minimum threshold for GPU load. Samples below this load are discarded.
         """
         for obs in observables:
             if obs not in SUPPORTED_OBSERVABLES:
@@ -256,7 +253,11 @@ class MetalObserver(BenchmarkObserver):
         self.use_continuous_observer = use_continuous_observer
         self.continuous_duration = continuous_duration
         self.interval_ms = interval_ms
+        self.min_load = min_load
         self.results_per_iteration = {self.field_name(k): [] for k in self.observables}
+
+        if min_load < 0.0 or min_load > 1.0:
+            raise ValueError(f"min_load must be between 0.0 and 1.0, got {min_load}")
 
     def register_device(self, dev):
         """Initialize the Metal device for monitoring."""
@@ -267,8 +268,8 @@ class MetalObserver(BenchmarkObserver):
                 self, continuous_duration=self.continuous_duration
             )
 
-    def after_start(self):
-        """Start sampling after kernel launch."""
+    def before_start(self):
+        """Start sampling before kernel launch."""
         self.device.start_sampling()
         self.sample_timestamps = []
         self.sample_values = {k: [] for k in self.results_per_iteration}
@@ -303,13 +304,23 @@ class MetalObserver(BenchmarkObserver):
         if not self.sample_timestamps:
             return
 
-        # Normalize timestamps to [0, 1] for integration
+        # normalize timestamps to [0, 1] for integration
         xs = np.array(self.sample_timestamps)
         if xs.max() > xs.min():
             xs = (xs - xs.min()) / (xs.max() - xs.min())
         else:
             xs = np.zeros_like(xs)
 
+        # prune for load
+        if self.min_load > 0.0 and "metal_load" in self.sample_values and len(self.sample_values["metal_load"]) > 1:
+            # if load was below min_load, the GPU wasn't active, discard that sample if it's not the only one
+            for idx, load in enumerate(self.sample_values["metal_load"]):
+                if load < self.min_load:
+                    for key in self.sample_values:
+                        del self.sample_values[key][idx]
+                    logger.warning(f"MetalContinuousObserver: load {load} < {self.min_load} at sample {idx}, discarding sample.")
+
+        # compute integrated metrics for each observable
         for key, values in self.sample_values.items():
             if not values:
                 continue
@@ -317,7 +328,7 @@ class MetalObserver(BenchmarkObserver):
             field_name = key.replace(f"{self.prefix}_", "") if self.prefix else key
 
             # Energy samples are already energy per interval (J), so sum them
-            # Other metrics (power, freq, occupancy) are rates, so integrate (average) them
+            # Other metrics (power, freq, load) are rates, so integrate (average) them
             if field_name == "energy":
                 result = sum(values)
             elif all(v == values[0] for v in values):
@@ -331,9 +342,10 @@ class MetalObserver(BenchmarkObserver):
         """Return averaged results across iterations."""
         results = dict()
 
-        for key in list(self.results_per_iteration):
+        for key in self.results_per_iteration.keys():
             if self.results_per_iteration[key]:
-                results[key] = np.average(self.results_per_iteration[key])
+                field_name = key.replace(f"{self.prefix}_", "") if self.prefix else key
+                results[key] = FIELD_TYPE_MAP[field_name](np.average(self.results_per_iteration[key]))
                 self.results_per_iteration[key] = []
 
         return results

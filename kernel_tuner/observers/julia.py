@@ -12,7 +12,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
     - CUDA: CuEvent timing
     - ROCBackend: HIPEvent timing
     - OneAPI: host-side timing (less accurate, no events available)
-    - Metal: timing by wrapping the kernel launch between two command buffers and measuring the time between them
+    - Metal: timing by wrapping the kernel launch with a command buffer
     """
 
     def __init__(
@@ -43,19 +43,10 @@ class JuliaRuntimeObserver(BenchmarkObserver):
 
     def after_finish(self):
         ms = None
-        ms_hostside = None
-        if self.name == "metal":
-            # Metal: backend's start_event/stop_event created command buffers
-            # The end command buffer was committed in stop_event()
-            # We need to wait for it and compute the time
-            if self.kt_backend._end_event is not None:
-                end_buf = self.kt_backend._end_event
-                # Wait for command buffer to complete
-                self.backend_mod.wait_completed(end_buf)
-                if self.kt_backend._start_event is not None:
-                    start_buf = self.kt_backend._start_event
-                    ms = float((end_buf.GPUStartTime - start_buf.GPUEndTime) * 1000.0)
-        elif self.name == "cuda":
+        ms_hostside = self.kt_backend._host_time_julia
+        ms_overhead = 0.0
+
+        if self.name == "cuda":
             # CUDA: use events stored in backend
             if self.kt_backend._start_event is not None and self.kt_backend._end_event is not None:
                 ms = float(self.backend_mod.elapsed(self.kt_backend._start_event, self.kt_backend._end_event) * 1000.0)
@@ -63,12 +54,17 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             # AMD: use events stored in backend
             if self.kt_backend._start_event is not None and self.kt_backend._end_event is not None:
                 ms = float(self.backend_mod.HIP.elapsed(self.kt_backend._start_event, self.kt_backend._end_event) * 1000.0)
+        elif self.name == "metal":
+            # register the overhead from the command buffer 
+            buf = self.kt_backend.metal_get_global_buffer()
+            if buf is not None:
+                ms_overhead = float((buf.GPUEndTime - buf.GPUStartTime) * 1000.0)
         elif self.name in ("intel", "cpu"):
             # uses host-side timing
             pass
         
         if self.kt_backend._host_start_time is not None and self.kt_backend._host_stop_time is not None:
-            ms_hostside = (self.kt_backend._host_stop_time - self.kt_backend._host_start_time) * 1000.0
+            ms_hostside_python = (self.kt_backend._host_stop_time - self.kt_backend._host_start_time) * 1000.0
 
         # If GPU timing failed or not available, fall back to host-side timing if available
         if ms is None and ms_hostside is not None:
@@ -76,15 +72,18 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             warn(f"Using host-side timing for Julia {self.name} backend; results may be less accurate.")
         if ms is None:
             raise RuntimeError(f"Failed to measure GPU time for Julia {self.name} backend; no timing information available.")
+        else:
+            # Subtract any known overhead
+            ms -= ms_overhead
 
         # If both GPU and host timing are available, check for discrepancies
         if ms is not None and ms_hostside is not None and ms > ms_hostside and ms_hostside > 0.0:
-            if ms < 1 and (ms > 1.5 * ms_hostside):
+            if ms < 1 and (ms > 1.2 * ms_hostside):
                 warn(
                     f"Measured GPU time {ms:.3f} ms is greater than host time {ms_hostside:.3f} ms; "
                     "this may happen with very short execution times."
                 )
-            elif ms > 1.5 * ms_hostside:
+            elif ms > 1.2 * ms_hostside:
                 warn(
                     f"Measured GPU time {ms:.3f} ms is substantially greater than host time {ms_hostside:.3f} ms; "
                     "this may indicate an issue with the timing measurement."
@@ -93,8 +92,12 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         self.times.append(ms)
 
     def get_results(self):
+        times_avg = self.times.copy()
+        if len(self.times) >= 5:
+            # remove the first to avoid JIT warmup effects
+            times_avg = self.times[1:]
         results = {
-            "time": np.average(self.times),
+            "time": np.average(times_avg),
             "times": self.times.copy(),
         }
         self.times = []
