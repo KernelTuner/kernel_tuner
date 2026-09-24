@@ -62,14 +62,17 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         elif self.name in ("intel", "cpu"):
             # uses host-side timing
             pass
-        
-        if self.kt_backend._host_start_time is not None and self.kt_backend._host_stop_time is not None:
-            ms_hostside_python = (self.kt_backend._host_stop_time - self.kt_backend._host_start_time) * 1000.0
 
         # If GPU timing failed or not available, fall back to host-side timing if available
         if ms is None and ms_hostside is not None:
             ms = ms_hostside
-            warn(f"Using host-side timing for Julia {self.name} backend; results may be less accurate.")
+            if self.name == "cuda" or self.name == "amdgpu":
+                warn(f"Using host-side timing for Julia {self.name} backend; results may be less accurate.")
+        if ms is None:
+            if self.kt_backend._host_start_time is not None and self.kt_backend._host_stop_time is not None:
+                ms_hostside_python = (self.kt_backend._host_stop_time - self.kt_backend._host_start_time) * 1000.0
+                ms = ms_hostside_python
+                warn(f"Using Python host-side timing for Julia {self.name} backend; results may be less accurate.")
         if ms is None:
             raise RuntimeError(f"Failed to measure GPU time for Julia {self.name} backend; no timing information available.")
         else:

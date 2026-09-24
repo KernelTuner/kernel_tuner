@@ -227,7 +227,7 @@ class MetalObserver(BenchmarkObserver):
         use_continuous_observer=True,
         continuous_duration=1.0,
         interval_ms=50,
-        min_load=0.05,
+        min_load=0.1,
     ):
         """
         Initialize the MetalObserver.
@@ -304,21 +304,23 @@ class MetalObserver(BenchmarkObserver):
         if not self.sample_timestamps:
             return
 
+        # prune for load
+        if self.min_load > 0.0 and "metal_load" in self.sample_values and len(self.sample_values["metal_load"]) > 1:
+            # if load was below min_load, the GPU wasn't active, discard that sample if it's not the only one
+            for idx, load in enumerate(self.sample_values["metal_load"]):
+                if load < self.min_load:
+                    del self.sample_timestamps[idx]
+                    for key in self.sample_values:
+                        del self.sample_values[key][idx]
+                    if load > 0.0:
+                        logger.info(f"MetalContinuousObserver: load {load} < {self.min_load} at sample {idx}, discarding sample.")
+
         # normalize timestamps to [0, 1] for integration
         xs = np.array(self.sample_timestamps)
         if xs.max() > xs.min():
             xs = (xs - xs.min()) / (xs.max() - xs.min())
         else:
             xs = np.zeros_like(xs)
-
-        # prune for load
-        if self.min_load > 0.0 and "metal_load" in self.sample_values and len(self.sample_values["metal_load"]) > 1:
-            # if load was below min_load, the GPU wasn't active, discard that sample if it's not the only one
-            for idx, load in enumerate(self.sample_values["metal_load"]):
-                if load < self.min_load:
-                    for key in self.sample_values:
-                        del self.sample_values[key][idx]
-                    logger.warning(f"MetalContinuousObserver: load {load} < {self.min_load} at sample {idx}, discarding sample.")
 
         # compute integrated metrics for each observable
         for key, values in self.sample_values.items():
