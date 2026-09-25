@@ -1,9 +1,7 @@
 import logging
 import inspect
-import copy
 import traceback # for compile error handling
 import re
-import warnings
 import builtins
 import numpy as np
 
@@ -34,7 +32,7 @@ class GenericPythonFunctions(GPUBackend):
         :type iterations: int
         """
 
-        if not torch: 
+        if not torch:
             logging.error("Unable to import Torch")
             raise ImportError("Unable to import Torch")
 
@@ -43,9 +41,9 @@ class GenericPythonFunctions(GPUBackend):
         self.name = torch.cuda.get_device_name(self.device_id)
         self.max_threads = 10**18 # 'inf' to support tile based programming models, which can use less threads then the size of a tile.
 
-        env = dict()
+        env = {}
         env["device_name"] = self.name
-        env["max_threads"] = self.max_threads 
+        env["max_threads"] = self.max_threads
         env["iterations"] = iterations
         env["compiler_options"] = compiler_options
         self.env = env
@@ -64,13 +62,13 @@ class GenericPythonFunctions(GPUBackend):
 
         # Variables to be filled in at compile time, needed for running the kernel after compilation.
         self.call_function = None
-        self.signature = None 
-        self.gpu_kwargs = None 
+        self.signature = None
+        self.gpu_kwargs = None
 
         super().__init__(device=device, iterations=iterations, compiler_options=compiler_options, observers=observers)
 
     def ready_argument_list(self, arguments):
-        """Ready argument list to be passed to the kernel. Converts arguments to Torch GPU Tensors or Python 
+        """Ready argument list to be passed to the kernel. Converts arguments to Torch GPU Tensors or Python
         Scalars. Arguments of built-in Python types are left untouched.
 
         :param arguments: List of arguments to be passed to the kernel.
@@ -107,11 +105,11 @@ class GenericPythonFunctions(GPUBackend):
                 raise TypeError("Unknown argument type: ", type(arg), ". Accepted types are Torch tenors, NumPy arrays and scalars and built-in Python types.")
 
         return torch_args
-        
+
 
     def compile(self, kernel_instance, gpu_args=None):
         """Compile the kernel by executing it once. This enforces that the kernel is cached. 
-        
+
         :param kernel_instance: The kernel instance containing information such as the kernel_source,
         grid, threads, params, etc.
         :type kernel_instance: KernelInstance
@@ -127,25 +125,25 @@ class GenericPythonFunctions(GPUBackend):
 
         if gpu_args is None:
             raise ValueError("gpu_args is None, Generic Python needs gpu args to compile the kernel")
-        
+
         # The first time we compile, we also set the call function and the signature
         # We need this later to run the kernel.
         if self.call_function is None or self.signature is None:
             self.call_function = kernel_instance.kernel_source.call_function
             self.signature = kernel_instance.kernel_source.signature
-        
+
         grid = kernel_instance.grid
         threads = kernel_instance.threads
         params = kernel_instance.params
 
         # If the kernel source is a class, we use the __call__ function as the kernel_function.
-        if inspect.isclass(kernel_instance.kernel_fn):  
+        if inspect.isclass(kernel_instance.kernel_fn):
             kernel_function = kernel_instance.kernel_fn()
         elif callable(kernel_instance.kernel_fn):
             kernel_function = kernel_instance.kernel_fn
         else:
             raise TypeError("kernel function is not a class or function")
-        
+
         # Tuning params can contain kernel arguments. In such cases, create keyword arguments with
         # the values of the tuning params.
         self.gpu_kwargs = {}
@@ -156,7 +154,7 @@ class GenericPythonFunctions(GPUBackend):
 
         # Call the user-defined call function in order to compile the kernel.
         self.synchronize()
-        self.call_function(kernel_function, gpu_args, self.gpu_kwargs, grid, threads, params) 
+        self.call_function(kernel_function, gpu_args, self.gpu_kwargs, grid, threads, params)
         self.synchronize()
 
         return kernel_function
@@ -191,13 +189,13 @@ class GenericPythonFunctions(GPUBackend):
             of the grid
         :type grid: tuple(int, int, int)
 
-        :param params: A dictionary with the tuning params for this specific kernel 
+        :param params: A dictionary with the tuning params for this specific kernel
             configuration
         :type params: dict
         """
-        self.call_function(func, gpu_args, self.gpu_kwargs, grid, threads, params) 
-    
-    
+        self.call_function(func, gpu_args, self.gpu_kwargs, grid, threads, params)
+
+
     def synchronize(self):
         """Halts execution until device has finished its tasks."""
         torch.cuda.synchronize()
@@ -231,8 +229,8 @@ class GenericPythonFunctions(GPUBackend):
 
     def copy_texture_memory_args(self, texmem_args):
         raise NotImplementedError("Generic Python does not support texture memory")
-    
-    
+
+
     def refresh_memory(self, gpu_memory, host_arguments, should_sync):
         """Refresh the GPU memory with the untouched host arguments. We overwrite the standard function
         because Python DSLs do usually do not manage memory explicitely"""
@@ -250,20 +248,20 @@ class GenericPythonFunctions(GPUBackend):
                 # GPU tensor
                 elif isinstance(gpu_arg, torch.Tensor):
                     if isinstance(host_arg, np.ndarray):
-                        gpu_arg.copy_(torch.as_tensor(host_arg))  
+                        gpu_arg.copy_(torch.as_tensor(host_arg))
                     elif isinstance(host_arg, torch.Tensor):
                         if host_arg.is_cuda and host_arg.device != gpu_arg.device:
                             gpu_arg.copy_(host_arg.to(gpu_arg.device))  # different gpu's, no direct copy allowed
                         else:
-                            gpu_arg.copy_(host_arg)  
+                            gpu_arg.copy_(host_arg)
                     else:
                         # host_arg is scalar, fill into tensor
                         gpu_arg.fill_(host_arg)
-               
+
 
     def classify_compile_exception(self, e):
-        """Best effort to differentiate between a user error and a resource error. 
-        
+        """Best effort to differentiate between a user error and a resource error.
+
         :param e: the caught exception
         :type e: exception
 
@@ -367,15 +365,15 @@ class GenericPythonFunctions(GPUBackend):
 
         if isinstance(e, USER_ERROR_TYPES):
             return "user_error"
-        
-        
+
+
         def match_any(patterns, text):
             return any(re.search(p, text) for p in patterns)
 
         msg = str(e).lower()
         tb = "".join(traceback.format_tb(e.__traceback__)).lower()
 
-        
+
         if match_any(RESOURCE_KEYWORDS, msg):
             return "resource_error"
 
@@ -384,7 +382,7 @@ class GenericPythonFunctions(GPUBackend):
 
         if match_any(USER_ERROR_KEYWORDS, msg):
             return "user_error"
-        
+
         if match_any(USER_ORIGINS, msg + tb):
             return "user_error"
 

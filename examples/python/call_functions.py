@@ -9,7 +9,7 @@ def call_triton(kernel_function, args, kwargs, grid, threads, params):
         kwargs["num_warps"] = params["num_warps"]
     if "num_stages" in params.keys():
         kwargs["num_stages"] = params["num_stages"]
-    
+
     kernel_function[grid](*args, **kwargs)
 
 
@@ -20,7 +20,7 @@ def call_tilelang(kernel_function, args, kwargs):
 
 def call_numba(kernel_function, args, kwargs, grid, threads):
     from numba import cuda
-    
+
     numba_args = []
     for arg in args:
         if isinstance(arg, torch.Tensor):
@@ -49,7 +49,7 @@ def call_cute(kernel_function, args, kwargs, grid, threads, params):
 
     # Initialize cache if it does not exist
     if not hasattr(call_cute, "custom_cache"):
-        call_cute.custom_cache = {}  
+        call_cute.custom_cache = {}
 
     # Convert Torch tensors to CuTe tensors with correct layout
     cute_args = []
@@ -64,12 +64,12 @@ def call_cute(kernel_function, args, kwargs, grid, threads, params):
     param_keys = sorted(params.keys())
     cache_str = type(kernel_function).__name__
     for k in param_keys:
-        cache_str += "_" + str(params[k]) 
-    
+        cache_str += "_" + str(params[k])
+
     # Check if kernel exists in cache. Otherwise, compile and save
     if cache_str in call_cute.custom_cache:
         compiled_kernel = call_cute.custom_cache[cache_str]
-    else: 
+    else:
         compiled_kernel = cute.compile(kernel_function, *cute_args)
         call_cute.custom_cache[cache_str] = compiled_kernel
 
@@ -82,7 +82,7 @@ def call_taichi(kernel_function, args, kwargs):
 
 def call_warp(kernel_function, args, kwargs, grid, threads, params):
     import warp as wp
-    
+
     # Convert Torch tensors to Warp args
     warp_args = []
     for arg in args:
@@ -104,7 +104,7 @@ def call_warp(kernel_function, args, kwargs, grid, threads, params):
         dimensions = params['dim']
     else:
         dimensions = [grid[i] * threads[i] for i in range(len(grid))]
-    
+
     # launch kernel
     wp.launch(
         kernel_function,

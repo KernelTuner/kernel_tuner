@@ -38,17 +38,16 @@ def tune():
     n = torch.tensor(size, dtype=torch.int32)
     c_expect = a + b
 
-    args = [a, b, c, size] 
+    args = [a, b, c, size]
     tune_params = dict()
     tune_params["block_size_x"] = [2**i for i in range(11)]
 
-    
-    result = run_kernel("add_kernel", __file__, size, args, {"block_size_x": 256}, 
-               lang="generic_python", call_function=call_triton)   
+
+    result = run_kernel("add_kernel", __file__, size, args, {"block_size_x": 256},
+               lang="generic_python", call_function=call_triton)
     assert np.allclose(c_expect.cpu(), result[2])
-    
-    
- 
+
+
     results, env = tune_kernel(
         kernel_name="add_kernel",
         kernel_source=__file__,
@@ -60,7 +59,6 @@ def tune():
         call_function=call_triton,
     )
 
-    
-    
+
 if __name__ == "__main__":
     tune()
