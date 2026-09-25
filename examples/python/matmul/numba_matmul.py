@@ -2,7 +2,11 @@ import numpy as np
 from numba import cuda, float32
 
 from kernel_tuner import tune_kernel
-from examples.generic_python.call_functions import call_numba
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
+from call_functions import call_numba  # noqa: E402
 
 
 # Source: https://nvidia.github.io/numba-cuda/user/examples.html#matrix-multiplication

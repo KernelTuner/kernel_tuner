@@ -12,7 +12,8 @@ from call_functions import call_tilus
 class VecAddV(tilus.Script):
     def __init__(self, block_size_x=None, num_warps=None):
         super().__init__()
-        self.block_size_x = block_size_x  # number of threads per block
+        self.block_size_x = block_size_x  # number of elements per block
+        self.num_warps = num_warps  # number of warps per block
 
     def __call__(
         self,
@@ -24,7 +25,7 @@ class VecAddV(tilus.Script):
 
         # compute the number of blocks needed
         self.attrs.blocks = [cdiv(n_size, self.block_size_x)]
-        self.attrs.warps = 4  # number of warps per block
+        self.attrs.warps = self.num_warps
 
         # calculate the offset for this block
         offset: int32 = self.block_size_x * self.blockIdx.x
@@ -83,7 +84,7 @@ def run(size):
         kernel_source=__file__,
         problem_size=size,
         arguments=args,
-        params={"block_size_x": 32},
+        params={"block_size_x": 32, "num_warps": 4},
         lang="generic_python",
         call_function=call_tilus,
     )

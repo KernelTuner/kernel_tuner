@@ -5,7 +5,11 @@ import tilelang.language as T
 import itertools
 
 from kernel_tuner import tune_kernel
-from examples.generic_python.call_functions import call_tilelang
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
+from call_functions import call_tilelang  # noqa: E402
 
 # https://github.com/tile-ai/tilelang/tree/main/examples/gemm
 # num_threads and num_stages added as variables to enable tuning.

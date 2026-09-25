@@ -3,7 +3,11 @@ from cupyx import jit
 import numpy as np
 
 from kernel_tuner import tune_kernel
-from examples.generic_python.call_functions import call_cupyx
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
+from call_functions import call_cupyx  # noqa: E402
 
 
 @jit.rawkernel()

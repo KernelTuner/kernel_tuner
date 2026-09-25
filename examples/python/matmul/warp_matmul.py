@@ -2,7 +2,11 @@ import numpy as np
 import warp as wp
 
 from kernel_tuner import tune_kernel
-from examples.generic_python.call_functions import call_warp
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
+from call_functions import call_warp  # noqa: E402
 
 wp.init()
 wp.config.enable_backward = False

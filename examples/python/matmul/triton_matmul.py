@@ -3,7 +3,11 @@ import triton
 import triton.language as tl
 
 from kernel_tuner import tune_kernel
-from examples.generic_python.call_functions import call_triton
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
+from call_functions import call_triton  # noqa: E402
 
 
 

@@ -5,7 +5,11 @@ from tilus import float16, float32, int32
 from tilus.utils import cdiv
 
 from kernel_tuner import tune_kernel
-from examples.generic_python.call_functions import call_tilus
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
+from call_functions import call_tilus  # noqa: E402
 
 
 # This kernel is copied from the Tilus project:

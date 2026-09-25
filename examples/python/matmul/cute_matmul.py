@@ -8,7 +8,11 @@ import cutlass.utils as utils
 from cutlass.cute.runtime import from_dlpack
 
 from kernel_tuner import tune_kernel
-from examples.generic_python.call_functions import call_cute
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
+from call_functions import call_cute  # noqa: E402
 
 # might need export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH to work
 
