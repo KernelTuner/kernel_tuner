@@ -63,7 +63,7 @@ def tune():
     args = [output, state, n]
 
     tune_params = dict()
-    tune_params["block_size_x"] = [32 * i for i in range(33)]
+    tune_params["block_size_x"] = [32 * i for i in range(1, 33)]
     tune_params["unroll_draws"] = [1, 2, 4, 8, 16]
 
     # note: each benchmarked launch of generate_random advances the hiprand state

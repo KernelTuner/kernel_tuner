@@ -43,7 +43,7 @@ def tune():
     size = 10_000_000
     n = numpy.int32(size)
     seed = numpy.uint64(42)
-    compiler_options = ["-O3"]
+    compiler_options = ["--dopt"]
 
     # curandState is opaque, host-side content is irrelevant, only its size matters
     state = numpy.zeros(size * CURAND_STATE_SIZE, dtype=numpy.uint8)
@@ -56,7 +56,7 @@ def tune():
     args = [output, state, n]
 
     tune_params = dict()
-    tune_params["block_size_x"] = [32 * i for i in range(33)]
+    tune_params["block_size_x"] = [32 * i for i in range(1, 33)]
     tune_params["unroll_draws"] = [1, 2, 4, 8, 16]
 
     # note: each benchmarked launch of generate_random advances the curand state
