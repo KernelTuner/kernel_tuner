@@ -101,3 +101,9 @@ Code Generator
 --------------
 [`CUDA <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/vector_add_codegen.py>`__] [`OpenCL <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/vector_add_codegen.py>`__]
  - use a Python function as a code generator
+
+Random Number Generation
+-------------------------
+[`CUDA <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/curand.py>`__] [`HIP <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/hip/hiprand.py>`__]
+ - use curand/hiprand's device-side API to generate random numbers inside a tuned kernel
+ - initialize the generator state once from the host using run\_kernel, then reuse it across tuning
