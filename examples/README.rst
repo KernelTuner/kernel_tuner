@@ -105,5 +105,6 @@ Code Generator
 Random Number Generation
 -------------------------
 [`CUDA <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/curand.py>`__] [`HIP <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/hip/hiprand.py>`__]
- - use curand/hiprand's device-side API to generate random numbers inside a tuned kernel
+ - use curand's (CUDA) or rocRAND's (HIP) device-side API to generate random numbers inside a tuned kernel
  - initialize the generator state once from the host using run\_kernel, then reuse it across tuning
+ - tune the unrolling factor of the loop that draws the random numbers
