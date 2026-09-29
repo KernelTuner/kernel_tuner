@@ -118,7 +118,7 @@ class tegra:
         if len(raw_data) > 1:
             data = raw_data.astype(int)
         else:
-            data = int(raw_data)
+            data = int(raw_data[0])
         return data
 
     def _write_clock_file(self, fname, value):
