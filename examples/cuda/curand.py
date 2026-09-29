@@ -43,7 +43,7 @@ def tune():
     size = 10_000_000
     n = numpy.int32(size)
     seed = numpy.uint64(42)
-    compiler_options = ["--dopt"]
+    compiler_options = ["--dopt=on"]
 
     # curandState is opaque, host-side content is irrelevant, only its size matters
     state = numpy.zeros(size * CURAND_STATE_SIZE, dtype=numpy.uint8)
