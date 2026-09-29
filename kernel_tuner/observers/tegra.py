@@ -294,7 +294,7 @@ class TegraObserver(BenchmarkObserver):
 
 def get_tegra_gr_clocks(n=None, quiet=False):
     """Get tunable parameter for Tegra graphics clock, n is desired number of values."""
-    d = tegra()
+    d = tegra(power_path="", temp_path="")
     gr_clocks = d.supported_gr_clocks
 
     if n and (len(gr_clocks) > n):
