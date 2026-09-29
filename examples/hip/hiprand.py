@@ -25,7 +25,12 @@ def tune():
     kernel_string = """
     #define DRAWS_PER_THREAD 16
     #include <rocrand/rocrand_xorwow.h>
-    #include <rocrand/rocrand_uniform.h>
+
+    // rocrand_uniform.h includes the host-side mtgp32 code, so do the (0, 1] conversion by hand
+    __device__ float uniform(rocrand_state_xorwow *state) {
+        const float inv = 2.3283064e-10f;  // 2^-32
+        return inv + rocrand(state) * inv;
+    }
 
     extern "C" __global__ void setup_kernel(rocrand_state_xorwow *state, unsigned long long seed, int n) {
         int i = blockIdx.x * block_size_x + threadIdx.x;
@@ -42,7 +47,7 @@ def tune():
             float sum = 0.0f;
             #pragma unroll unroll_draws
             for (int j = 0; j < DRAWS_PER_THREAD; j++) {
-                sum += rocrand_uniform(&local_state);
+                sum += uniform(&local_state);
             }
 
             output[i] = sum;
@@ -54,7 +59,9 @@ def tune():
     size = 10_000_000
     n = numpy.int32(size)
     seed = numpy.uint64(42)
-    compiler_options = ["-O3"]
+    # rocrand_common.h includes <math.h>, which clashes with hiprtc's built-in
+    # types; defining libstdc++'s include guard skips it (gcc's header layout)
+    compiler_options = ["-O3", "-D_GLIBCXX_MATH_H"]
 
     # rocrand_state_xorwow is opaque, host-side content is irrelevant, only its size matters
     state = numpy.zeros(size * ROCRAND_STATE_SIZE, dtype=numpy.uint8)
