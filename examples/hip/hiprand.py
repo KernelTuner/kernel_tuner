@@ -21,7 +21,7 @@ HIPRAND_STATE_SIZE = 48
 def tune():
     kernel_string = """
     #define DRAWS_PER_THREAD 16
-    #include <hiprand_kernel.h>
+    #include <hiprand/hiprand_kernel.h>
 
     extern "C" __global__ void setup_kernel(hiprandState *state, unsigned long long seed, int n) {
         int i = blockIdx.x * block_size_x + threadIdx.x;
