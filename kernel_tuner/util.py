@@ -768,52 +768,39 @@ def get_kernel_string(kernel_source, params=None):
 
 
 def get_kernel_ast(kernel_name, filepath):
-    '''
-    Util function for Generic Python Backend that returns the kernel function as AST. 
+    """Util function for Generic Python Backend that returns the kernel function as AST.
 
     :param kernel_name: name of the kernel (as passed by the user)
     :type kernel_name: string
 
-    :param filepath: the path to the file where the kernel lives. (passed by the user as kenrel_source)
+    :param filepath: the path to the file where the kernel lives (passed by the user as kernel_source)
     :type filepath: string or Path containing a filename that points to the kernel source
 
-    :returns: ast.FunctionDef node in case the kernel is a function or a tuple 
+    :returns: ast.FunctionDef node in case the kernel is a function or a tuple
         (ast.ClassDef node, ast.FunctionDef node) in case the kernel is represented as the __call__ function
         of a class (for Tilus support).
-    '''
-    if isinstance(filepath, Path):
-        source = read_file(filepath)
-    elif isinstance(filepath, str):
-        with open(filepath, "r") as f:
-            source = f.read()
-    else:
-        raise TypeError("Error kernel_source does not specify a path to a file")
+    """
+    if not isinstance(filepath, (str, Path)):
+        raise TypeError(f"kernel_source should be a path to a file, got {type(filepath)}")
+    if not Path(filepath).is_file():
+        raise FileNotFoundError(f"Kernel source file {filepath} not found")
 
-    tree = ast.parse(source)
+    source = read_file(filepath)
+    tree = ast.parse(source, filename=str(filepath))
 
-    # Function based kernels
+    # ast.walk is breadth-first, so top-level definitions are found before nested ones
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == kernel_name:
-            return node 
-    
-    # Class based kernels
-    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == kernel_name:
+            # Function based kernels
+            return node
         if isinstance(node, ast.ClassDef) and node.name == kernel_name:
-            class_node = node
-            break
+            # Class based kernels, the kernel is the __call__ function of the class
+            for member in node.body:
+                if isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)) and member.name == "__call__":
+                    return (node, member)
+            raise ValueError(f"No __call__ function found inside class {kernel_name} in {filepath}")
 
-    if not class_node:
-         raise ValueError(f"Kernel {kernel_name} not found in {filepath}")
-    
-    # Search for __call__ function within class
-    for node in class_node.body:
-        if isinstance(node, ast.FunctionDef) and node.name == "__call__":
-            call_node = node
-            return (class_node, call_node)
-
-    if not call_node:
-        raise ValueError(f"No __call__ function found inside Class {kernel_name}")
-   
+    raise ValueError(f"Kernel {kernel_name} not found in {filepath}")
 
 
 def get_arg_names(func_node: ast.FunctionDef):

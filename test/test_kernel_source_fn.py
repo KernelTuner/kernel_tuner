@@ -68,10 +68,10 @@ def test_initiation():
     with pytest.raises(ValueError, match=r"call_function must be supplied for language .*"):
         KernelSource("mock_kernel", KS_FILE, "generic_python")
     
-    with pytest.raises(FileNotFoundError, match=r".* No such file or directory: .*"):
+    with pytest.raises(FileNotFoundError, match=r"Kernel source file .* not found"):
         KernelSource("mock_kernel", "This is a string Kernel", "generic_python", call_function=call_mock)
 
-    with pytest.raises(TypeError, match="Error kernel_source does not specify a path to a file"):
+    with pytest.raises(TypeError, match="kernel_source should be a path to a file"):
         KernelSource("mock_kernel", mock_kernel, "generic_python", call_function=call_mock)
 
     with pytest.raises(ValueError, match=r"KernelSourceFn only supports a single kernel source"):
