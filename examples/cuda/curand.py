@@ -49,7 +49,7 @@ def tune():
     state = numpy.zeros(size * CURAND_STATE_SIZE, dtype=numpy.uint8)
 
     # initialize the curand state from a separate kernel, using a fixed block size
-    setup_params = {"block_size_x": 256}
+    setup_params = {"block_size_x": 256, "unroll_draws": 1}
     state = run_kernel("setup_kernel", kernel_string, size, [state, seed, n], setup_params, lang="nvcuda", compiler_options=compiler_options)[0]
 
     output = numpy.zeros(size).astype(numpy.float32)
