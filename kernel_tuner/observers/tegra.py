@@ -168,7 +168,7 @@ class tegra:
 
     def __del__(self):
         # restore original core clocks, if changed
-        if self.has_changed_clocks:
+        if hasattr(self, "has_changed_clocks") and self.has_changed_clocks:
             self.reset_clock()
 
     def read_gpu_temp(self):
