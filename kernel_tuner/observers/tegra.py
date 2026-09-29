@@ -55,7 +55,7 @@ class tegra:
         for zone in Path("/sys/class/thermal").iterdir():
             with open(zone / Path("type")) as fp:
                 name = fp.read().strip()
-            if name == "GPU-therm":
+            if name in ("GPU-therm", "gpu-thermal"):
                 gpu_temp_path = str(zone)
                 break
 
