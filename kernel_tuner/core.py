@@ -587,8 +587,9 @@ class DeviceInterface(object):
             # skip over this configuration and try the next one
             error_message = str(e.stderr) if hasattr(e, "stderr") else str(e)
             if self.lang.upper() == "GENERIC_PYTHON":
-                # Python DSLs raise many different errors, the backend classifies them
-                skippable = self.dev.classify_compile_exception(e) != "user_error"
+                # Python DSLs raise many different errors, the backend classifies them.
+                # Only skip configurations that are recognized as using too many resources.
+                skippable = self.dev.classify_compile_exception(e) == "resource_error"
                 reason = f"\n{e}"
             else:
                 shared_mem_error_messages = [

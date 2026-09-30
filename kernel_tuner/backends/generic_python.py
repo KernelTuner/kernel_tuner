@@ -1,6 +1,5 @@
 import logging
 import inspect
-import traceback # for compile error handling
 import re
 import builtins
 import numpy as np
@@ -262,6 +261,10 @@ class GenericPythonFunctions(GPUBackend):
     def classify_compile_exception(self, e):
         """Best effort to differentiate between a user error and a resource error.
 
+        Only the messages of the exception and of the exceptions it was raised from are
+        inspected. The traceback is not used, because the file paths and source lines in it
+        contain words like "cuda" or "ast" for almost any DSL, regardless of the error.
+
         :param e: the caught exception
         :type e: exception
 
@@ -269,121 +272,105 @@ class GenericPythonFunctions(GPUBackend):
         :rtype: string
         """
 
-        RESOURCE_KEYWORDS = (
+        RESOURCE_PATTERNS = (
             # Shared memory
-            "shared memory",
-            "smem",
-            "uses too much shared",
-            "exceeds shared memory",
-            "shared memory limit",
+            r"shared memory",
+            r"\bsmem\b",
+            r"too much shared",
 
             # Registers / occupancy
-            "too many registers",
-            "register spill",
-            "uses too many registers",
-            "out of registers",
+            r"too many registers",
+            r"register spill",
+            r"out of registers",
+            r"register usage",
 
             # Launch configuration
-            "invalid launch configuration",
-            "invalid configuration argument",
-            "threads per block",
-            "block size",
-            "grid size",
-            "num_warps",
-            "num_ctas",
+            r"invalid launch configuration",
+            r"invalid configuration",
+            r"invalidconfiguration",  # cudaErrorInvalidConfiguration
+            r"launch_invalid_config",
+            r"threads per block",
+            r"block size",
+            r"grid size",
+            r"\bnum_warps\b",
+            r"\bnum_ctas\b",
+            r"no valid warp partition",
+            r"no valid schedule",
 
             # Generic resource exhaustion
-            "too many resources",
-            "out of resources",
-            "exceeds maximum",
-            "exceeds limit",
+            r"too many resources",
+            r"out of resources?\b",
+            r"out_of_resources",  # CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES
+            r"exceeds maximum",
+            r"exceeds limit",
 
-            # Compiler-level indicators
-            "ptxas error",
-            "ptxas fatal",
-            "nvcc error",
-            "cuda error",
-            "llvm error",
-            "mlir error",
-            "lowering failed",
+            # Errors reported by the compiler toolchain
+            r"\bptxas\b",
+            r"\bnvcc error",
+            r"\bllvm error",
+            r"\bmlir error",
+            r"lowering failed",
         )
 
-        USER_ERROR_KEYWORDS = (
+        USER_ERROR_PATTERNS = (
             # Undefined / missing symbols
-            "not defined",
-            "undefined variable",
-            "without definition",
-            "unknown variable",
-            "unbound",
+            r"not defined",
+            r"undefined variable",
+            r"without definition",
+            r"unknown variable",
+            r"\bunbound\b",
 
             # Type / shape errors
-            "type mismatch",
-            "invalid type",
-            "cannot convert",
-            "expected .* but got",
-            "incompatible types",
+            r"type mismatch",
+            r"invalid type",
+            r"cannot convert",
+            r"expected .* but got",
+            r"incompatible types",
 
             # Indexing / bounds
-            "index out of bounds",
-            "out of bounds access",
-            "invalid index",
+            r"index out of bounds",
+            r"out of bounds access",
+            r"invalid index",
 
             # IR / AST construction
-            "failed to build",
-            "invalid expression",
-            "malformed",
-            "illegal operation",
+            r"failed to build",
+            r"invalid expression",
+            r"malformed",
+            r"illegal operation",
+
+            # Frontend components
+            r"\btranspiler\b",
+            r"\bfrontend\b",
+            r"\bast\b",
         )
 
-        RESOURCE_ORIGINS = (
-            "ptxas",
-            "nvcc",
-            "cuda",
-            "llvm",
-            "mlir",
-            "cubin",
-            "fatbin",
-        )
+        # Errors in the kernel code that no tuning parameter value can cause (IndentationError is a SyntaxError)
+        CODE_ERROR_TYPES = (NameError, UnboundLocalError, SyntaxError)
 
-        USER_ORIGINS = (
-            "transpiler",
-            "scheduler",
-            "hidet",
-            "frontend",
-            "ast",
-        )
+        # Usually user errors, but some DSLs also raise these for configurations they do not support
+        USER_ERROR_TYPES = (AttributeError, TypeError)
 
-
-        USER_ERROR_TYPES = (
-            NameError,
-            UnboundLocalError,
-            AttributeError,
-            TypeError,
-            SyntaxError,
-            IndentationError,
-        )
-
-        if isinstance(e, USER_ERROR_TYPES):
-            return "user_error"
-
+        # Follow the chain of exceptions like Python does when printing a traceback,
+        # wrappers often hide the original error in __cause__ or __context__
+        chain = []
+        while e is not None and all(e is not seen for seen in chain):
+            chain.append(e)
+            e = e.__cause__ if e.__cause__ is not None else (None if e.__suppress_context__ else e.__context__)
+        msg = "\n".join(str(exc) for exc in chain).lower()
 
         def match_any(patterns, text):
             return any(re.search(p, text) for p in patterns)
 
-        msg = str(e).lower()
-        tb = "".join(traceback.format_tb(e.__traceback__)).lower()
-
-
-        if match_any(RESOURCE_KEYWORDS, msg):
-            return "resource_error"
-
-        if match_any(RESOURCE_ORIGINS, msg + tb):
-            return "resource_error"
-
-        if match_any(USER_ERROR_KEYWORDS, msg):
+        if any(isinstance(exc, CODE_ERROR_TYPES) for exc in chain):
             return "user_error"
 
-        if match_any(USER_ORIGINS, msg + tb):
+        if match_any(RESOURCE_PATTERNS, msg):
+            return "resource_error"
+
+        if any(isinstance(exc, USER_ERROR_TYPES) for exc in chain):
+            return "user_error"
+
+        if match_any(USER_ERROR_PATTERNS, msg):
             return "user_error"
 
         return "unknown"
