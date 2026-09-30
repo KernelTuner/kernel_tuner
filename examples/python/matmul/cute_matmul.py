@@ -92,7 +92,7 @@ def tune_naive_matmul(M, N, K):
     tune_params = dict()
     tune_params["block_size_x"] = [2**i for i in range(1, 10)]
     tune_params["block_size_y"] = [2**i for i in range(1, 10)]
-    restrictions = ["block_size_x * block_size_y >= 32, block_size_x * block_size_y <= 1024"]
+    restrictions = ["block_size_x * block_size_y >= 32", "block_size_x * block_size_y <= 1024"]
 
     results, env = tune_kernel("matmul", __file__, size, args, tune_params, lang="generic_python", 
         call_function=call_cute, answer=answer,  atol=M * 2 **(-11), restrictions=restrictions, verbose=False)
@@ -979,11 +979,11 @@ def call_cute_custom(kernel_function, args, kwargs, grid, threads, params):
     else: 
         # Wrap in try-except because CuTe gives TypeError for certain block sizes. This 
         # stops the tuning process and we do not want this
-        try: 
+        try:
             compiled_kernel = cute.compile(kernel_function, *cute_args)
             call_cute_custom.custom_cache[cache_str] = compiled_kernel
-        except:
-            raise RuntimeError("Invalid configuration")
+        except Exception as e:
+            raise RuntimeError(f"Invalid configuration, CuTe compile failed with {type(e).__name__}") from e
             
         
 
@@ -1050,6 +1050,8 @@ def tune_optimized(M, N, K, L=1):
         "num_stages * (bK * (bM + bN)) * 2 <= 49152", # SMEM
         "bM >= atom_lay_M * 32", # ensure each atom sees at least 2 MMA tiles per dimension
         "bN >= atom_lay_N * 16", # ensure each atom sees at least 2 MMA tiles per dimension
+        # the swizzled smem layout of C only supports these tiles, others fail in autovec_copy
+        "bN >= 128", "bN <= 128 * atom_lay_N",
     ]
 
 

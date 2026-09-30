@@ -28,7 +28,7 @@ def call_numba(kernel_function, args, kwargs, grid, threads):
         else:
             numba_args.append(arg)
 
-    kernel_function[grid, threads](*args, **kwargs)
+    kernel_function[grid, threads](*numba_args, **kwargs)
 
 
 def call_cupyx(kernel_function, args, kwargs, grid, threads):

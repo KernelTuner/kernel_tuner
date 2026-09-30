@@ -50,7 +50,7 @@ def run_gemm(M, N, K):
     print("Succes")
 
 
-def tune(M, K, N):
+def tune(M, N, K):
     rng = np.random.default_rng(42)
     A = rng.random((M, K)).astype(np.float16)
     B = rng.random((K, N)).astype(np.float16)

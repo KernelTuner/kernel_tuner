@@ -1,4 +1,4 @@
-import torch 
+import torch
 
 import cutlass
 import cutlass.cute as cute
@@ -46,12 +46,13 @@ def main():
     c = torch.zeros(size, device="cuda", dtype=torch.float16)
 
     args = [a, b, c, size]
-    tune_params = {"num_threads_per_block": [1, 2, 4, 8, 16, 32, 64, 128, 265, 512, 1024]}
+    tune_params = {"num_threads_per_block": [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]}
     answer = [None, None, (a+b).cpu(), None]
 
     tune_kernel("vec_add", __file__, size, args, tune_params, answer=answer,
                 lang="generic_python", call_function=call_cute, verbose=True)
 
 
-main()
+if __name__ == "__main__":
+    main()
 

@@ -10,7 +10,7 @@ from call_functions import call_numba  # noqa: E402
 
 
 # Source: https://nvidia.github.io/numba-cuda/user/examples.html#matrix-multiplication
-@cuda.jit(cache=True)
+@cuda.jit
 def matmul(A, B, C):
     i, j = cuda.grid(2)
     if i < C.shape[0] and j < C.shape[1]:
@@ -21,7 +21,7 @@ def matmul(A, B, C):
 
 
 # Translated to Numba-CUDA from https://github.com/cupy/cupy/blob/main/examples/gemm/sgemm.cu
-@cuda.jit(cache=True)
+@cuda.jit
 def optimized_matmul(M, N, K, A, B, C):
     DIM_X = 16
     DIM_Y = 16
@@ -227,7 +227,7 @@ def tune_optimized(M, N, K):
         "THR_M == BLK_M / DIM_X",
         "THR_N == BLK_N / DIM_Y",
         "DIM_X * DIM_Y <= 1024",
-        "DIM_x * DIM_Y >= 32",
+        "DIM_X * DIM_Y >= 32",
     ]
 
     results, env = tune_kernel(

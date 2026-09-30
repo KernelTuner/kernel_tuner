@@ -36,7 +36,8 @@ def call_warp(kernel_function, args, kwargs, grid, threads, params):
             warp_args.append(wp.from_torch(arg))
         else:
             warp_args.append(arg)
-    dim = params['size']
+    # each thread processes work_per_thread elements
+    dim = (params['size'] + params['work_per_thread'] - 1) // params['work_per_thread']
     wp.launch(kernel=kernel_function, dim=dim, inputs=warp_args)
     
 
