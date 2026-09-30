@@ -107,6 +107,7 @@ cute_present = python_dsl_present("cutlass", "cute")
 triton_present = python_dsl_present("triton")
 tilus_present = python_dsl_present("tilus")
 tilelang_present = python_dsl_present("tilelang")
+cutile_present = python_dsl_present("cuda", "tile")
 
 try:
     import pyatf
@@ -161,6 +162,7 @@ skip_if_no_cute = pytest.mark.skipif(not cute_present, reason="CuTe DSL not inst
 skip_if_no_triton = pytest.mark.skipif(not triton_present, reason="Triton not installed")
 skip_if_no_tilus = pytest.mark.skipif(not tilus_present, reason="Tilus not installed")
 skip_if_no_tilelang = pytest.mark.skipif(not tilelang_present, reason="TileLang not installed")
+skip_if_no_cutile = pytest.mark.skipif(not cutile_present, reason="cuTile not installed")
 
 
 def skip_backend(backend: str):

@@ -296,6 +296,7 @@ class GenericPythonFunctions(GPUBackend):
             r"\bnum_ctas\b",
             r"no valid warp partition",
             r"no valid schedule",
+            r"power of (two|2)",  # many tile based DSLs require power of two tile sizes
 
             # Generic resource exhaustion
             r"too many resources",
@@ -303,6 +304,9 @@ class GenericPythonFunctions(GPUBackend):
             r"out_of_resources",  # CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES
             r"exceeds maximum",
             r"exceeds limit",
+
+            # Compilation taking too long, usually caused by large tile sizes
+            r"exceeded timeout",
 
             # Errors reported by the compiler toolchain
             r"\bptxas\b",

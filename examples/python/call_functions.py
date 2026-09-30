@@ -112,3 +112,14 @@ def call_warp(kernel_function, args, kwargs, grid, threads, params):
         inputs=warp_args,
         block_dim=threads_per_block
     )
+
+
+def call_cutile(kernel_function, args, kwargs, grid):
+    import cuda.tile as ct
+
+    # ct.launch only accepts positional arguments, tunable parameters that are also
+    # kernel arguments are passed in kwargs and should be the last kernel arguments.
+    # Large tiles can take very long to compile, so limit the compile time, the
+    # resulting timeout error makes Kernel Tuner skip the configuration.
+    with ct.compiler_timeout(60):
+        ct.launch(torch.cuda.current_stream(), grid, kernel_function, (*args, *kwargs.values()))

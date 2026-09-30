@@ -11,6 +11,7 @@ from kernel_tuner.backends.generic_python import GenericPythonFunctions
 from .context import (
     skip_if_no_cupy,
     skip_if_no_cute,
+    skip_if_no_cutile,
     skip_if_no_numba_cuda,
     skip_if_no_taichi,
     skip_if_no_tilelang,
@@ -30,6 +31,7 @@ dsls = [
     pytest.param("triton", marks=[skip_if_no_torch, skip_if_no_triton]),
     pytest.param("tilus", marks=[skip_if_no_torch, skip_if_no_tilus]),
     pytest.param("tilelang", marks=[skip_if_no_torch, skip_if_no_tilelang]),
+    pytest.param("cutile", marks=[skip_if_no_torch, skip_if_no_cutile]),
 ]
 
 
@@ -90,6 +92,8 @@ resource_errors = [
     RuntimeError("error[CUDA_LAUNCH_INVALID_CONFIG]: CUDA launch failed: cudaErrorInvalidValue (1)"),  # CuTe
     RuntimeError("error: cudaErrorInvalidConfiguration (error code: 9)"),  # CuTe
     TypeError("Invalid configuration, CuTe compile failed with TypeError"),  # resource message wins over type
+    RuntimeError("Invalid argument \"shape\" of load(): Dimension #0 of shape (96,) is not a power of two"),  # cuTile
+    RuntimeError("`tileiras` compiler exceeded timeout 30s. Using a smaller tile size may reduce compilation time."),
     wrapped(RuntimeError("out of resource: shared memory")),  # message only in the chained exception
 ]
 
@@ -99,6 +103,7 @@ user_errors = [
     AttributeError("module 'triton.language' has no attribute 'lod'"),
     TypeError("vector_add() takes 4 positional arguments but 5 were given"),
     RuntimeError("Type mismatch: float32 and int32"),
+    RuntimeError("Undefined variable undefined_name used"),  # cuTile
     wrapped(NameError("name 'x' is not defined")),
     wrapped(TypeError("unsupported operand")),
 ]
