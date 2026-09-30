@@ -2,6 +2,7 @@ import shutil
 import subprocess
 import sys
 import ctypes.util
+import os
 from os import environ
 import importlib.util
 
@@ -81,9 +82,31 @@ except ImportError:
 
 try:
     import torch
-    gen_python_torch_present = True
+    gen_python_torch_present = torch.cuda.is_available()
 except ImportError:
     gen_python_torch_present = False
+
+
+def python_dsl_present(module, subpackage=None):
+    """Check if a Python DSL is installed without importing it, some DSLs are slow to import."""
+    try:
+        spec = importlib.util.find_spec(module)
+    except (ImportError, ValueError):
+        return False
+    if spec is None:
+        return False
+    if subpackage is None:
+        return True
+    return any(os.path.isdir(os.path.join(loc, subpackage)) for loc in spec.submodule_search_locations or [])
+
+
+numba_cuda_present = python_dsl_present("numba_cuda")
+warp_present = python_dsl_present("warp")
+taichi_present = python_dsl_present("taichi")
+cute_present = python_dsl_present("cutlass", "cute")
+triton_present = python_dsl_present("triton")
+tilus_present = python_dsl_present("tilus")
+tilelang_present = python_dsl_present("tilelang")
 
 try:
     import pyatf
@@ -130,7 +153,14 @@ skip_if_no_hip = pytest.mark.skipif(not hip_present, reason="No HIP Python found
 skip_if_no_pyatf = pytest.mark.skipif(not pyatf_present, reason="PyATF not installed")
 skip_if_no_methodology = pytest.mark.skipif(not methodology_present, reason="Autotuning Methodology not found")
 skip_if_no_pymoo = pytest.mark.skipif(not pymoo_present, reason="No PyMOO found")
-skip_if_no_torch = pytest.mark.skipif(not gen_python_torch_present, reason="Torch not installed")
+skip_if_no_torch = pytest.mark.skipif(not gen_python_torch_present, reason="Torch not installed or no CUDA device")
+skip_if_no_numba_cuda = pytest.mark.skipif(not numba_cuda_present, reason="numba-cuda not installed")
+skip_if_no_warp = pytest.mark.skipif(not warp_present, reason="Warp not installed")
+skip_if_no_taichi = pytest.mark.skipif(not taichi_present, reason="Taichi not installed")
+skip_if_no_cute = pytest.mark.skipif(not cute_present, reason="CuTe DSL not installed")
+skip_if_no_triton = pytest.mark.skipif(not triton_present, reason="Triton not installed")
+skip_if_no_tilus = pytest.mark.skipif(not tilus_present, reason="Tilus not installed")
+skip_if_no_tilelang = pytest.mark.skipif(not tilelang_present, reason="TileLang not installed")
 
 
 def skip_backend(backend: str):
@@ -153,4 +183,4 @@ def skip_backend(backend: str):
     elif backend.upper() == "JULIA" and not shutil.which("julia"):
         pytest.skip("No Julia on PATH")
     elif backend.upper() == "GENERIC_PYTHON" and not gen_python_torch_present:
-        pytest.skip("Torch not installed")
+        pytest.skip("Torch not installed or no CUDA device")
