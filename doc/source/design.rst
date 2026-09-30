@@ -150,3 +150,13 @@ kernel_tuner.util
 .. automodule:: kernel_tuner.util
     :members:
 
+
+kernel_tuner.utils.language_detection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.utils.language_detection
+    :members:
+
+kernel_tuner.utils.call_functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.utils.call_functions
+    :members:
