@@ -241,6 +241,7 @@ def test_check_restrictions():
         assert answer == e
 
 
+@skip_if_no_pycuda
 def test_get_device_interface1():
     lang = "PYCUDA"
     dev = core.DeviceInterface(core.KernelSource("", "", lang=lang))
