@@ -2,7 +2,7 @@ from warnings import warn
 import numpy as np
 import pytest
 
-from kernel_tuner import tune_kernel
+from kernel_tuner import run_kernel, tune_kernel
 from kernel_tuner.backends.julia import JuliaFunctions
 from kernel_tuner.core import KernelInstance, KernelSource
 
@@ -71,3 +71,101 @@ def test_tune_kernel(env):
     result, _ = tune_kernel(*env, lang="julia", verbose=True)
 
     assert len(result) > 0
+
+
+
+axpy_kernel_name = "axpy!"
+axpy_kernel_string = r"""
+    using KernelAbstractions
+
+    @kernel function axpy!(
+        c, a, b, alpha, n, ::Val{block_size_x} = Val(128)
+    ) where {block_size_x}
+        i = @index(Global)
+        if i <= n
+            c[i] += alpha * a[i] + b[i]
+        end
+    end
+    """
+
+
+@pytest.fixture
+def axpy_env():
+    """Arguments and expected output for a kernel that accumulates into c for the first n elements only."""
+    size = 1000
+    rng = np.random.default_rng(42)
+    a = rng.standard_normal(size).astype(np.float32)
+    b = rng.standard_normal(size).astype(np.float32)
+    c = rng.standard_normal(size).astype(np.float32)
+    alpha = np.float32(2.5)
+    n = np.int32(900)
+
+    expected = c.copy()
+    expected[:n] += alpha * a[:n] + b[:n]
+
+    return size, [c, a, b, alpha, n], expected
+
+
+def to_julia_array(arr):
+    """Convert a numpy array into a Julia Vector{Float32}."""
+    from juliacall import Main as jl
+
+    return jl.seval("x -> Vector{Float32}(x)")(arr)
+
+
+@skip_if_no_julia
+@pytest.mark.parametrize("input_type", ["numpy", "julia"])
+def test_run_kernel_arguments_roundtrip(axpy_env, input_type):
+    """Check that arrays and scalars are passed to and from a Julia kernel correctly."""
+    size, args, expected = axpy_env
+    host_args = [np.copy(arg) for arg in args]
+    if input_type == "julia":
+        args[:3] = [to_julia_array(arg) for arg in args[:3]]
+
+    result = run_kernel(axpy_kernel_name, axpy_kernel_string, size, args, [("block_size_x", 128)], lang="julia")
+
+    assert all(isinstance(r, np.ndarray) for r in result[:3])
+    assert np.allclose(result[0], expected, atol=1e-6)
+    # elements beyond n are only correct if n was passed correctly
+    assert np.array_equal(result[0][args[4]:], host_args[0][args[4]:])
+    assert np.array_equal(result[1], host_args[1])
+    assert np.array_equal(result[2], host_args[2])
+    assert result[3] == host_args[3]
+    assert result[4] == host_args[4]
+    # the user's arguments are not modified
+    for arg, host_arg in zip(args, host_args):
+        assert np.array_equal(np.asarray(arg), host_arg)
+
+
+@skip_if_no_julia
+@pytest.mark.parametrize("input_type", ["numpy", "julia"])
+@pytest.mark.parametrize("answer_type", ["numpy", "julia"])
+def test_tune_kernel_verifies_answer(axpy_env, input_type, answer_type):
+    """Check output verification with numpy and Julia arrays, output is reset between configurations."""
+    size, args, expected = axpy_env
+    if input_type == "julia":
+        args[:3] = [to_julia_array(arg) for arg in args[:3]]
+    if answer_type == "julia":
+        expected = to_julia_array(expected)
+    answer = [expected, None, None, None, None]
+    tune_params = [("block_size_x", [64, 128, 256])]
+
+    result, _ = tune_kernel(
+        axpy_kernel_name, axpy_kernel_string, size, args, tune_params, lang="julia", answer=answer, atol=1e-6
+    )
+
+    assert len(result) == 3
+    assert all("__error__" not in r for r in result)
+
+
+@skip_if_no_julia
+def test_tune_kernel_detects_wrong_answer(axpy_env, tmp_path, monkeypatch):
+    """Check that output verification fails when the kernel output does not match the answer."""
+    monkeypatch.chdir(tmp_path)  # a failed verification leaves the kernel source file behind
+    size, args, expected = axpy_env
+    answer = [expected + 1, None, None, None, None]
+
+    with pytest.raises(RuntimeError, match="verification failed"):
+        tune_kernel(
+            axpy_kernel_name, axpy_kernel_string, size, args, [("block_size_x", [64])], lang="julia", answer=answer
+        )
