@@ -1,4 +1,3 @@
-import torch
 from numba import cuda
 
 kernel_name = "vector_add"
@@ -17,8 +16,3 @@ def arguments(c, a, b, n):
 
 def tune_params(n):
     return {"block_size_x": [128, 256]}
-
-
-def call_function(kernel_function, args, kwargs, grid, threads):
-    numba_args = [cuda.as_cuda_array(arg) if isinstance(arg, torch.Tensor) else arg for arg in args]
-    kernel_function[grid, threads](*numba_args, **kwargs)

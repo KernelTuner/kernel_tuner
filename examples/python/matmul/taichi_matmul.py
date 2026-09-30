@@ -2,11 +2,7 @@ import numpy as np
 import taichi as ti
 
 from kernel_tuner import tune_kernel
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
-from call_functions import call_taichi  # noqa: E402
 
 ti.init(arch=ti.gpu)
 
@@ -53,8 +49,6 @@ def tune(M, N, K):
         arguments=args,
         tune_params=tune_params,
         answer=answer,
-        lang="generic_python",
-        call_function=call_taichi,
         atol=M * 2**(-11),
         block_size_names = ["BLOCK_DIM"],
     )

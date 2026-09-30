@@ -65,7 +65,7 @@ def test_initiation():
     '''
     Test invalid KernelSourceFn initations    
     '''
-    with pytest.raises(ValueError, match=r"call_function must be supplied for language .*"):
+    with pytest.raises(ValueError, match=r"Could not detect the Python DSL .*, please pass a call_function"):
         KernelSource("mock_kernel", KS_FILE, "generic_python")
     
     with pytest.raises(FileNotFoundError, match=r"Kernel source file .* not found"):

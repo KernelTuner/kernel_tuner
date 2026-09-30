@@ -158,7 +158,8 @@ _kernel_options = Options(
                 """Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
         the language using this argument, currently supported: "CUDA", "CuPy",
-        "nvcuda", "OpenCL", "HIP", "C", or "Generic_Python.""",
+        "nvcuda", "OpenCL", "HIP", "C", or "Generic_Python". Kernels in Python
+        files (.py) are detected as "Generic_Python".""",
                 "string",
             ),
         ),
@@ -315,7 +316,10 @@ _kernel_options = Options(
             "call_function",
             (
                 """When the language Generic Python is used, a call function that calls the kernel in the Python
-                 DSL must be specified. The function must take the following positional arguments:
+                 DSL. If not specified, the DSL of the kernel is detected from its decorators or base classes and
+                 a default call function from kernel_tuner.utils.call_functions is used. Supported DSLs are
+                 Triton, Numba, CuPy (cupyx.jit), Warp, Taichi, CuTe, Tilus, TileLang, and cuTile.
+                 The function must take the following positional arguments:
                 :kernel_function: the callable function with the tuning parameters inserted.
                 :args: list of kernel arguments, as provided by the user in the <args> argument.
                 :kwargs: dictionary of kernel keyword arguments. If a tuning parameter is in the kernel signature, 

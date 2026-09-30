@@ -8,11 +8,7 @@ import cutlass.utils as utils
 from cutlass.cute.runtime import from_dlpack
 
 from kernel_tuner import tune_kernel
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
-from call_functions import call_cute  # noqa: E402
 
 # might need export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH to work
 
@@ -94,8 +90,8 @@ def tune_naive_matmul(M, N, K):
     tune_params["block_size_y"] = [2**i for i in range(1, 10)]
     restrictions = ["block_size_x * block_size_y >= 32", "block_size_x * block_size_y <= 1024"]
 
-    results, env = tune_kernel("matmul", __file__, size, args, tune_params, lang="generic_python", 
-        call_function=call_cute, answer=answer,  atol=M * 2 **(-11), restrictions=restrictions, verbose=False)
+    results, env = tune_kernel("matmul", __file__, size, args, tune_params,
+        answer=answer,  atol=M * 2 **(-11), restrictions=restrictions, verbose=False)
 
 
 
@@ -1057,7 +1053,7 @@ def tune_optimized(M, N, K, L=1):
 
 
     results, env = tune_kernel("TensorOpGemm", __file__, M * N, args, tune_params, verbose=True, restrictions=restrictions, #strategy="bayes_opt",
-                               lang="generic_python", call_function=call_cute_custom, answer=[None, None, c_ref.cpu()], atol=M * 2**(-10))
+                               call_function=call_cute_custom, answer=[None, None, c_ref.cpu()], atol=M * 2**(-10))
 
 
 

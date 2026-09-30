@@ -240,25 +240,6 @@ def test_check_restrictions():
         assert answer == e
 
 
-def test_detect_language1():
-    kernel_string = "__global__ void vector_add( ... );"
-    lang = detect_language(kernel_string)
-    assert lang == "CUDA"
-
-
-def test_detect_language2():
-    kernel_string = "__kernel void vector_add( ... );"
-    lang = detect_language(kernel_string)
-    assert lang == "OpenCL"
-
-
-def test_detect_language3():
-    kernel_string = "blabla"
-    lang = detect_language(kernel_string)
-    assert lang == "C"
-
-
-@skip_if_no_pycuda
 def test_get_device_interface1():
     lang = "PYCUDA"
     dev = core.DeviceInterface(core.KernelSource("", "", lang=lang))

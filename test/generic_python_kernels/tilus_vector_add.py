@@ -31,7 +31,3 @@ def arguments(c, a, b, n):
 
 def tune_params(n):
     return {"block_size_x": [128, 256], "num_warps": [4]}
-
-
-def call_function(kernel_function, args, kwargs):
-    kernel_function(*args, **kwargs)

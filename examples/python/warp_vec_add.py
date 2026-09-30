@@ -3,7 +3,6 @@ import numpy as np
 import torch
 
 from kernel_tuner import tune_kernel
-from call_functions import call_warp
 
 
 wp.init()
@@ -62,7 +61,6 @@ def tune():
         problem_size=n,
         arguments=args,
         tune_params=tune_params,
-        lang="generic_python",
         answer=[None, None, c_expect, None],
         call_function=call_warp,
     )

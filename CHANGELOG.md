@@ -5,6 +5,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## Unreleased
 - Fix `np.shuffle` crash and wrong return type in `Searchspace` distributed random and LHS samplers
 - Add support for tuning kernels written in Python DSLs, such as Triton, Numba, Warp, Taichi, Tilus, TileLang, CuTe, cuTile, and CuPy (cupyx.jit), using `lang="generic_python"` and a `call_function`
+- Detect kernels in Python files as `lang="generic_python"`, and detect the DSL of Python kernels to select a default `call_function` when none is given
 - Add support for PyTorch tensors and other objects implementing the CUDA Array Interface as kernel arguments in the cuda-python (nvcuda) backend
 - Change PyCUDA backend to copy PyTorch CUDA tensors to a separate device allocation, the user's tensors are no longer modified by the kernel
 - Fix output verification failing for PyTorch tensors as expected answers

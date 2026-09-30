@@ -1,6 +1,4 @@
 import cutlass.cute as cute
-import torch
-from cutlass.cute.runtime import from_dlpack
 
 kernel_name = "vector_add"
 
@@ -30,14 +28,3 @@ def arguments(c, a, b, n):
 
 def tune_params(n):
     return {"block_size_x": [128, 256]}
-
-
-# kernels compiled with cute.compile, indexed by the kernel function of each configuration
-compiled_kernels = {}
-
-
-def call_function(kernel_function, args, kwargs):
-    cute_args = [from_dlpack(arg) if isinstance(arg, torch.Tensor) else arg for arg in args]
-    if kernel_function not in compiled_kernels:
-        compiled_kernels[kernel_function] = cute.compile(kernel_function, *cute_args)
-    compiled_kernels[kernel_function](*cute_args, **kwargs)

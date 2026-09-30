@@ -13,7 +13,9 @@ from typing import Any
 from kernel_tuner.language import Language
 from kernel_tuner.kernel_sources.kernel_source import KernelSource
 from kernel_tuner.kernel_sources.model.prepared_kernel_source_data import PreparedKernelSourceData
-from kernel_tuner.util import get_kernel_ast, get_arg_names
+from kernel_tuner.util import get_kernel_ast, get_arg_names, normalize_call_function
+from kernel_tuner.utils.call_functions import DEFAULT_CALL_FUNCTIONS, get_default_call_function
+from kernel_tuner.utils.language_detection import detect_python_dsl
 
 
 class KernelSourceFn(KernelSource):
@@ -24,8 +26,9 @@ class KernelSourceFn(KernelSource):
     must be a path to the file where the kernel with kernel_name lives. The kernel can be 
     decorated by a JIT decorator. 
     
-    A call function to specify how the kernel should be launched must be supplied. The call 
-    function must take the following arguments:
+    A call function specifies how the kernel should be launched. If no call function is supplied,
+    the DSL of the kernel is detected and a default call function from kernel_tuner.utils.call_functions
+    is used. The call function must take the following arguments:
     - kernel_function: the callable function with the tuning parameters inserted. 
     - args: list of kernel arguments, as provided by the user in the <args> argument.
     - kwargs: dictionary of kernel keyword arguments. If a tuning parameter is in the kernel signature, 
@@ -40,16 +43,16 @@ class KernelSourceFn(KernelSource):
         if isinstance(kernel_source, list):
             raise ValueError("KernelSourceFn only supports a single kernel source")
        
-        if self.lang == Language.GENERIC_PYTHON: 
+        if not isinstance(kernel_name, str):
+            raise TypeError("kernel_name should be a string, got ", type(kernel_name))
+
+        if self.lang == Language.GENERIC_PYTHON:
             if call_function is None:
-                raise ValueError("call_function must be supplied for language Generic Python")
+                call_function = self._default_call_function(kernel_name, kernel_source)
             if not callable(call_function):
                 raise TypeError(f"call_function of type {type(call_function)} is not a callable object.")
         self.call_function = call_function
 
-        if not isinstance(kernel_name, str):
-            raise TypeError("kernel_name should be a string, got ", type(kernel_name))
-        
         source_ast = get_kernel_ast(kernel_name, kernel_source)
         if isinstance(source_ast, tuple): # Class based kernel
             self.source_tree = source_ast[0]
@@ -61,6 +64,20 @@ class KernelSourceFn(KernelSource):
         self.kernel_fn = self.source_tree # This is where we will store the transformed source.
         self.import_nodes = self._find_import_nodes(kernel_source)
         self.dependencies = self._find_dependencies(kernel_source)
+
+
+    @staticmethod
+    def _default_call_function(kernel_name, kernel_source):
+        """Select the default call function for the DSL the kernel is written in."""
+        dsl = detect_python_dsl(kernel_name, kernel_source)
+        if dsl is None:
+            raise ValueError(
+                f"Could not detect the Python DSL of kernel {kernel_name}, please pass a call_function. "
+                f"Kernels are detected by their decorators or base classes, supported DSLs are "
+                f"{list(DEFAULT_CALL_FUNCTIONS)}."
+            )
+        logging.debug(f"detected Python DSL {dsl} for kernel {kernel_name}")
+        return normalize_call_function(get_default_call_function(dsl))
 
 
     def prepare_kernel_instance(self, kernel_options, params, grid, threads):

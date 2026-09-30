@@ -3,11 +3,7 @@ import triton
 import triton.language as tl
 
 from kernel_tuner import tune_kernel
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
-from call_functions import call_triton  # noqa: E402
 
 
 
@@ -231,13 +227,11 @@ def tune_basic(M, N, K):
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
-        lang="generic_python",
         answer=[None, None, C_ref.cpu(), None, None, None],
         atol=M * 2**(-11),
         block_size_names = ["BLOCK_SIZE_M", "BLOCK_SIZE_N"],
         strategy = "bayes_opt",
         strategy_options = {"max_fevals": 100},
-        call_function=call_triton,
     )
 
 
@@ -273,7 +267,6 @@ def tune_opt(M, N, K):
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
-        lang="generic_python",
         answer=[None, None, C_ref.cpu(), None, None, None, None, None, None, None, None, None],
         atol=M * 2**(-11),
         block_size_names = ["BLOCK_SIZE_M", "BLOCK_SIZE_N"],
@@ -281,7 +274,6 @@ def tune_opt(M, N, K):
         restrictions = restrictions,
         strategy = "bayes_opt",
         strategy_options = {"max_fevals": 100},
-        call_function=call_triton,
     )
     
 

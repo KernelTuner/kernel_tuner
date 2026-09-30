@@ -50,16 +50,8 @@ def test_generic_python_dsl(dsl):
     answer = [a + b if arg is c else None for arg in args]
     tune_params = kernel.tune_params(n)
 
-    results, _ = tune_kernel(
-        kernel.kernel_name,
-        kernel.__file__,
-        n,
-        args,
-        tune_params,
-        lang="generic_python",
-        call_function=kernel.call_function,
-        answer=answer,
-    )
+    # the language and call function are detected from the kernel source
+    results, _ = tune_kernel(kernel.kernel_name, kernel.__file__, n, args, tune_params, answer=answer)
 
     num_configs = np.prod([len(v) for v in tune_params.values()])
     assert len(results) == num_configs

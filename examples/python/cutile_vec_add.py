@@ -2,7 +2,6 @@ import cuda.tile as ct
 import torch
 
 from kernel_tuner import tune_kernel
-from call_functions import call_cutile
 
 
 @ct.kernel
@@ -26,8 +25,7 @@ def tune():
 
     # Each block processes one tile, so the tile size acts as the block size to compute the grid
     results, env = tune_kernel("vec_add", __file__, size, args, tune_params, answer=answer,
-                               block_size_names=["tile_size"], lang="generic_python",
-                               call_function=call_cutile)
+                               block_size_names=["tile_size"])
 
 
 if __name__ == "__main__":

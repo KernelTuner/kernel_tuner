@@ -1,5 +1,4 @@
 import cuda.tile as ct
-import torch
 
 kernel_name = "vector_add"
 
@@ -20,8 +19,3 @@ def arguments(c, a, b, n):
 def tune_params(n):
     # each block processes one tile, so the tile size is the block size used to compute the grid
     return {"block_size_x": [128, 256]}
-
-
-def call_function(kernel_function, args, kwargs, grid):
-    # ct.launch only takes positional arguments, the tunable kernel argument block_size_x comes last
-    ct.launch(torch.cuda.current_stream(), grid, kernel_function, (*args, *kwargs.values()))

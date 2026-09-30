@@ -3,11 +3,7 @@ from cupyx import jit
 import numpy as np
 
 from kernel_tuner import tune_kernel
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
-from call_functions import call_cupyx  # noqa: E402
 
 
 @jit.rawkernel()
@@ -62,8 +58,6 @@ def tune(M, N, K):
         tune_params=tune_params,
         answer=[None, None, A.dot(B), None, None, None],
         atol=1e-1,
-        call_function=call_cupyx, 
-        lang="generic_python",
         restrictions=restrictions,
         verbose=True,   
     )

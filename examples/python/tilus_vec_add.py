@@ -4,7 +4,6 @@ from tilus.utils import cdiv
 import torch 
 
 from kernel_tuner import tune_kernel, run_kernel
-from call_functions import call_tilus
 
 
 
@@ -63,9 +62,7 @@ def tune(size):
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
-        lang="generic_python",
         answer=[None, None, None, c_expect.cpu()],
-        call_function=call_tilus,
         verbose=True,
     )
 
@@ -85,8 +82,6 @@ def run(size):
         problem_size=size,
         arguments=args,
         params={"block_size_x": 32, "num_warps": 4},
-        lang="generic_python",
-        call_function=call_tilus,
     )
 
     c_expect = c_expect.cpu()

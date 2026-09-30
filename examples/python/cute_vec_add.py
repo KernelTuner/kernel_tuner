@@ -4,7 +4,6 @@ import cutlass
 import cutlass.cute as cute
 
 from kernel_tuner import tune_kernel
-from call_functions import call_cute
 
 @cute.kernel
 def vec_add_kernel(
@@ -50,7 +49,7 @@ def main():
     answer = [None, None, (a+b).cpu(), None]
 
     tune_kernel("vec_add", __file__, size, args, tune_params, answer=answer,
-                lang="generic_python", call_function=call_cute, verbose=True)
+                verbose=True)
 
 
 if __name__ == "__main__":

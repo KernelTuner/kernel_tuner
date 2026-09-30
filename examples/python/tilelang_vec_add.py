@@ -3,7 +3,6 @@ import tilelang.language as T
 import torch
 
 from kernel_tuner import tune_kernel
-from call_functions import call_tilelang
 
 
 @tilelang.jit  # infers target from tensors at first call
@@ -37,8 +36,7 @@ def tune():
 
     answer = [None, None, (A + B).cpu()]
     
-    res, env = tune_kernel("add", __file__, N, args, tune_params, lang="generic_python", 
-            call_function=call_tilelang, answer=answer)
+    res, env = tune_kernel("add", __file__, N, args, tune_params, answer=answer)
 
 if __name__ == "__main__":
     tune()

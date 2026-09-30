@@ -5,11 +5,7 @@ from tilus import float16, float32, int32
 from tilus.utils import cdiv
 
 from kernel_tuner import tune_kernel
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
-from call_functions import call_tilus  # noqa: E402
 
 
 # This kernel is copied from the Tilus project:
@@ -211,12 +207,10 @@ def tune_basic(M, N, K):
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
-        lang="generic_python",
         answer=[None, None, None, None, None, C_ref.cpu()],
         atol=M * 2**(-11),
         strategy = "bayes_opt",
         strategy_options = {"max_fevals": 200},
-        call_function=call_tilus,
     )
 
 
@@ -246,13 +240,11 @@ def tune_opt(M, N, K):
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
-        lang="generic_python",
         answer=[None, None, None, None, None, C_ref.cpu()],
         atol=M * 2**(-11),
         restrictions=restrictions,
         strategy = "bayes_opt",
         strategy_options = {"max_fevals": 200},
-        call_function=call_tilus,
     )
 
 

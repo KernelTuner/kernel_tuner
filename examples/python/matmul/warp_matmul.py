@@ -2,11 +2,7 @@ import numpy as np
 import warp as wp
 
 from kernel_tuner import tune_kernel
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
-from call_functions import call_warp  # noqa: E402
 
 wp.init()
 wp.config.enable_backward = False
@@ -71,9 +67,7 @@ def tune(M, N, K):
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
-        lang="generic_python",
         answer=answer,
-        call_function=call_warp,
     )
 
 

@@ -2,11 +2,7 @@ import cuda.tile as ct
 import torch
 
 from kernel_tuner import tune_kernel
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
-from call_functions import call_cutile  # noqa: E402
 
 
 @ct.kernel
@@ -75,8 +71,7 @@ def tune(M, N, K):
 
     # each block computes one tile of C, so the tile sizes act as block sizes to compute the grid
     results, env = tune_kernel("matmul", __file__, (M, N), args, tune_params, answer=answer,
-                               atol=M * 2**(-11), block_size_names=["tile_m", "tile_n"],
-                               lang="generic_python", call_function=call_cutile)
+                               atol=M * 2**(-11), block_size_names=["tile_m", "tile_n"])
 
 
 def tune_swizzled(M, N, K):
@@ -96,8 +91,7 @@ def tune_swizzled(M, N, K):
     # 1D grid with one block per tile of C
     results, env = tune_kernel("matmul_swizzled", __file__, M * N, args, tune_params, answer=answer,
                                atol=M * 2**(-11), block_size_names=["tile_m"], grid_div_x=["tile_m", "tile_n"],
-                               strategy="bayes_opt", strategy_options={"max_fevals": 100},
-                               lang="generic_python", call_function=call_cutile)
+                               strategy="bayes_opt", strategy_options={"max_fevals": 100})
 
 
 if __name__ == "__main__":

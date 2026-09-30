@@ -1,8 +1,7 @@
-import kernel_tuner.util as util
-
 from abc import abstractmethod
 
 from kernel_tuner.language import Language
+from kernel_tuner.utils.language_detection import detect_language, is_python_file
 from kernel_tuner.kernel_sources.model.prepared_kernel_source_data import PreparedKernelSourceData
 
 
@@ -19,8 +18,13 @@ class KernelSourceFactory(type):
     the __init__ call of the KernelSource class to initalize some common variables.
     '''
     def __call__(cls, kernel_name, kernel_sources, lang, defines=None, call_function=None):
-        if lang == None:
-            language = None 
+        first_source = kernel_sources[0] if isinstance(kernel_sources, list) and kernel_sources else kernel_sources
+        if lang is None and is_python_file(first_source):
+            # kernels in Python files are written in a Python DSL
+            lang = Language.GENERIC_PYTHON.value
+
+        if lang is None:
+            language = None
         else:
             try:
                 language = Language(lang.upper())
@@ -62,7 +66,7 @@ class KernelSource(metaclass=KernelSourceFactory):
             if callable(self.kernel_sources[0]):
                 raise TypeError("Please specify language when using a code generator function")
             kernel_string = self.get_kernel_string(0)
-            language = util.detect_language(kernel_string)
+            language = detect_language(kernel_string)
             self.lang = Language(language.upper())
         else:
             try:

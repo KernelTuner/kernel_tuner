@@ -5,11 +5,7 @@ import tilelang.language as T
 import itertools
 
 from kernel_tuner import tune_kernel
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for call_functions.py
-from call_functions import call_tilelang  # noqa: E402
 
 # https://github.com/tile-ai/tilelang/tree/main/examples/gemm
 # num_threads and num_stages added as variables to enable tuning.
@@ -262,12 +258,10 @@ def tune_basic(M, N, K):
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
-        lang="generic_python",
         answer=[None, None, C_ref.cpu()],
         atol=M * 2**(-11),
         strategy = "bayes_opt",
         strategy_options = {"max_fevals": 100},
-        call_function=call_tilelang,
         verbose=True,
         restrictions=restrictions,
     )
@@ -304,12 +298,10 @@ def tune_opt(M, N, K):
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
-        lang="generic_python",
         answer=[None, None, C_ref.cpu()],
         atol=M * 2**(-11),
         strategy = "bayes_opt",
         strategy_options = {"max_fevals": 100},
-        call_function=call_tilelang,
         verbose=True,
         restrictions=restrictions,
     )

@@ -2,7 +2,6 @@ from numba import cuda
 import numpy as np
 
 from kernel_tuner import tune_kernel
-from call_functions import call_numba
 
 
 @cuda.jit
@@ -33,9 +32,7 @@ def tune():
         problem_size=N,
         arguments=args,
         tune_params=tune_params,
-        lang="generic_python",
         answer=[None, None, c_expect],
-        call_function=call_numba,
     )
 
 if __name__ == "__main__":

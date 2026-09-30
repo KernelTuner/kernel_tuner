@@ -4,7 +4,6 @@ import triton
 import triton.language as tl
 
 from kernel_tuner import tune_kernel, run_kernel
-from call_functions import call_triton
 
 @triton.jit
 def add_op(x, y):
@@ -43,8 +42,7 @@ def tune():
     tune_params["block_size_x"] = [2**i for i in range(11)]
 
 
-    result = run_kernel("add_kernel", __file__, size, args, {"block_size_x": 256},
-               lang="generic_python", call_function=call_triton)
+    result = run_kernel("add_kernel", __file__, size, args, {"block_size_x": 256})
     assert np.allclose(c_expect.cpu(), result[2])
 
 
@@ -54,9 +52,7 @@ def tune():
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
-        lang="generic_python",
         answer=[None, None, c_expect.cpu(), None],
-        call_function=call_triton,
     )
 
 

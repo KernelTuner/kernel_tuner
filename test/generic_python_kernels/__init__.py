@@ -6,5 +6,6 @@ into the module it generates for each configuration. Every module provides:
 - ``kernel_name``: name of the kernel function or class in the module
 - ``arguments(c, a, b, n)``: the kernel arguments in the order the kernel expects them
 - ``tune_params(n)``: a small set of tunable parameters
-- ``call_function``: the call function that launches the kernel
+
+The kernels are launched with the default call functions for their DSL.
 """
