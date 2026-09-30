@@ -1,16 +1,33 @@
 import logging
-import inspect
 import re
 import builtins
+import threading
 import numpy as np
 
 from kernel_tuner.backends.backend import GPUBackend
+from kernel_tuner.backends.generic_python_processes import (
+    PROCESS_BUILD_DSLS,
+    BuildProcessPool,
+    dsl_compile_hooks,
+    instantiate_kernel,
+)
+from kernel_tuner.kernel_sources.kernel_source_fn import kernel_module_name
 from kernel_tuner.observers.generic_python import GenericPythonRuntimeObserver
 
 try:
     import torch
 except ImportError:
     torch = None
+
+
+# DSLs whose kernels are not compiled in parallel threads. Numba, Warp, and cuTile compile one kernel at a
+# time because of a global compiler lock, so parallel threads are not faster (and even slower for Warp).
+# CuTe keeps the state of compiled kernels per thread, so these cannot be launched from another thread.
+# When build_processes is set, these are compiled in worker processes instead, see generic_python_processes.
+SERIAL_COMPILE_DSLS = PROCESS_BUILD_DSLS
+
+# Returned by build() for kernels that were compiled by a worker process, load() loads these from disk
+PROCESS_BUILT = "process_built"
 
 
 class GenericPythonFunctions(GPUBackend):
@@ -59,10 +76,16 @@ class GenericPythonFunctions(GPUBackend):
 
         self.units = {"time": "ms", "power": "s,mW", "energy": "J"}
 
-        # Variables to be filled in at compile time, needed for running the kernel after compilation.
+        # Set when a kernel is loaded, needed for running the kernel after compilation.
         self.call_function = None
         self.signature = None
-        self.gpu_kwargs = None
+
+        # The maximum number of worker processes used by build() for DSLs that cannot compile kernels in
+        # parallel threads. Set by runners that compile in parallel, by default these kernels are compiled
+        # by load() in the main process.
+        self.build_processes = 0
+        self._build_pool = None
+        self._build_pool_lock = threading.Lock()
 
         super().__init__(device=device, iterations=iterations, compiler_options=compiler_options, observers=observers)
 
@@ -107,7 +130,7 @@ class GenericPythonFunctions(GPUBackend):
 
 
     def compile(self, kernel_instance, gpu_args=None):
-        """Compile the kernel by executing it once. This enforces that the kernel is cached. 
+        """Compile the kernel by executing it once. This enforces that the kernel is cached.
 
         :param kernel_instance: The kernel instance containing information such as the kernel_source,
         grid, threads, params, etc.
@@ -119,44 +142,98 @@ class GenericPythonFunctions(GPUBackend):
         :returns: A kernel that can be called with the user-defined call function.
         :rtype: callable
         """
+        return self.load(kernel_instance, self.build(kernel_instance, gpu_args), gpu_args)
+
+    def build(self, kernel_instance, gpu_args=None):
+        """Compile the kernel by executing it once, this can be called from multiple threads.
+
+        The DSL caches the compiled kernel, so the kernel is not compiled again when it is benchmarked.
+        DSLs that compile kernels one at a time, even from multiple threads, are compiled in a worker
+        process if build_processes is set, otherwise nothing is done and the kernel is compiled by load().
+
+        :returns: The kernel function, PROCESS_BUILT if the kernel was compiled by a worker process,
+            or None if the kernel is compiled by load().
+        """
+        if kernel_instance.kernel_source.dsl in SERIAL_COMPILE_DSLS:
+            if not self.build_processes:
+                return None
+            kernel_source = kernel_instance.kernel_source
+            kwargs = self._kernel_kwargs(kernel_source.signature, kernel_instance.params)
+            pool = self._get_build_pool(gpu_args)
+            if pool.build(kernel_instance, gpu_args, kernel_source.call_function, kwargs):
+                return PROCESS_BUILT
+            return None
+        # the current device is set per thread, and would otherwise be the default device
+        torch.cuda.set_device(self.device_id)
+        return self._compile_by_running(kernel_instance, gpu_args)
+
+    def _get_build_pool(self, gpu_args):
+        with self._build_pool_lock:
+            if self._build_pool is None:
+                self._build_pool = BuildProcessPool(self.device_id, gpu_args, self.build_processes)
+            return self._build_pool
+
+    def shutdown_build_processes(self):
+        """Stop the worker processes started by build(), if any."""
+        with self._build_pool_lock:
+            pool, self._build_pool = self._build_pool, None
+        if pool is not None:
+            pool.shutdown()
+
+    def load(self, kernel_instance, build_result, gpu_args=None):
+        """Return the kernel function compiled by build(), or compile it now if build() did not.
+
+        :returns: A kernel that can be called with the user-defined call function.
+        :rtype: callable
+        """
+        # These are the same for every configuration, but are needed to run the kernel
+        self.call_function = kernel_instance.kernel_source.call_function
+        self.signature = kernel_instance.kernel_source.signature
+
+        if build_result is None:
+            return self._compile_by_running(kernel_instance, gpu_args)
+        if build_result is PROCESS_BUILT:
+            return self._compile_by_running(kernel_instance, gpu_args, load_from_worker=True)
+        return build_result
+
+    def _compile_by_running(self, kernel_instance, gpu_args, load_from_worker=False):
+        """Compile the kernel by running it once with the user-defined call function.
+
+        :param load_from_worker: Load the kernel that a worker process compiled and stored on disk.
+        :type load_from_worker: bool
+        """
         if kernel_instance.kernel_fn is None:
             raise ValueError("kernel_fn is None, currently Generic Python only supports callable kernel_source")
 
         if gpu_args is None:
             raise ValueError("gpu_args is None, Generic Python needs gpu args to compile the kernel")
 
-        # The first time we compile, we also set the call function and the signature
-        # We need this later to run the kernel.
-        if self.call_function is None or self.signature is None:
-            self.call_function = kernel_instance.kernel_source.call_function
-            self.signature = kernel_instance.kernel_source.signature
-
-        grid = kernel_instance.grid
-        threads = kernel_instance.threads
-        params = kernel_instance.params
-
         # If the kernel source is a class, we use the __call__ function as the kernel_function.
-        if inspect.isclass(kernel_instance.kernel_fn):
-            kernel_function = kernel_instance.kernel_fn()
-        elif callable(kernel_instance.kernel_fn):
-            kernel_function = kernel_instance.kernel_fn
-        else:
-            raise TypeError("kernel function is not a class or function")
+        kernel_function = instantiate_kernel(kernel_instance.kernel_fn)
 
-        # Tuning params can contain kernel arguments. In such cases, create keyword arguments with
-        # the values of the tuning params.
-        self.gpu_kwargs = {}
-        if params is not None:
-            for arg_name in self.signature:
-                if arg_name in params:
-                    self.gpu_kwargs[arg_name] = params[arg_name]
+        kernel_source = kernel_instance.kernel_source
+        params = kernel_instance.params
+        kwargs = self._kernel_kwargs(kernel_source.signature, params)
 
         # Call the user-defined call function in order to compile the kernel.
         self.synchronize()
-        self.call_function(kernel_function, gpu_args, self.gpu_kwargs, grid, threads, params)
+        grid, threads = kernel_instance.grid, kernel_instance.threads
+        if load_from_worker:
+            module_name = kernel_module_name(kernel_instance.temp_files[0])
+            with dsl_compile_hooks(kernel_source.dsl, kernel_function, module_name, self._build_pool.export_dir, False):
+                kernel_source.call_function(kernel_function, gpu_args, kwargs, grid, threads, params)
+        else:
+            kernel_source.call_function(kernel_function, gpu_args, kwargs, grid, threads, params)
         self.synchronize()
 
         return kernel_function
+
+    @staticmethod
+    def _kernel_kwargs(signature, params):
+        """Tuning params can be kernel arguments, these are passed as keyword arguments to the kernel."""
+        if params is None:
+            return {}
+        return {arg_name: params[arg_name] for arg_name in signature if arg_name in params}
 
     def start_event(self):
         """Records the event that marks the start of a measurement."""
@@ -192,7 +269,7 @@ class GenericPythonFunctions(GPUBackend):
             configuration
         :type params: dict
         """
-        self.call_function(func, gpu_args, self.gpu_kwargs, grid, threads, params)
+        self.call_function(func, gpu_args, self._kernel_kwargs(self.signature, params), grid, threads, params)
 
 
     def synchronize(self):

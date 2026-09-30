@@ -316,18 +316,15 @@ _kernel_options = Options(
             "call_function",
             (
                 """When the language Generic Python is used, a call function that calls the kernel in the Python
-                 DSL. If not specified, the DSL of the kernel is detected from its decorators or base classes and
-                 a default call function from kernel_tuner.utils.call_functions is used. Supported DSLs are
-                 Triton, Numba, CuPy (cupyx.jit), Warp, Taichi, CuTe, Tilus, TileLang, and cuTile.
-                 The function must take the following positional arguments:
-                :kernel_function: the callable function with the tuning parameters inserted.
-                :args: list of kernel arguments, as provided by the user in the <args> argument.
-                :kwargs: dictionary of kernel keyword arguments. If a tuning parameter is in the kernel signature, 
-                    the tuning parameter will be added as a keyword argument.
-                Optionally, the following arguments can be used. The order and name of the arguments must match.
-                :grid: the launch grid (tuple with 3 values), as computed by KernelTuner
-                :threads: the thread block size (tuple with 3 values), as computed by KernelTuner
-                :params: dictionary with the values of the tuning params for the specific configuration.""",
+        DSL. If not specified, the DSL of the kernel is detected from its decorators or base classes and
+        a default call function from kernel_tuner.utils.call_functions is used. Supported DSLs are
+        Triton, Numba, CuPy (cupyx.jit), Warp, Taichi, CuTe, Tilus, TileLang, and cuTile.
+        The call function receives three positional arguments: kernel_function, the kernel with the
+        values of the tunable parameters inserted; args, the list of kernel arguments; and kwargs, a
+        dictionary with the tunable parameters that are also arguments of the kernel. Optionally, the
+        call function can take the arguments grid and threads, the grid and thread block dimensions
+        computed by Kernel Tuner, and params, a dictionary with the tunable parameters of the
+        configuration, in this order and with these names.""",
                 "function",
             ),
         ),
@@ -533,6 +530,18 @@ _tuning_options = Options(
             ),
         ),
         (
+            "parallel_compile",
+            (
+                """Set to `True` or an integer to compile kernels in parallel threads on the local machine, before
+                benchmarking them one after the other. If set to an integer, this will be the number of threads,
+                otherwise the number of CPU cores is used. Kernels are compiled in parallel when the search
+                strategy evaluates multiple configurations at once, such as brute_force, random_sample, and
+                population-based strategies. Numba, Warp, cuTile, and CuTe kernels are compiled in worker
+                processes instead of threads. Cannot be combined with `parallel` or `simulation_mode`.""",
+                "int|bool",
+            ),
+        ),
+        (
             "observers",
             (
                 """A list of Observers to use during tuning, please see :ref:`observers`.
@@ -651,6 +660,7 @@ def tune_kernel(
     metrics=None,
     simulation_mode=None,
     parallel=None,
+    parallel_compile=None,
     observers=None,
     objective=None,
     objective_higher_is_better=None,
@@ -776,7 +786,9 @@ def tune_kernel(
     # Create runner
     if parallel and simulation_mode:
         raise ValueError("Enabling `parallel` and `simulation_mode` together is not supported")
-    elif simulation_mode:
+    if parallel_compile and (parallel or simulation_mode):
+        raise ValueError("Enabling `parallel_compile` together with `parallel` or `simulation_mode` is not supported")
+    if simulation_mode:
         from kernel_tuner.runners.simulation import SimulationRunner
 
         runner = SimulationRunner(kernelsource, kernel_options, device_options, iterations, observers)
@@ -798,6 +810,13 @@ def tune_kernel(
         from kernel_tuner.runners.parallel import ParallelRunner
         runner = ParallelRunner(
             kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers
+        )
+    elif parallel_compile:
+        from kernel_tuner.runners.parallel_compile import ParallelCompileRunner
+
+        num_workers = None if parallel_compile is True else parallel_compile
+        runner = ParallelCompileRunner(
+            kernelsource, kernel_options, device_options, iterations, observers, num_workers=num_workers
         )
     else:
         from kernel_tuner.runners.sequential import SequentialRunner

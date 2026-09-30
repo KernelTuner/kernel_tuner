@@ -259,15 +259,22 @@ class CudaFunctions(GPUBackend):
     def compile(self, kernel_instance):
         """Call the CUDA compiler to compile the kernel, return the device function.
 
-        :param kernel_name: The name of the kernel to be compiled, used to lookup the
-            function after compilation.
-        :type kernel_name: string
-
-        :param kernel_string: The CUDA kernel code that contains the function `kernel_name`
-        :type kernel_string: string
+        :param kernel_instance: The kernel instance, containing the name and code of the kernel
+        :type kernel_instance: kernel_tuner.core.KernelInstance
 
         :returns: A kernel that can be launched by the CUDA runtime
         :rtype:
+        """
+        return self.load(kernel_instance, self.build(kernel_instance))
+
+    def build(self, kernel_instance):
+        """Compile the kernel to PTX using NVRTC, this is thread-safe and does not use the device.
+
+        :param kernel_instance: The kernel instance, containing the name and code of the kernel
+        :type kernel_instance: kernel_tuner.core.KernelInstance
+
+        :returns: The PTX and the lowered name of the kernel inside the PTX
+        :rtype: tuple(bytes, bytes)
         """
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
@@ -311,26 +318,10 @@ class CudaFunctions(GPUBackend):
             err = nvrtc.nvrtcGetPTX(program, buff)
             cuda_error_check(err)
 
-            # Load the module
-            err, self.current_module = driver.cuModuleLoadData(np.char.array(buff))
-            if err == driver.CUresult.CUDA_ERROR_INVALID_PTX:
-                raise SkippableFailure("uses too much shared data")
-            else:
-                cuda_error_check(err)
-
-            # First, get the "lowered" name of the kernel (i.e., the name inside the PTX).
-            # After, we can use the lowered name to lookup the kernel in the module.
+            # Get the "lowered" name of the kernel (i.e., the name inside the PTX), which is
+            # used to lookup the kernel in the module after loading it.
             err, lowered_name = nvrtc.nvrtcGetLoweredName(program, expression_name)
             cuda_error_check(err)
-            err, self.func = driver.cuModuleGetFunction(
-                self.current_module, lowered_name
-            )
-            cuda_error_check(err)
-
-            # get the number of registers per thread used in this kernel
-            num_regs = driver.cuFuncGetAttribute(driver.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
-            assert num_regs[0] == 0, f"Retrieving number of registers per thread unsuccesful: code {num_regs[0]}"
-            self.num_regs = num_regs[1]
 
         except RuntimeError as re:
             _, n = nvrtc.nvrtcGetProgramLogSize(program)
@@ -338,6 +329,37 @@ class CudaFunctions(GPUBackend):
             nvrtc.nvrtcGetProgramLog(program, log)
             print(log.decode("utf-8"))
             raise re
+
+        return buff, lowered_name
+
+    def load(self, kernel_instance, build_result):
+        """Load a kernel compiled by build() onto the device and return the device function.
+
+        :param kernel_instance: The kernel instance
+        :type kernel_instance: kernel_tuner.core.KernelInstance
+
+        :param build_result: The PTX and lowered name returned by build()
+        :type build_result: tuple(bytes, bytes)
+
+        :returns: A kernel that can be launched by the CUDA runtime
+        :rtype:
+        """
+        ptx, lowered_name = build_result
+
+        # Load the module
+        err, self.current_module = driver.cuModuleLoadData(np.char.array(ptx))
+        if err == driver.CUresult.CUDA_ERROR_INVALID_PTX:
+            raise SkippableFailure("uses too much shared data")
+        else:
+            cuda_error_check(err)
+
+        err, self.func = driver.cuModuleGetFunction(self.current_module, lowered_name)
+        cuda_error_check(err)
+
+        # get the number of registers per thread used in this kernel
+        num_regs = driver.cuFuncGetAttribute(driver.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
+        assert num_regs[0] == 0, f"Retrieving number of registers per thread unsuccesful: code {num_regs[0]}"
+        self.num_regs = num_regs[1]
 
         return self.func
 

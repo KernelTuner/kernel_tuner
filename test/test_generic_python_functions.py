@@ -122,7 +122,7 @@ def test_gpu_kwargs():
     gpu_args = dev.ready_argument_list(args)
     callable_fn = dev.compile_kernel(instance, verbose=False, gpu_args=gpu_args)
 
-    kwargs = dev.dev.gpu_kwargs
+    kwargs = dev.dev._kernel_kwargs(ks.signature, params)
     
     assert kwargs["mock_param"] == 64
     assert callable_fn(*args, **kwargs) == 64

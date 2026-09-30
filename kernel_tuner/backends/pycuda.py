@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import logging
+import threading
 
 import numpy as np
 
@@ -170,27 +171,40 @@ class PyCudaFunctions(GPUBackend):
     def compile(self, kernel_instance):
         """Call the CUDA compiler to compile the kernel, return the device function.
 
-        :param kernel_name: The name of the kernel to be compiled, used to lookup the
-            function after compilation.
-        :type kernel_name: string
-
-        :param kernel_string: The CUDA kernel code that contains the function `kernel_name`
-        :type kernel_string: string
+        :param kernel_instance: The kernel instance, containing the name and code of the kernel
+        :type kernel_instance: kernel_tuner.core.KernelInstance
 
         :returns: An CUDA kernel that can be called directly.
         :rtype: pycuda.driver.Function
         """
+        return self.load(kernel_instance, self.build(kernel_instance))
+
+    def build(self, kernel_instance):
+        """Compile the kernel with nvcc and load it into a module, this is thread-safe.
+
+        PyCUDA links and loads the module as part of compilation, so the context of this backend
+        is made current for the calling thread while building the module.
+
+        :param kernel_instance: The kernel instance, containing the name and code of the kernel
+        :type kernel_instance: kernel_tuner.core.KernelInstance
+
+        :returns: The compiled module
+        :rtype: pycuda.compiler.SourceModule
+        """
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
 
+        no_extern_c = 'extern "C"' in kernel_string
+
+        compiler_options = ["-Xcompiler=-Wall"]
+        if self.compiler_options:
+            compiler_options += self.compiler_options
+
+        other_thread = threading.current_thread() is not threading.main_thread()
+        if other_thread:
+            self.context.push()
         try:
-            no_extern_c = 'extern "C"' in kernel_string
-
-            compiler_options = ["-Xcompiler=-Wall"]
-            if self.compiler_options:
-                compiler_options += self.compiler_options
-
-            self.current_module = self.source_mod(
+            return self.source_mod(
                 kernel_string,
                 options=compiler_options + ["-e", kernel_name],
                 arch=("compute_" + self.cc) if self.cc != "00" else None,
@@ -198,16 +212,39 @@ class PyCudaFunctions(GPUBackend):
                 cache_dir=False,
                 no_extern_c=no_extern_c,
             )
-
-            self.func = self.current_module.get_function(kernel_name)
-            if not isinstance(self.func, str):
-                self.num_regs = self.func.num_regs
-            return self.func
         except drv.CompileError as e:
             if "uses too much shared data" in e.stderr:
                 raise SkippableFailure("uses too much shared data")
             else:
                 raise e
+        except drv.LogicError as e:
+            # DynamicSourceModule compiles to PTX, the PTX is compiled to machine code when it is linked,
+            # at which point the CUDA driver rejects kernels that use too much shared memory
+            if "cuLinkComplete failed: device kernel image is invalid" in str(e):
+                raise SkippableFailure("uses too much shared data")
+            else:
+                raise e
+        finally:
+            if other_thread:
+                drv.Context.pop()
+
+    def load(self, kernel_instance, build_result):
+        """Return the device function from a module compiled by build().
+
+        :param kernel_instance: The kernel instance
+        :type kernel_instance: kernel_tuner.core.KernelInstance
+
+        :param build_result: The module returned by build()
+        :type build_result: pycuda.compiler.SourceModule
+
+        :returns: An CUDA kernel that can be called directly.
+        :rtype: pycuda.driver.Function
+        """
+        self.current_module = build_result
+        self.func = self.current_module.get_function(kernel_instance.name)
+        if not isinstance(self.func, str):
+            self.num_regs = self.func.num_regs
+        return self.func
 
     def start_event(self):
         """Records the event that marks the start of a measurement."""

@@ -1,7 +1,7 @@
 import inspect
 import ast
 import copy
-import uuid
+import os
 import sys
 import logging
 
@@ -16,6 +16,15 @@ from kernel_tuner.kernel_sources.model.prepared_kernel_source_data import Prepar
 from kernel_tuner.util import get_kernel_ast, get_arg_names, normalize_call_function
 from kernel_tuner.utils.call_functions import DEFAULT_CALL_FUNCTIONS, get_default_call_function
 from kernel_tuner.utils.language_detection import detect_python_dsl
+
+
+def kernel_module_name(temp_file_path):
+    """Return the name of the module created for the kernel source in temp_file_path.
+
+    Worker processes that compile kernels import the same file under the same name, the name of
+    the module is part of the key under which some DSLs cache compiled kernels.
+    """
+    return os.path.splitext(os.path.basename(temp_file_path))[0]
 
 
 class KernelSourceFn(KernelSource):
@@ -46,9 +55,12 @@ class KernelSourceFn(KernelSource):
         if not isinstance(kernel_name, str):
             raise TypeError("kernel_name should be a string, got ", type(kernel_name))
 
+        # the DSL is also used to decide whether kernels can be compiled in parallel threads
+        self.dsl = detect_python_dsl(kernel_name, kernel_source)
+
         if self.lang == Language.GENERIC_PYTHON:
             if call_function is None:
-                call_function = self._default_call_function(kernel_name, kernel_source)
+                call_function = self._default_call_function(kernel_name, self.dsl)
             if not callable(call_function):
                 raise TypeError(f"call_function of type {type(call_function)} is not a callable object.")
         self.call_function = call_function
@@ -67,9 +79,8 @@ class KernelSourceFn(KernelSource):
 
 
     @staticmethod
-    def _default_call_function(kernel_name, kernel_source):
+    def _default_call_function(kernel_name, dsl):
         """Select the default call function for the DSL the kernel is written in."""
-        dsl = detect_python_dsl(kernel_name, kernel_source)
         if dsl is None:
             raise ValueError(
                 f"Could not detect the Python DSL of kernel {kernel_name}, please pass a call_function. "
@@ -146,11 +157,12 @@ class KernelSourceFn(KernelSource):
 
         #print(new_source)
         
-        # Create a unique module name and write new source to it.
-        module_name = f'temp_kernel_module_{uuid.uuid4().hex}'
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
+        # Write the new source to a uniquely named module, the module is named after the file.
+        prefix = 'temp_kernel_module_'
+        with tempfile.NamedTemporaryFile(mode='w', prefix=prefix, suffix='.py', delete=False) as temp_file:
             temp_file.write(new_source)
             temp_file_path = temp_file.name
+        module_name = kernel_module_name(temp_file_path)
 
         # Register the module in sys.modules before executing it
         spec = importlib.util.spec_from_file_location(module_name, temp_file_path)

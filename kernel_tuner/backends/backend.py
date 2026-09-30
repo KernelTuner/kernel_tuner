@@ -46,6 +46,23 @@ class Backend(ABC):
         """This method must implement the compilation of a kernel into a callable function."""
         pass
 
+    def build(self, kernel_instance):
+        """Compile a kernel without loading it onto the device, the result is passed to load().
+
+        Kernel Tuner can call build() for multiple kernels in parallel threads, so implementations must be
+        thread-safe and must not modify the state of the backend. Backends that do not implement build()
+        compile the kernel in load() instead.
+        """
+        return None
+
+    def load(self, kernel_instance, build_result):
+        """Load a kernel compiled by build() onto the device and return a callable function.
+
+        Called from the main thread, right before the kernel is verified and benchmarked. By default, this
+        compiles the kernel, for backends that do not implement build().
+        """
+        return self.compile(kernel_instance)
+
     @abstractmethod
     def start_event(self):
         """This method must implement the recording of the start of a measurement."""

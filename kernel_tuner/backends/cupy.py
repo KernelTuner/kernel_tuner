@@ -115,15 +115,22 @@ class CupyFunctions(GPUBackend):
     def compile(self, kernel_instance):
         """Call the CUDA compiler to compile the kernel, return the device function.
 
-        :param kernel_name: The name of the kernel to be compiled, used to lookup the
-            function after compilation.
-        :type kernel_name: string
-
-        :param kernel_string: The CUDA kernel code that contains the function `kernel_name`
-        :type kernel_string: string
+        :param kernel_instance: The kernel instance, containing the name and code of the kernel
+        :type kernel_instance: kernel_tuner.core.KernelInstance
 
         :returns: An CUDA kernel that can be called directly.
         :rtype: cupy.RawKernel
+        """
+        return self.load(kernel_instance, self.build(kernel_instance))
+
+    def build(self, kernel_instance):
+        """Compile the kernel into a module using NVRTC, this is thread-safe.
+
+        :param kernel_instance: The kernel instance, containing the name and code of the kernel
+        :type kernel_instance: kernel_tuner.core.KernelInstance
+
+        :returns: The compiled module
+        :rtype: cupy.RawModule
         """
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
@@ -135,11 +142,26 @@ class CupyFunctions(GPUBackend):
 
         options = tuple(compiler_options)
 
-        self.current_module = cp.RawModule(
-            code=kernel_string, options=options, name_expressions=[kernel_name]
-        )
+        module = cp.RawModule(code=kernel_string, options=options, name_expressions=[kernel_name])
+        # CuPy compiles lazily, compile now on the device of this backend (the current device is per thread)
+        with self.dev:
+            module.compile()
+        return module
 
-        self.func = self.current_module.get_function(kernel_name)
+    def load(self, kernel_instance, build_result):
+        """Return the device function from a module compiled by build().
+
+        :param kernel_instance: The kernel instance
+        :type kernel_instance: kernel_tuner.core.KernelInstance
+
+        :param build_result: The module returned by build()
+        :type build_result: cupy.RawModule
+
+        :returns: An CUDA kernel that can be called directly.
+        :rtype: cupy.RawKernel
+        """
+        self.current_module = build_result
+        self.func = self.current_module.get_function(kernel_instance.name)
         self.num_regs = self.func.num_regs
         return self.func
 

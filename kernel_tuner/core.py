@@ -51,6 +51,10 @@ _KernelInstance = namedtuple(
 )
 
 
+KernelBuild = namedtuple("KernelBuild", ["result", "error", "time"])
+"""The result of DeviceInterface.build_kernel: the build result, the exception raised, and the build time in ms."""
+
+
 class KernelInstance(_KernelInstance):
     """Class that represents the specific parameterized instance of a kernel."""
 
@@ -489,7 +493,15 @@ class DeviceInterface(object):
             print("expected: ", answer, "\ngot: ", result_host)
             raise RuntimeError("Kernel result verification failed for: " + util.get_config_string(instance.params))
 
-    def compile_and_benchmark(self, kernel_source, gpu_args, params, kernel_options, to):
+    def compile_and_benchmark(
+        self, kernel_source, gpu_args, params, kernel_options, to, instance=None, build=None, delete_temp_files=True
+    ):
+        """Compile, verify, and benchmark a kernel configuration.
+
+        To compile multiple configurations in parallel, runners can first create the kernel instance with
+        create_kernel_instance() and build it with build_kernel(), and pass these as ``instance`` and ``build``.
+        Pass ``delete_temp_files=False`` to keep the temporary files of the instance, to use it again.
+        """
         # reset previous timers
         last_compilation_time = None
         last_verification_time = None
@@ -502,7 +514,8 @@ class DeviceInterface(object):
         instance_string = util.get_instance_string(params)
 
         logging.debug("compile_and_benchmark " + instance_string)
-        instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
+        if instance is None:
+            instance = self.create_kernel_instance(kernel_source, kernel_options, params, verbose)
         if isinstance(instance, util.ErrorConfig):
             result["__error__"] = util.InvalidConfig()
         else:
@@ -512,7 +525,7 @@ class DeviceInterface(object):
             try:
                 # compile the kernel
                 start_compilation = time.perf_counter()
-                func = self.compile_kernel(instance, verbose, gpu_args)
+                func = self.compile_kernel(instance, verbose, gpu_args, build)
                 if not func:
                     result["__error__"] = util.CompilationFailedConfig()
                 else:
@@ -528,6 +541,9 @@ class DeviceInterface(object):
 
                 # stop compilation stopwatch and convert to milliseconds
                 last_compilation_time = 1000 * (time.perf_counter() - start_compilation)
+                if build is not None:
+                    # the kernel was built before, possibly in parallel with other kernels
+                    last_compilation_time += build.time
 
                 # test kernel for correctness
                 if func and (to.answer or to.verify or self.output_observers):
@@ -553,7 +569,8 @@ class DeviceInterface(object):
                 raise e
 
             # clean up any temporary files, if no error occurred
-            instance.delete_temp_files()
+            if delete_temp_files:
+                instance.delete_temp_files()
 
         # For Python DSLs, the compilation time also includes one kernel run, so we subtract the runtime
         if self.lang.upper() == "GENERIC_PYTHON" and last_compilation_time and "time" in result:
@@ -567,20 +584,46 @@ class DeviceInterface(object):
 
         return result
 
-    def compile_kernel(self, instance, verbose, gpu_args=None):
+    def build_kernel(self, instance, gpu_args=None):
+        """Compile the kernel for this specific instance without loading it, this is thread-safe.
+
+        This is the part of the compilation that can be done in parallel for multiple kernel instances.
+        Exceptions are not raised, but returned as part of the result, so they can be handled when the
+        kernel is loaded by compile_kernel().
+
+        :returns: The result of the backend's build method, any exception it raised, and the build time in ms.
+        :rtype: KernelBuild
+        """
+        start = time.perf_counter()
+        result, error = None, None
+        try:
+            if self.lang.upper() == "GENERIC_PYTHON":
+                result = self.dev.build(instance, gpu_args)
+            else:
+                result = self.dev.build(instance)
+        except Exception as e:
+            error = e
+        return KernelBuild(result, error, 1000 * (time.perf_counter() - start))
+
+    def compile_kernel(self, instance, verbose, gpu_args=None, build=None):
         """Compile the kernel for this specific instance.
 
         Generic Python kernels are compiled by running them once, which requires ``gpu_args``.
+        If the kernel was already built by build_kernel(), pass the result as ``build`` to only load it.
         """
         logging.debug("compile_kernel " + instance.name)
 
         # compile kernel_string into device func
         func = None
         try:
+            if build is None:
+                build = self.build_kernel(instance, gpu_args)
+            if build.error is not None:
+                raise build.error
             if self.lang.upper() == "GENERIC_PYTHON":
-                func = self.dev.compile(instance, gpu_args)
+                func = self.dev.load(instance, build.result, gpu_args)
             else:
-                func = self.dev.compile(instance)
+                func = self.dev.load(instance, build.result)
         except Exception as e:
             # compiles may fail because certain kernel configurations use too
             # much shared memory for example, the desired behavior is to simply

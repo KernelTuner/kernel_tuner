@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import json
 import os
+import pickle
 import warnings
 import datetime
 
@@ -643,6 +644,17 @@ def test_normalize_call_function(func):
         return x + 1
 
     assert v(kernel, (1,), {}, grid=1, threads=2, params=3) == 2
+
+
+def call_with_grid(kernel_function, args, kwargs, grid):
+    return kernel_function(*args, grid)
+
+
+def test_normalize_call_function_picklable():
+    """Normalized call functions can be pickled, to send them to worker processes that compile kernels."""
+    v = pickle.loads(pickle.dumps(normalize_call_function(call_with_grid)))
+    assert v(lambda x, grid: x + grid, (1,), {}, grid=2, threads=3, params=4) == 3
+    assert normalize_call_function(v) is v
 
 class MockRunner:
     simulation_mode = False

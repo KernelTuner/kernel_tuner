@@ -1170,6 +1170,21 @@ def normalize_verify_function(v):
     return lambda answer, result_host, atol: v(answer, result_host)
 
 
+class _NormalizedCallFunction:
+    """Call function that accepts grid, threads and params, and passes only the ones the user function takes.
+
+    This is a class instead of a closure, so that it can be pickled to compile kernels in worker processes.
+    """
+
+    def __init__(self, function, optional_args):
+        self.function = function
+        self.optional_args = optional_args
+
+    def __call__(self, kernel_function, args, kwargs, grid, threads, params):
+        optional = {"grid": grid, "threads": threads, "params": params}
+        return self.function(kernel_function, args, kwargs, *(optional[name] for name in self.optional_args))
+
+
 def normalize_call_function(v):
     """Normalize a user-specified call function for language Generic Python.
 
@@ -1184,16 +1199,16 @@ def normalize_call_function(v):
         sig = signature(func)
         return name in sig.parameters
     
-    if v is None:
-        return None
+    if v is None or isinstance(v, _NormalizedCallFunction):
+        return v
 
     if has_kw_argument(v, "grid"):
         if has_kw_argument(v, "threads"):
             if has_kw_argument(v, "params"):
                 return v
-            return lambda kernel_function, args, kwargs, grid, threads, params: v(kernel_function, args, kwargs, grid, threads)
-        return lambda kernel_function, args, kwargs, grid, threads, params: v(kernel_function, args, kwargs, grid)
-    return lambda kernel_function, args, kwargs, grid, threads, params: v(kernel_function, args, kwargs)
+            return _NormalizedCallFunction(v, ("grid", "threads"))
+        return _NormalizedCallFunction(v, ("grid",))
+    return _NormalizedCallFunction(v, ())
 
 
 
