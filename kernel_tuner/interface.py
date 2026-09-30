@@ -40,6 +40,8 @@ import kernel_tuner.core as core
 import kernel_tuner.util as util
 from kernel_tuner.accuracy import Tunable
 from kernel_tuner.file_utils import get_input_file, get_t4_metadata, get_t4_results, import_class_from_file
+from kernel_tuner.kernel_sources.kernel_source import KernelSource
+from kernel_tuner.language import Language
 from kernel_tuner.searchspace import Searchspace
 from kernel_tuner.util import get_objective_defaults
 
@@ -129,9 +131,10 @@ _kernel_options = Options(
         (
             "kernel_source",
             (
-                """The CUDA, OpenCL, HIP, or C kernel code.
+                """The CUDA, OpenCL, HIP, C or Python DSL kernel code.
             It is allowed for the code to be passed as a string, a filename, a function
             that returns a string of code, or a list when the code needs auxilliary files.
+            In the case of a kernel in a Python DSL such as Triton, only a filename is accepted.
 
             To support combined host and device code tuning, a list of
             filenames can be passed. The first file in the list should be the
@@ -155,7 +158,8 @@ _kernel_options = Options(
                 """Specifies the language used for GPU kernels. The kernel_tuner
         automatically detects the language, but if it fails, you may specify
         the language using this argument, currently supported: "CUDA", "CuPy",
-        "nvcuda", "OpenCL", "HIP", or "C".""",
+        "nvcuda", "OpenCL", "HIP", "C", or "Generic_Python". Kernels in Python
+        files (.py) are detected as "Generic_Python".""",
                 "string",
             ),
         ),
@@ -202,7 +206,9 @@ _kernel_options = Options(
             "arguments",
             (
                 """A list of kernel arguments, use numpy arrays for
-            arrays, use numpy.int32 or numpy.float32 for scalars.""",
+            arrays, use numpy.int32 or numpy.float32 for scalars. When the language
+            Generic Python is used, Torch Tensors and built-in Python data types are also 
+            excepted""",
                 "list",
             ),
         ),
@@ -304,6 +310,22 @@ _kernel_options = Options(
             a function that returns a string. If an emtpy dictionary is passed, no definitions are inserted.
             If None is passed, each tunable parameter is inserted as a preprocessor definition.""",
                 "dict",
+            ),
+        ),
+        (
+            "call_function",
+            (
+                """When the language Generic Python is used, a call function that calls the kernel in the Python
+        DSL. If not specified, the DSL of the kernel is detected from its decorators or base classes and
+        a default call function from kernel_tuner.utils.call_functions is used. Supported DSLs are
+        Triton, Numba, CuPy (cupyx.jit), Warp, Taichi, CuTe, Tilus, TileLang, and cuTile.
+        The call function receives three positional arguments: kernel_function, the kernel with the
+        values of the tunable parameters inserted; args, the list of kernel arguments; and kwargs, a
+        dictionary with the tunable parameters that are also arguments of the kernel. Optionally, the
+        call function can take the arguments grid and threads, the grid and thread block dimensions
+        computed by Kernel Tuner, and params, a dictionary with the tunable parameters of the
+        configuration, in this order and with these names.""",
+                "function",
             ),
         ),
     ]
@@ -508,6 +530,18 @@ _tuning_options = Options(
             ),
         ),
         (
+            "parallel_compile",
+            (
+                """Set to `True` or an integer to compile kernels in parallel threads on the local machine, before
+                benchmarking them one after the other. If set to an integer, this will be the number of threads,
+                otherwise the number of CPU cores is used. Kernels are compiled in parallel when the search
+                strategy evaluates multiple configurations at once, such as brute_force, random_sample, and
+                population-based strategies. Numba, Warp, cuTile, and CuTe kernels are compiled in worker
+                processes instead of threads. Cannot be combined with `parallel` or `simulation_mode`.""",
+                "int|bool",
+            ),
+        ),
+        (
             "observers",
             (
                 """A list of Observers to use during tuning, please see :ref:`observers`.
@@ -626,17 +660,20 @@ def tune_kernel(
     metrics=None,
     simulation_mode=None,
     parallel=None,
+    parallel_compile=None,
     observers=None,
     objective=None,
     objective_higher_is_better=None,
     objectives=None,
     seed=None,
+    call_function=None,
 ):
+  
     start_overhead_time = perf_counter()
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime("%Y%m%d-%H:%M:%S") + ".log", level=log)
 
-    kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
+    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, util.normalize_call_function(call_function))
 
     # Convert Julia types
     if lang is not None and lang.upper() == "JULIA":
@@ -720,6 +757,10 @@ def tune_kernel(
     logging.debug("tuning_options: %s", util.get_config_string(tuning_options))
     logging.debug("device_options: %s", util.get_config_string(device_options))
 
+    # the user-specific call function may of may not have optional grid, threads and params
+    # arguments. We normalize it so that it always accepts all arguments.
+    kernel_options.call_function = util.normalize_call_function(kernel_options.call_function)
+
     # check whether the selected strategy and options are valid
     # (a falsy strategy means the default brute_force strategy is used)
     strategy = strategy or "brute_force"
@@ -745,7 +786,9 @@ def tune_kernel(
     # Create runner
     if parallel and simulation_mode:
         raise ValueError("Enabling `parallel` and `simulation_mode` together is not supported")
-    elif simulation_mode:
+    if parallel_compile and (parallel or simulation_mode):
+        raise ValueError("Enabling `parallel_compile` together with `parallel` or `simulation_mode` is not supported")
+    if simulation_mode:
         from kernel_tuner.runners.simulation import SimulationRunner
 
         runner = SimulationRunner(kernelsource, kernel_options, device_options, iterations, observers)
@@ -767,6 +810,13 @@ def tune_kernel(
         from kernel_tuner.runners.parallel import ParallelRunner
         runner = ParallelRunner(
             kernelsource, kernel_options, device_options, tuning_options, iterations, observers, num_workers=num_workers
+        )
+    elif parallel_compile:
+        from kernel_tuner.runners.parallel_compile import ParallelCompileRunner
+
+        num_workers = None if parallel_compile is True else parallel_compile
+        runner = ParallelCompileRunner(
+            kernelsource, kernel_options, device_options, iterations, observers, num_workers=num_workers
         )
     else:
         from kernel_tuner.runners.sequential import SequentialRunner
@@ -951,11 +1001,12 @@ def run_kernel(
     block_size_names=None,
     quiet=False,
     log=None,
+    call_function=None,
 ):
     if log:
         logging.basicConfig(filename=kernel_name + datetime.now().strftime("%Y%m%d-%H:%M:%S") + ".log", level=log)
 
-    kernelsource = core.KernelSource(kernel_name, kernel_source, lang, defines)
+    kernelsource = KernelSource(kernel_name, kernel_source, lang, defines, util.normalize_call_function(call_function))
 
     if lang is not None and lang.upper() == "JULIA":
         params = util.julia_list_of_pairs_to_dict(params)
@@ -971,6 +1022,10 @@ def run_kernel(
     opts = locals()
     kernel_options = Options([(k, opts[k]) for k in _kernel_options.keys()])
     device_options = Options([(k, opts[k]) for k in _device_options.keys()])
+
+    # the user-specific call function may of may not have optional grid, threads and params
+    # arguments. We normalize it so that it always accepts all arguments.
+    kernel_options.call_function = util.normalize_call_function(kernel_options.call_function)
 
     # detect language and create the right device function interface
     dev = core.DeviceInterface(kernelsource, iterations=1, **device_options)
@@ -991,8 +1046,8 @@ def run_kernel(
         # see if the kernel arguments have correct type
         util.check_argument_list(instance.name, instance.kernel_string, arguments, lang=lang)
 
-        # compile the kernel
-        func = dev.compile_kernel(instance, False)
+        # compile the kernel (Generic Python kernels need the arguments to compile)
+        func = dev.compile_kernel(instance, False, gpu_args)
         if func is None:
             raise RuntimeError("cannot compile kernel, too much shared memory used")
 
@@ -1014,16 +1069,27 @@ def run_kernel(
     if not dev.run_kernel(func, gpu_args, instance):
         raise RuntimeError("runtime error occured, too many resources requested")
 
+
+
     # copy data in GPU memory back to the host
     results = []
-    for i, arg in enumerate(arguments):
-        if numpy.isscalar(arg):
-            results.append(arg)
-        elif isinstance(arg, torch.Tensor):
-            results.append(arg.cpu())
-        else:
-            results.append(numpy.zeros_like(arg))
-            dev.memcpy_dtoh(results[-1], gpu_args[i])
+    if instance.kernel_source.lang == Language.GENERIC_PYTHON:
+        for arg in gpu_args:
+            if isinstance(arg, torch.Tensor):
+                results.append(arg.cpu())
+            else:
+                results.append(arg)
+    else:
+        for i, arg in enumerate(arguments):
+            if numpy.isscalar(arg):
+                results.append(arg)
+            elif isinstance(arg, torch.Tensor):
+                results.append(torch.empty(arg.shape, dtype=arg.dtype, device="cpu"))
+                dev.memcpy_dtoh(results[-1], gpu_args[i])
+            else:
+                results.append(numpy.zeros_like(arg))
+                dev.memcpy_dtoh(results[-1], gpu_args[i])
+
 
     return results
 

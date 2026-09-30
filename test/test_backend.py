@@ -5,8 +5,9 @@ from .context import (
     skip_if_no_opencl,
     skip_if_no_pycuda,
     skip_if_no_julia,
+    skip_if_no_torch,
 )
-from kernel_tuner.backends import backend, compiler, cupy, nvcuda, opencl, pycuda, julia
+from kernel_tuner.backends import backend, compiler, cupy, nvcuda, opencl, pycuda, julia, generic_python
 
 
 class WrongBackend(backend.Backend):
@@ -51,3 +52,8 @@ def test_pycuda_backend():
 @skip_if_no_julia
 def test_julia_backend():
     dev = julia.JuliaFunctions()
+
+
+@skip_if_no_torch
+def test_generic_python_backend():
+    dev = generic_python.GenericPythonFunctions()

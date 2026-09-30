@@ -3,13 +3,14 @@
 from __future__ import print_function
 
 import logging
+import threading
 
 import numpy as np
 
-from kernel_tuner.backends.backend import GPUBackend
+from kernel_tuner.backends.backend import GPUBackend, get_device_array, is_host_array
 from kernel_tuner.observers.nvml import nvml  # noqa F401
 from kernel_tuner.observers.pycuda import PyCudaRuntimeObserver
-from kernel_tuner.util import SkippableFailure, TorchPlaceHolder
+from kernel_tuner.util import SkippableFailure
 
 # embedded in try block to be able to generate documentation
 # and run tests without pycuda installed
@@ -20,8 +21,7 @@ try:
 except ImportError:
 
     class PyCudaPlaceHolder:
-        def __init__(self):
-            self.PointerHolderBase = object
+        pass
 
     drv = PyCudaPlaceHolder()
     pycuda_available = False
@@ -34,23 +34,6 @@ try:
     from pycuda.compiler import DynamicSourceModule
 except ImportError:
     DynamicSourceModule = None
-
-try:
-    import torch
-except ImportError:
-    torch = TorchPlaceHolder()
-
-
-class Holder(drv.PointerHolderBase):
-    """class to interoperate torch device memory allocations with PyCUDA."""
-
-    def __init__(self, tensor):
-        super(Holder, self).__init__()
-        self.tensor = tensor
-        self.gpudata = tensor.data_ptr()
-
-    def get_pointer(self):
-        return self.t.data_ptr()
 
 
 class PyCudaFunctions(GPUBackend):
@@ -157,6 +140,8 @@ class PyCudaFunctions(GPUBackend):
         :param arguments: List of arguments to be passed to the kernel.
             The order should match the argument list on the CUDA kernel.
             Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.
+            Device arrays that implement the CUDA Array Interface (e.g. PyTorch CUDA tensors,
+            CuPy arrays) and CPU PyTorch tensors are also supported.
         :type arguments: list(numpy objects)
 
         :returns: A list of arguments that can be passed to an CUDA kernel.
@@ -164,17 +149,14 @@ class PyCudaFunctions(GPUBackend):
         """
         gpu_args = []
         for arg in arguments:
-            # if arg i is a numpy array copy to device
-            if isinstance(arg, np.ndarray):
-                alloc = drv.mem_alloc(arg.nbytes)
+            # arrays are copied to a new device allocation, so the kernel never modifies the user's data
+            device_array = get_device_array(arg)
+            if device_array is not None or is_host_array(arg):
+                nbytes = device_array[1] if device_array is not None else np.asarray(arg).nbytes
+                alloc = drv.mem_alloc(nbytes)
                 self.allocations.append(alloc)
                 gpu_args.append(alloc)
-                drv.memcpy_htod(gpu_args[-1], arg)
-            elif isinstance(arg, torch.Tensor):
-                if arg.is_cuda:
-                    gpu_args.append(Holder(arg))
-                else:
-                    gpu_args.append(Holder(arg.cuda()))
+                self.memcpy_htod(alloc, arg)
             # pycuda does not support bool, convert to uint8 instead
             elif isinstance(arg, np.bool_):
                 gpu_args.append(arg.astype(np.uint8))
@@ -189,27 +171,40 @@ class PyCudaFunctions(GPUBackend):
     def compile(self, kernel_instance):
         """Call the CUDA compiler to compile the kernel, return the device function.
 
-        :param kernel_name: The name of the kernel to be compiled, used to lookup the
-            function after compilation.
-        :type kernel_name: string
-
-        :param kernel_string: The CUDA kernel code that contains the function `kernel_name`
-        :type kernel_string: string
+        :param kernel_instance: The kernel instance, containing the name and code of the kernel
+        :type kernel_instance: kernel_tuner.core.KernelInstance
 
         :returns: An CUDA kernel that can be called directly.
         :rtype: pycuda.driver.Function
         """
+        return self.load(kernel_instance, self.build(kernel_instance))
+
+    def build(self, kernel_instance):
+        """Compile the kernel with nvcc and load it into a module, this is thread-safe.
+
+        PyCUDA links and loads the module as part of compilation, so the context of this backend
+        is made current for the calling thread while building the module.
+
+        :param kernel_instance: The kernel instance, containing the name and code of the kernel
+        :type kernel_instance: kernel_tuner.core.KernelInstance
+
+        :returns: The compiled module
+        :rtype: pycuda.compiler.SourceModule
+        """
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
 
+        no_extern_c = 'extern "C"' in kernel_string
+
+        compiler_options = ["-Xcompiler=-Wall"]
+        if self.compiler_options:
+            compiler_options += self.compiler_options
+
+        other_thread = threading.current_thread() is not threading.main_thread()
+        if other_thread:
+            self.context.push()
         try:
-            no_extern_c = 'extern "C"' in kernel_string
-
-            compiler_options = ["-Xcompiler=-Wall"]
-            if self.compiler_options:
-                compiler_options += self.compiler_options
-
-            self.current_module = self.source_mod(
+            return self.source_mod(
                 kernel_string,
                 options=compiler_options + ["-e", kernel_name],
                 arch=("compute_" + self.cc) if self.cc != "00" else None,
@@ -217,16 +212,39 @@ class PyCudaFunctions(GPUBackend):
                 cache_dir=False,
                 no_extern_c=no_extern_c,
             )
-
-            self.func = self.current_module.get_function(kernel_name)
-            if not isinstance(self.func, str):
-                self.num_regs = self.func.num_regs
-            return self.func
         except drv.CompileError as e:
             if "uses too much shared data" in e.stderr:
                 raise SkippableFailure("uses too much shared data")
             else:
                 raise e
+        except drv.LogicError as e:
+            # DynamicSourceModule compiles to PTX, the PTX is compiled to machine code when it is linked,
+            # at which point the CUDA driver rejects kernels that use too much shared memory
+            if "cuLinkComplete failed: device kernel image is invalid" in str(e):
+                raise SkippableFailure("uses too much shared data")
+            else:
+                raise e
+        finally:
+            if other_thread:
+                drv.Context.pop()
+
+    def load(self, kernel_instance, build_result):
+        """Return the device function from a module compiled by build().
+
+        :param kernel_instance: The kernel instance
+        :type kernel_instance: kernel_tuner.core.KernelInstance
+
+        :param build_result: The module returned by build()
+        :type build_result: pycuda.compiler.SourceModule
+
+        :returns: An CUDA kernel that can be called directly.
+        :rtype: pycuda.driver.Function
+        """
+        self.current_module = build_result
+        self.func = self.current_module.get_function(kernel_instance.name)
+        if not isinstance(self.func, str):
+            self.num_regs = self.func.num_regs
+        return self.func
 
     def start_event(self):
         """Records the event that marks the start of a measurement."""
@@ -368,16 +386,13 @@ class PyCudaFunctions(GPUBackend):
     def memcpy_dtoh(self, dest, src):
         """Perform a device to host memory copy.
 
-        :param dest: A numpy array in host memory to store the data
+        :param dest: A numpy array (or CPU PyTorch tensor) in host memory to store the data
         :type dest: numpy.ndarray
 
         :param src: A GPU memory allocation unit
         :type src: pycuda.driver.DeviceAllocation
         """
-        if isinstance(src, drv.DeviceAllocation):
-            drv.memcpy_dtoh(dest, src)
-        elif isinstance(src, torch.Tensor):
-            dest[:] = src
+        drv.memcpy_dtoh(np.asarray(dest), src)
 
     def memcpy_htod(self, dest, src):
         """Perform a host to device memory copy.
@@ -385,11 +400,15 @@ class PyCudaFunctions(GPUBackend):
         :param dest: A GPU memory allocation unit
         :type dest: pycuda.driver.DeviceAllocation
 
-        :param src: A numpy array in host memory to store the data
+        :param src: A numpy array (or CPU PyTorch tensor) in host memory, or a device array
+            that implements the CUDA Array Interface
         :type src: numpy.ndarray
         """
-        if isinstance(dest, drv.DeviceAllocation):
-            drv.memcpy_htod(dest, src)
+        device_array = get_device_array(src)
+        if device_array is not None:
+            drv.memcpy_dtod(dest, *device_array)
+        else:
+            drv.memcpy_htod(dest, np.asarray(src))
 
     units = {"time": "ms", "power": "s,mW", "energy": "J"}
 

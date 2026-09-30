@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import json
 import os
+import pickle
 import warnings
 import datetime
 
@@ -238,24 +239,6 @@ def test_check_restrictions():
     for r, e in zip(restrictions, expected):
         answer = check_restrictions(r, dict(zip(params.keys(), params.values())), False)
         assert answer == e
-
-
-def test_detect_language1():
-    kernel_string = "__global__ void vector_add( ... );"
-    lang = detect_language(kernel_string)
-    assert lang == "CUDA"
-
-
-def test_detect_language2():
-    kernel_string = "__kernel void vector_add( ... );"
-    lang = detect_language(kernel_string)
-    assert lang == "OpenCL"
-
-
-def test_detect_language3():
-    kernel_string = "blabla"
-    lang = detect_language(kernel_string)
-    assert lang == "C"
 
 
 @skip_if_no_pycuda
@@ -641,6 +624,38 @@ def test_normalize_verify_function():
     v = normalize_verify_function(lambda a, b, atol: True)
     assert v(1, 2, atol=3)
 
+
+
+def test_normalize_call_function_none():
+    assert normalize_call_function(None) is None
+
+@pytest.mark.parametrize(
+    "func",
+    [
+        lambda f, a, k: f(*a, **k),
+        lambda f, a, k, grid: f(*a, **k),
+        lambda f, a, k, grid, threads: f(*a, **k),
+        lambda f, a, k, grid, threads, params: f(*a, **k),
+    ],
+)
+def test_normalize_call_function(func):
+    v = normalize_call_function(func)
+
+    def kernel(x):
+        return x + 1
+
+    assert v(kernel, (1,), {}, grid=1, threads=2, params=3) == 2
+
+
+def call_with_grid(kernel_function, args, kwargs, grid):
+    return kernel_function(*args, grid)
+
+
+def test_normalize_call_function_picklable():
+    """Normalized call functions can be pickled, to send them to worker processes that compile kernels."""
+    v = pickle.loads(pickle.dumps(normalize_call_function(call_with_grid)))
+    assert v(lambda x, grid: x + grid, (1,), {}, grid=2, threads=3, params=4) == 3
+    assert normalize_call_function(v) is v
 
 class MockRunner:
     simulation_mode = False
