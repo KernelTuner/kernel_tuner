@@ -55,7 +55,7 @@ class tegra:
         for zone in Path("/sys/class/thermal").iterdir():
             with open(zone / Path("type")) as fp:
                 name = fp.read().strip()
-            if name == "GPU-therm":
+            if name in ("GPU-therm", "gpu-thermal"):
                 gpu_temp_path = str(zone)
                 break
 
@@ -118,7 +118,7 @@ class tegra:
         if len(raw_data) > 1:
             data = raw_data.astype(int)
         else:
-            data = int(raw_data)
+            data = int(raw_data[0])
         return data
 
     def _write_clock_file(self, fname, value):
@@ -168,7 +168,7 @@ class tegra:
 
     def __del__(self):
         # restore original core clocks, if changed
-        if self.has_changed_clocks:
+        if hasattr(self, "has_changed_clocks") and self.has_changed_clocks:
             self.reset_clock()
 
     def read_gpu_temp(self):
@@ -294,7 +294,7 @@ class TegraObserver(BenchmarkObserver):
 
 def get_tegra_gr_clocks(n=None, quiet=False):
     """Get tunable parameter for Tegra graphics clock, n is desired number of values."""
-    d = tegra()
+    d = tegra(power_path="", temp_path="")
     gr_clocks = d.supported_gr_clocks
 
     if n and (len(gr_clocks) > n):
