@@ -6,6 +6,7 @@ import sys
 import logging
 
 import tempfile
+import importlib.machinery
 import importlib.util
 
 from typing import Any
@@ -25,6 +26,23 @@ def kernel_module_name(temp_file_path):
     the module is part of the key under which some DSLs cache compiled kernels.
     """
     return os.path.splitext(os.path.basename(temp_file_path))[0]
+
+
+class _NoBytecodeLoader(importlib.machinery.SourceFileLoader):
+    """Source loader that does not write .pyc files, kernel modules are imported only once."""
+
+    def set_data(self, path, data, *, _mode=0o666):
+        pass
+
+
+def import_kernel_module(module_name, temp_file_path):
+    """Import the kernel module in temp_file_path under module_name and register it in sys.modules."""
+    loader = _NoBytecodeLoader(module_name, temp_file_path)
+    spec = importlib.util.spec_from_file_location(module_name, temp_file_path, loader=loader)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 class KernelSourceFn(KernelSource):
@@ -164,11 +182,7 @@ class KernelSourceFn(KernelSource):
             temp_file_path = temp_file.name
         module_name = kernel_module_name(temp_file_path)
 
-        # Register the module in sys.modules before executing it
-        spec = importlib.util.spec_from_file_location(module_name, temp_file_path)
-        temp_module = importlib.util.module_from_spec(spec)       
-        sys.modules[module_name] = temp_module
-        spec.loader.exec_module(temp_module)
+        temp_module = import_kernel_module(module_name, temp_file_path)
         new_fn = getattr(temp_module, self.kernel_name)
         
         return new_fn, temp_file_path

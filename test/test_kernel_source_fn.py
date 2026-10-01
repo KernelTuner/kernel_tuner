@@ -1,4 +1,5 @@
 import os
+import tempfile
 from pathlib import Path
 import pytest
 import inspect
@@ -11,6 +12,14 @@ from kernel_tuner.kernel_sources.kernel_source_fn import KernelSourceFn
 from kernel_tuner.kernel_sources.kernel_source_str import KernelSourceStr
 
 KS_FILE = Path(__file__).resolve()
+
+
+@pytest.fixture(autouse=True)
+def temp_kernel_dir(tmp_path, monkeypatch):
+    """Write the temporary kernel modules of a test to its tmp_path, instead of leaving them in /tmp."""
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    return tmp_path
+
 # Helper functions --------------------------------------------
 
 def normalize_ast(src: str):
@@ -169,4 +178,9 @@ def test_dependencies():
     assert res == 128
 
 
+def test_no_bytecode(temp_kernel_dir):
+    ks = KernelSourceFn("mock_kernel", KS_FILE, "generic_python", call_function=call_mock)
+    _, temp_path = ks.apply_params_to_source_fn({"mock_param": 128})
 
+    assert Path(temp_path).parent == temp_kernel_dir
+    assert not (temp_kernel_dir / "__pycache__").exists()

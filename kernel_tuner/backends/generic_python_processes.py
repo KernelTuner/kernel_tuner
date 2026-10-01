@@ -15,7 +15,6 @@ the worker, the main process compiles the kernel instead.
 """
 
 import glob
-import importlib.util
 import inspect
 import itertools
 import logging
@@ -32,7 +31,7 @@ from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from contextlib import contextmanager
 
-from kernel_tuner.kernel_sources.kernel_source_fn import kernel_module_name
+from kernel_tuner.kernel_sources.kernel_source_fn import import_kernel_module, kernel_module_name
 
 # DSLs whose kernels are compiled in worker processes when compiling in parallel
 PROCESS_BUILD_DSLS = {"numba", "warp", "cutile", "cute"}
@@ -204,10 +203,7 @@ def _build_in_worker(job):
         for index, arg in job.args.items():
             args[index] = _to_device(arg)
 
-        spec = importlib.util.spec_from_file_location(job.module_name, job.module_path)
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[job.module_name] = module
-        spec.loader.exec_module(module)
+        module = import_kernel_module(job.module_name, job.module_path)
         kernel_function = instantiate_kernel(getattr(module, job.kernel_name))
 
         with dsl_compile_hooks(job.dsl, kernel_function, job.module_name, job.export_dir, export=True):

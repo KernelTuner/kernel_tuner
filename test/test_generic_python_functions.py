@@ -1,5 +1,5 @@
 from .context import skip_if_no_torch
-from .test_kernel_source_fn import call_mock
+from .test_kernel_source_fn import call_mock, temp_kernel_dir  # noqa: F401, temp_kernel_dir is an autouse fixture
 from kernel_tuner.core import DeviceInterface, KernelInstance
 from kernel_tuner.kernel_sources.kernel_source import KernelSource
 import numpy as np
