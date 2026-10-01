@@ -68,7 +68,15 @@ def tune():
 
     # initialize the rocRAND state once from a separate kernel, using a fixed block size
     setup_params = {"block_size_x": 256, "unroll_draws": 1}
-    state = run_kernel("setup_kernel", kernel_string, size, [state, seed, n], setup_params, lang="HIP", compiler_options=compiler_options)[0]
+    state = run_kernel(
+        "setup_kernel",
+        kernel_string,
+        size,
+        [state, seed, n],
+        setup_params,
+        lang="HIP",
+        compiler_options=compiler_options,
+    )[0]
 
     output = numpy.zeros(size).astype(numpy.float32)
     args = [output, state, n]
@@ -79,7 +87,9 @@ def tune():
 
     # note: each benchmarked launch of generate_random advances the rocRAND state
     # further along its sequence, since the kernel writes the updated state back
-    results, env = tune_kernel("generate_random", kernel_string, size, args, tune_params, lang="HIP", compiler_options=compiler_options)
+    results, env = tune_kernel(
+        "generate_random", kernel_string, size, args, tune_params, lang="HIP", compiler_options=compiler_options
+    )
 
     return results
 
