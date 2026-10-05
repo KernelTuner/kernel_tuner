@@ -3,6 +3,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
+- Require Python 3.12.2 or newer, Python 3.10 and 3.11 are no longer supported
 - Fix `np.shuffle` crash and wrong return type in `Searchspace` distributed random and LHS samplers
 - Add support for tuning kernels written in Python DSLs, such as Triton, Numba, Warp, Taichi, Tilus, TileLang, CuTe, cuTile, and CuPy (cupyx.jit), using `lang="generic_python"` and a `call_function`
 - Detect kernels in Python files as `lang="generic_python"`, and detect the DSL of Python kernels to select a default `call_function` when none is given
