@@ -536,8 +536,9 @@ _tuning_options = Options(
                 benchmarking them one after the other. If set to an integer, this will be the number of threads,
                 otherwise the number of CPU cores is used. Kernels are compiled in parallel when the search
                 strategy evaluates multiple configurations at once, such as brute_force, random_sample, and
-                population-based strategies. Numba, Warp, cuTile, and CuTe kernels are compiled in worker
-                processes instead of threads. Cannot be combined with `parallel` or `simulation_mode`.""",
+                population-based strategies. Numba, Warp, cuTile, CuTe, and Tilus kernels are compiled in
+                worker processes instead of threads, Taichi kernels one at a time. Cannot be combined with
+                `parallel` or `simulation_mode`.""",
                 "int|bool",
             ),
         ),

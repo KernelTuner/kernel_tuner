@@ -1,12 +1,14 @@
 """Compile Python DSL kernels in worker processes, for DSLs that cannot compile kernels in parallel threads.
 
-Numba, Warp, and cuTile hold a global lock while compiling, and CuTe kernels can only be launched from the
-thread that compiled them. However, these DSLs can store compiled kernels on disk. A worker process imports
-the same kernel module file as the main process, and compiles the kernel by running it once, after which the
-main process loads the compiled kernel from disk instead of compiling it:
+Numba, Warp, and cuTile hold a global lock while compiling, CuTe kernels can only be launched from the
+thread that compiled them, and Tilus keeps the state of the kernel it is compiling in global variables.
+However, these DSLs can store compiled kernels on disk. A worker process imports the same kernel module file
+as the main process, and compiles the kernel by running it once, after which the main process loads the
+compiled kernel from disk instead of compiling it:
 
 - Numba: caching is enabled on the kernel, the cache files are removed once the main process loaded them.
-- Warp and cuTile: their kernel caches are enabled by default.
+  Numba cannot cache some kernels, such as kernels that use float16, these are compiled by the main process.
+- Warp, cuTile, and Tilus: their kernel caches are enabled by default.
 - CuTe: ``cute.compile`` does not use the file cache of CuTe, so the compiled kernel is exported with
   ``export_to_c`` and loaded with ``cutlass.runtime.load_module``.
 
@@ -34,7 +36,7 @@ from contextlib import contextmanager
 from kernel_tuner.kernel_sources.kernel_source_fn import import_kernel_module, kernel_module_name
 
 # DSLs whose kernels are compiled in worker processes when compiling in parallel
-PROCESS_BUILD_DSLS = {"numba", "warp", "cutile", "cute"}
+PROCESS_BUILD_DSLS = {"numba", "warp", "cutile", "cute", "tilus"}
 
 BuildJob = namedtuple(
     "BuildJob",
@@ -50,17 +52,42 @@ def dsl_compile_hooks(dsl, kernel_function, module_name, export_dir, export):
     :param export: True in a worker process, to store the compiled kernel on disk. False in the main process,
         to load the kernel stored by the worker process.
     :type export: bool
+
+    :returns: A list to which the errors are added that prevented storing the compiled kernel on disk.
+    :rtype: list(Exception)
     """
+    not_stored = []
     if dsl == "numba" and hasattr(kernel_function, "enable_caching"):
         kernel_function.enable_caching()
-        yield
-        if not export:
+        if export:
+            _catch_numba_cache_errors(kernel_function, not_stored)
+        yield not_stored
+        # in a worker, Numba may have written the index of its cache before it failed to store the kernel
+        if not export or not_stored:
             _remove_numba_cache_files(kernel_function)
     elif dsl == "cute":
         with _cute_export_hook(module_name, export_dir, export):
-            yield
+            yield not_stored
     else:
-        yield
+        yield not_stored
+
+
+def _catch_numba_cache_errors(kernel_function, not_stored):
+    """Let the kernel compile when Numba cannot store it in its cache, and add the error to not_stored.
+
+    Numba cannot cache some kernels, such as kernels that are linked with other files, which includes kernels
+    that use float16.
+    """
+    cache = kernel_function._cache
+    save_overload = cache.save_overload
+
+    def save_overload_or_record_error(sig, data):
+        try:
+            save_overload(sig, data)
+        except Exception as e:
+            not_stored.append(e)
+
+    cache.save_overload = save_overload_or_record_error
 
 
 def _remove_numba_cache_files(kernel_function):
@@ -141,8 +168,10 @@ def _to_device(arg):
 def _picklable_exception_chain(e):
     """Return the exception and the exceptions it was raised from, as they can be sent to the main process.
 
-    The chain is followed like Python does when printing a traceback. Exceptions that cannot be pickled are
-    replaced by a RuntimeError with the name of the exception type and its message.
+    The chain is followed like Python does when printing a traceback. Exceptions that cannot be pickled, or
+    that lose part of their message when pickled, are replaced by a RuntimeError with the name of the exception
+    type and its message. For example, nvJitLinkError only pickles its status, not the error log of the linker
+    that its message includes, which is needed to classify the error.
     """
     chain = []
     while e is not None and all(e is not seen for seen in chain):
@@ -151,10 +180,12 @@ def _picklable_exception_chain(e):
     picklable = []
     for exc in chain:
         try:
-            pickle.loads(pickle.dumps(exc))
-            picklable.append(exc)
+            if str(pickle.loads(pickle.dumps(exc))) == str(exc):
+                picklable.append(exc)
+                continue
         except Exception:
-            picklable.append(RuntimeError(f"{type(exc).__name__}: {exc}"))
+            pass
+        picklable.append(RuntimeError(f"{type(exc).__name__}: {exc}"))
     return picklable
 
 
@@ -186,10 +217,15 @@ def _cuda_is_healthy():
         return False
 
 
+class KernelNotStored(str):
+    """Returned by a worker process that compiled a kernel that the DSL could not store on disk, with the reason."""
+
+
 def _build_in_worker(job):
     """Compile a kernel in a worker process by running it once.
 
-    :returns: None if the kernel was compiled, or the exception chain of the error raised while compiling.
+    :returns: None if the kernel was compiled, KernelNotStored if the kernel was compiled but could not be stored
+        on disk, or the exception chain of the error raised while compiling.
     """
     import torch
 
@@ -206,10 +242,12 @@ def _build_in_worker(job):
         module = import_kernel_module(job.module_name, job.module_path)
         kernel_function = instantiate_kernel(getattr(module, job.kernel_name))
 
-        with dsl_compile_hooks(job.dsl, kernel_function, job.module_name, job.export_dir, export=True):
+        with dsl_compile_hooks(job.dsl, kernel_function, job.module_name, job.export_dir, export=True) as not_stored:
             torch.cuda.synchronize()
             job.call_function(kernel_function, args, job.kwargs, job.grid, job.threads, job.params)
             torch.cuda.synchronize()
+        if not_stored:
+            return KernelNotStored(f"{type(not_stored[0]).__name__}: {not_stored[0]}")
         return None
     except Exception as e:
         _worker["broken"] = not _cuda_is_healthy()
@@ -284,7 +322,7 @@ class BuildProcessPool:
 
         executor = self._get_executor()
         try:
-            error_chain = executor.submit(_build_in_worker, job).result()
+            result = executor.submit(_build_in_worker, job).result()
         except BrokenProcessPool as e:
             self._handle_broken_pool(executor, e)
             return False
@@ -294,8 +332,18 @@ class BuildProcessPool:
             self.disabled = True
             return False
 
-        if error_chain is not None:
-            _raise_exception_chain(error_chain)
+        if isinstance(result, KernelNotStored):
+            # the other configurations of the kernel can most likely not be stored either
+            with self._lock:
+                if not self.disabled:
+                    logging.warning(
+                        "Could not store kernels compiled by worker processes, compiling in this process instead: "
+                        + result
+                    )
+                self.disabled = True
+            return False
+        if result is not None:
+            _raise_exception_chain(result)
         self.any_succeeded = True
         return True
 

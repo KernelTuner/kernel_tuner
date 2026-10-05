@@ -181,16 +181,19 @@ Parallel compilation is supported by the CUDA backends (CUDA-Python, CuPy, and P
 for all supported DSLs. Other backends compile the kernels one at a time.
 ``parallel_compile`` cannot be combined with ``parallel`` or ``simulation_mode``.
 
-Numba, Warp, cuTile, and CuTe cannot compile kernels in parallel threads: the first three compile one kernel at a
-time because of a global compiler lock, and CuTe kernels can only be launched from the thread that compiled them.
+Numba, Warp, cuTile, CuTe, and Tilus cannot compile kernels in parallel threads: Numba, Warp, and cuTile compile
+one kernel at a time because of a global compiler lock, CuTe kernels can only be launched from the thread that
+compiled them, and Tilus keeps the state of the kernel it is compiling in global variables.
 These kernels are compiled in worker processes instead, at most one per thread, and at most 8 when
 ``parallel_compile`` is set to ``True``. A worker process compiles the
 kernel by running it once, after which Kernel Tuner loads the compiled kernel from disk. Numba and CuTe kernels are
-stored in a temporary cache that Kernel Tuner removes, Warp and cuTile kernels are stored in the kernel caches of
-these DSLs. Note that:
+stored in a temporary cache that Kernel Tuner removes, Warp, cuTile, and Tilus kernels are stored in the kernel
+caches of these DSLs. Note that:
 
 * Starting the worker processes takes several seconds, so compiling in worker processes only pays off when
   compiling a kernel takes long, or when many kernels are compiled.
+* Numba cannot store some kernels in its cache, such as kernels that use float16. Kernel Tuner then prints a
+  warning and compiles these kernels one at a time.
 * Each worker process creates its own CUDA context on the GPU and a copy of the kernel arguments, which uses GPU
   memory. Use a smaller number for ``parallel_compile`` if the GPU runs out of memory.
 * The worker processes are started with the ``spawn`` method of ``multiprocessing``, which imports the script that
@@ -198,3 +201,6 @@ these DSLs. Note that:
   ``if __name__ == "__main__":``, as the examples do. A ``call_function`` must be defined at the top level of a
   module, so that it can be sent to the worker processes. When kernels cannot be compiled in worker processes,
   Kernel Tuner prints a warning and compiles them one at a time.
+
+Taichi kernels cannot be compiled in parallel threads either. Taichi compiles kernels quickly, so these are
+compiled one at a time in the main thread.

@@ -23,8 +23,12 @@ except ImportError:
 # DSLs whose kernels are not compiled in parallel threads. Numba, Warp, and cuTile compile one kernel at a
 # time because of a global compiler lock, so parallel threads are not faster (and even slower for Warp).
 # CuTe keeps the state of compiled kernels per thread, so these cannot be launched from another thread.
+# Tilus keeps the state of the kernel it is compiling in global variables, so it can compile one kernel at a time.
 # When build_processes is set, these are compiled in worker processes instead, see generic_python_processes.
-SERIAL_COMPILE_DSLS = PROCESS_BUILD_DSLS
+# Taichi keeps global compiler state that does not support compiling in threads, and has to set up its runtime
+# in the main thread. Taichi compiles quickly, so its kernels are always compiled by load() in the main thread.
+MAIN_THREAD_DSLS = {"taichi"}
+SERIAL_COMPILE_DSLS = PROCESS_BUILD_DSLS | MAIN_THREAD_DSLS
 
 # Returned by build() for kernels that were compiled by a worker process, load() loads these from disk
 PROCESS_BUILT = "process_built"
@@ -155,7 +159,7 @@ class GenericPythonFunctions(GPUBackend):
             or None if the kernel is compiled by load().
         """
         if kernel_instance.kernel_source.dsl in SERIAL_COMPILE_DSLS:
-            if not self.build_processes:
+            if not self.build_processes or kernel_instance.kernel_source.dsl in MAIN_THREAD_DSLS:
                 return None
             kernel_source = kernel_instance.kernel_source
             kwargs = self._kernel_kwargs(kernel_source.signature, kernel_instance.params)

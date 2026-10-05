@@ -25,8 +25,9 @@ class ParallelCompileRunner(SequentialRunner):
     the lock. Backends that do not implement DeviceInterface.build_kernel compile the kernels when they are
     loaded, in which case the configurations are compiled one after the other.
 
-    Python DSLs that cannot compile kernels in parallel threads (Numba, Warp, cuTile, and CuTe) compile the
-    kernels in worker processes instead, from which the main process loads the compiled kernels.
+    Python DSLs that cannot compile kernels in parallel threads (Numba, Warp, cuTile, CuTe, and Tilus) compile
+    the kernels in worker processes instead, from which the main process loads the compiled kernels. Taichi kernels
+    are compiled one at a time in the main thread.
     """
 
     def __init__(self, kernel_source, kernel_options, device_options, iterations, observers, num_workers=None):

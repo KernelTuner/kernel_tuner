@@ -118,6 +118,25 @@ def test_generic_python_process_builds_fallback(caplog):
     assert "Could not compile kernels in worker processes" in caplog.text
 
 
+@skip_if_no_torch
+@skip_if_no_numba_cuda
+def test_generic_python_process_builds_not_stored(caplog):
+    """Kernels are compiled in the main process when the DSL cannot store the kernels compiled by workers."""
+    from .generic_python_kernels import numba_vector_add_fp16 as kernel
+
+    n = 4096
+    a = np.random.randn(n).astype(np.float16)
+    b = np.random.randn(n).astype(np.float16)
+    c = np.zeros_like(a)
+
+    results, _ = tune_kernel(
+        kernel.kernel_name, kernel.__file__, n, [c, a, b, n], {"block_size_x": [128, 256, 512]},
+        answer=[a + b, None, None, None], atol=1e-2, parallel_compile=2,
+    )
+    assert all(isinstance(result.get("time"), float) for result in results)
+    assert "Could not store kernels compiled by worker processes" in caplog.text
+
+
 def test_worker_exception_chain():
     """Errors raised in worker processes are raised in the main process with the exceptions they came from."""
 
@@ -135,12 +154,31 @@ def test_worker_exception_chain():
         _raise_exception_chain(chain)
     assert GenericPythonFunctions.classify_compile_exception(None, raised.value) == "resource_error"
 
+    # exceptions that lose their message when pickled, like nvJitLinkError, are replaced to keep the message
+    error = LosesMessage(4, "\nnvJitLink error log: ptxas error   : Entry function uses too much shared data")
+    chain = pickle.loads(pickle.dumps(_picklable_exception_chain(wrapped(error))))
+    assert "too much shared data" in str(chain[1])
+    with pytest.raises(RuntimeError) as raised:
+        _raise_exception_chain(chain)
+    assert GenericPythonFunctions.classify_compile_exception(None, raised.value) == "resource_error"
+
     # exception types are kept when possible, they are used to classify the error
     chain = pickle.loads(pickle.dumps(_picklable_exception_chain(wrapped(NameError("name 'x' is not defined")))))
     with pytest.raises(RuntimeError) as raised:
         _raise_exception_chain(chain)
     assert isinstance(raised.value.__cause__, NameError)
     assert GenericPythonFunctions.classify_compile_exception(None, raised.value) == "user_error"
+
+
+class LosesMessage(Exception):
+    """Like nvJitLinkError, only the status is pickled, not the error log that is part of the message."""
+
+    def __init__(self, status, log=""):
+        super().__init__(f"ERROR_PTX_COMPILE ({status}){log}")
+        self.status = status
+
+    def __reduce__(self):
+        return (type(self), (self.status,))
 
 
 def wrapped(error, wrapper=None):
