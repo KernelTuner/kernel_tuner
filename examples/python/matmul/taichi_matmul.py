@@ -23,7 +23,7 @@ def run(M, N, K):
     A = np.random.rand(M, K).astype(np.float16)
     B = np.random.rand(K, N).astype(np.float16)
     C = np.zeros((M, N), dtype=np.float16)
-    C_ref = A @ B
+    C_ref = (A.astype(np.float32) @ B.astype(np.float32)).astype(np.float16)
 
     matmul(A, B, C)
 
@@ -40,7 +40,7 @@ def tune(M, N, K):
     args = [A, B, C]
     tune_params = {"BLOCK_DIM": [2**i for i in range(5, 11)]}
 
-    answer = [None, None, A @ B]
+    answer = [None, None, (A.astype(np.float32) @ B.astype(np.float32)).astype(np.float16)]
 
     results, env = tune_kernel(
         kernel_name="matmul",
@@ -54,8 +54,8 @@ def tune(M, N, K):
     )
 
 if __name__ == "__main__":
-    run(1024, 1024, 1024)
-    tune(1024, 1024, 1024)
+    run(4096, 4096, 4096)
+    tune(4096, 4096, 4096)
 
 
     

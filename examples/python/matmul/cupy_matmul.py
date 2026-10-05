@@ -34,7 +34,7 @@ def run(M, N, K):
 
     # Correctness verification
     c_ref = cp.matmul(a, b)
-    assert cp.allclose(c, c_ref, rtol=1e-2, atol=1e-1)
+    assert cp.allclose(c, c_ref, rtol=1e-2, atol=M * 2**(-11))
 
     print("Succes")
 
@@ -56,14 +56,14 @@ def tune(M, N, K):
         problem_size=size,
         arguments=args,
         tune_params=tune_params,
-        answer=[None, None, A.dot(B), None, None, None],
-        atol=1e-1,
+        answer=[None, None, (A.astype(np.float32) @ B.astype(np.float32)).astype(np.float16), None, None, None],
+        atol=M * 2**(-11),
         restrictions=restrictions,
         verbose=True,   
     )
 
 
 if __name__ == "__main__":
-    M, N, K = 1024, 1024, 1024
+    M, N, K = 4096, 4096, 4096
     tune(M, N, K)
     

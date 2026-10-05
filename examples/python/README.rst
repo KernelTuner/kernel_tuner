@@ -85,10 +85,8 @@ CuPy
 Numba
 ~~~~~
 [`numba_matmul.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/numba_matmul.py>`__]
- - tune a basic kernel and a kernel that uses shared memory tiling and register blocking
- - tell Kernel Tuner to compute the grid dimensions for 2D thread blocks with tiling
- - use restrictions that relate multiple tunable parameters to each other
- - use Bayesian Optimization to search a large search space
+ - tune a basic kernel with 2-dimensional thread blocks
+ - use the restrictions option to limit the search to valid thread block sizes
 
 Taichi
 ~~~~~~
@@ -104,14 +102,14 @@ Warp
 Triton
 ~~~~~~
 [`triton_matmul.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/triton_matmul.py>`__]
- - tune a basic kernel and the optimized kernel from the Triton tutorials
+ - tune a basic tiled kernel that uses ``tl.dot``
  - tune the Triton compiler options ``num_warps`` and ``num_stages``
  - use Bayesian Optimization to search a large search space
 
 Tilus
 ~~~~~
 [`tilus_matmul.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/tilus_matmul.py>`__]
- - tune the tile sizes and number of warps of class-based kernels
+ - tune the tile sizes and number of warps of a class-based kernel
  - use Bayesian Optimization to search a large search space
 
 TileLang
@@ -123,14 +121,11 @@ TileLang
 CuTe
 ~~~~
 [`cute_matmul.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/cute_matmul.py>`__]
- - tune a naive kernel and the Ampere tensor core GEMM from the CuTe DSL examples
- - tune a class-based kernel, where the tunable parameters are attributes of the class
- - use restrictions to exclude configurations that exceed the shared memory or that the kernel does not support
- - pass a user-defined call function that creates the tensor layouts required by the kernel
+ - tune a naive kernel, where the thread block size is set in the ``@cute.jit`` function that launches it
+ - use the restrictions option to limit the search to valid thread block sizes
 
 cuTile
 ~~~~~~
 [`cutile_matmul.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/cutile_matmul.py>`__]
  - tune the tile sizes of a tile-based kernel that uses tensor cores
- - tune the size of groups of tiles to improve L2 cache reuse, using a 1-dimensional grid
  - tell Kernel Tuner to compute a grid with one block per tile of the output matrix
