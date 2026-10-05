@@ -8,7 +8,7 @@ import kernel_tuner
 from kernel_tuner.util import InvalidConfig
 from kernel_tuner.interface import strategy_map
 
-from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch, skip_if_no_pyatf
+from ..context import skip_if_no_bayesopt_botorch, skip_if_no_bayesopt_gpytorch, skip_if_no_pyatf, skip_if_no_skopt
 
 
 cache_filename =  Path(__file__).parent / "test_cache_file.json"
@@ -51,6 +51,8 @@ for s in strategy_map.keys():
         strategies.append(pytest.param(s, marks=skip_if_no_bayesopt_botorch))
     elif 'pyatf' in s.lower():
         strategies.append(pytest.param(s, marks=skip_if_no_pyatf))
+    elif s.lower() == 'skopt':
+        strategies.append(pytest.param(s, marks=skip_if_no_skopt))
     else:
         strategies.append(s)
 

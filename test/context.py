@@ -117,6 +117,13 @@ except ImportError:
     pyatf_present = False
 
 try:
+    import skopt
+
+    skopt_present = True
+except ImportError:
+    skopt_present = False
+
+try:
     import pymoo
     pymoo_present = True
 except ImportError:
@@ -152,6 +159,7 @@ skip_if_no_bayesopt_botorch = pytest.mark.skipif(
 )
 skip_if_no_hip = pytest.mark.skipif(not hip_present, reason="No HIP Python found")
 skip_if_no_pyatf = pytest.mark.skipif(not pyatf_present, reason="PyATF not installed")
+skip_if_no_skopt = pytest.mark.skipif(not skopt_present, reason="scikit-optimize not installed")
 skip_if_no_methodology = pytest.mark.skipif(not methodology_present, reason="Autotuning Methodology not found")
 skip_if_no_pymoo = pytest.mark.skipif(not pymoo_present, reason="No PyMOO found")
 skip_if_no_torch = pytest.mark.skipif(not gen_python_torch_present, reason="Torch not installed or no CUDA device")
