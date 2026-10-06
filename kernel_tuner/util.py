@@ -116,6 +116,12 @@ class SkippableFailure(Exception):
     """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected."""
 
 
+# Part of the error message of ptxas for kernels that use too much shared memory. Backends also raise
+# SkippableFailure with this message when a kernel uses too much shared memory, so that these configurations
+# are recognized as skippable by DeviceInterface.compile_kernel.
+SHARED_MEMORY_ERROR = "uses too much shared data"
+
+
 class StopCriterionReached(Exception):
     """Exception thrown when a stop criterion has been reached."""
 

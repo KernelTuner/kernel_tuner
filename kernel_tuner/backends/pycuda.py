@@ -10,7 +10,7 @@ import numpy as np
 from kernel_tuner.backends.backend import GPUBackend, get_device_array, is_host_array
 from kernel_tuner.observers.nvml import nvml  # noqa F401
 from kernel_tuner.observers.pycuda import PyCudaRuntimeObserver
-from kernel_tuner.util import SkippableFailure
+from kernel_tuner.util import SHARED_MEMORY_ERROR, SkippableFailure
 
 # embedded in try block to be able to generate documentation
 # and run tests without pycuda installed
@@ -213,15 +213,15 @@ class PyCudaFunctions(GPUBackend):
                 no_extern_c=no_extern_c,
             )
         except drv.CompileError as e:
-            if "uses too much shared data" in e.stderr:
-                raise SkippableFailure("uses too much shared data")
+            if SHARED_MEMORY_ERROR in e.stderr:
+                raise SkippableFailure(SHARED_MEMORY_ERROR)
             else:
                 raise e
         except drv.LogicError as e:
             # DynamicSourceModule compiles to PTX, the PTX is compiled to machine code when it is linked,
             # at which point the CUDA driver rejects kernels that use too much shared memory
             if "cuLinkComplete failed: device kernel image is invalid" in str(e):
-                raise SkippableFailure("uses too much shared data")
+                raise SkippableFailure(SHARED_MEMORY_ERROR)
             else:
                 raise e
         finally:

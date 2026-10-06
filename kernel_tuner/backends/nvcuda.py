@@ -6,7 +6,7 @@ import os
 
 from kernel_tuner.backends.backend import GPUBackend, get_device_array, is_host_array
 from kernel_tuner.observers.nvcuda import CudaRuntimeObserver
-from kernel_tuner.util import SkippableFailure
+from kernel_tuner.util import SHARED_MEMORY_ERROR, SkippableFailure
 from kernel_tuner.utils.nvcuda import cuda_error_check, to_valid_nvrtc_gpu_arch_cc, find_cuda_home, _check
 
 def preload_python_nvrtc():
@@ -349,7 +349,7 @@ class CudaFunctions(GPUBackend):
         # Load the module
         err, self.current_module = driver.cuModuleLoadData(np.char.array(ptx))
         if err == driver.CUresult.CUDA_ERROR_INVALID_PTX:
-            raise SkippableFailure("uses too much shared data")
+            raise SkippableFailure(SHARED_MEMORY_ERROR)
         else:
             cuda_error_check(err)
 

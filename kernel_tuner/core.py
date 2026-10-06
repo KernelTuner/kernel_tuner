@@ -636,7 +636,7 @@ class DeviceInterface(object):
                 reason = f"\n{e}"
             else:
                 shared_mem_error_messages = [
-                    "uses too much shared data",
+                    util.SHARED_MEMORY_ERROR,
                     "local memory limit exceeded",
                     r"local memory \(\d+\) exceeds limit \(\d+\)",
                 ]
