@@ -16,7 +16,26 @@ from kernel_tuner.kernel_sources.kernel_source import KernelSource
 from kernel_tuner.kernel_sources.model.prepared_kernel_source_data import PreparedKernelSourceData
 from kernel_tuner.util import get_kernel_ast, get_arg_names, normalize_call_function
 from kernel_tuner.utils.call_functions import DEFAULT_CALL_FUNCTIONS, get_default_call_function
-from kernel_tuner.utils.language_detection import detect_python_dsl
+from kernel_tuner.utils.language_detection import _import_aliases, _qualified_name, detect_python_dsl
+
+# Decorators of Kernel Tuner itself, these are not copied into the module created for each configuration
+KERNEL_TUNER_DECORATORS = {"kernel_tuner.autotune", "kernel_tuner.decorator.autotune"}
+
+
+def remove_kernel_tuner_decorators(node, source_file):
+    """Remove the decorators of Kernel Tuner from a kernel function or class node.
+
+    The module created for each configuration contains a copy of the kernel with its decorators. The decorator
+    that autotunes the kernel must not be copied, as it would tune each copy again, and its arguments refer to
+    names that are not copied into that module.
+    """
+    with open(source_file, "r") as f:
+        aliases = _import_aliases(ast.parse(f.read(), filename=source_file))
+    node.decorator_list = [
+        decorator
+        for decorator in node.decorator_list
+        if _qualified_name(decorator, aliases) not in KERNEL_TUNER_DECORATORS
+    ]
 
 
 def kernel_module_name(temp_file_path):
@@ -88,8 +107,9 @@ class KernelSourceFn(KernelSource):
             self.source_tree = source_ast[0]
             self.signature = get_arg_names(source_ast[1])
         else:
-            self.source_tree = source_ast 
+            self.source_tree = source_ast
             self.signature = get_arg_names(source_ast)
+        remove_kernel_tuner_decorators(self.source_tree, kernel_source)
 
         self.kernel_fn = self.source_tree # This is where we will store the transformed source.
         self.import_nodes = self._find_import_nodes(kernel_source)

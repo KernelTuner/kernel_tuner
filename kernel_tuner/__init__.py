@@ -1,6 +1,7 @@
 from importlib.metadata import version
 
 from kernel_tuner.interface import run_kernel, tune_kernel, tune_kernel_T1, tune_cache
+from kernel_tuner.decorator import autotune
 
 __version__ = version(__package__)
 
@@ -12,6 +13,7 @@ __all__ = [
     "tune_cache",
     "tune_kernel_T1",
     "__version__",
+    "autotune"
 ]
 
 

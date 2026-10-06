@@ -129,3 +129,51 @@ cuTile
 [`cutile_matmul.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/cutile_matmul.py>`__]
  - tune the tile sizes of a tile-based kernel that uses tensor cores
  - tell Kernel Tuner to compute a grid with one block per tile of the output matrix
+
+Autotuning while the application runs
+-------------------------------------
+
+These examples use the ``kernel_tuner.autotune`` decorator instead of ``tune_kernel``, which works like
+``triton.autotune``: the kernel is launched as usual, and tuned when it is launched for a new tuning key.
+
+Triton vector add
+~~~~~~~~~~~~~~~~~
+[`triton_vec_add_autotune.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/triton_vec_add_autotune.py>`__]
+ - add the decorator on top of ``@triton.jit`` and launch the kernel with a grid function, as in Triton
+ - tune again for every new vector size, the tuning key
+ - replace ``triton.autotune`` by passing its list of ``triton.Config`` objects as ``configs``
+
+Numba vector add
+~~~~~~~~~~~~~~~~
+[`numba_vec_add_autotune.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/numba_vec_add_autotune.py>`__]
+ - tune the thread block size of a kernel that is launched with ``kernel[grid, block]``
+ - let the decorator compute the launch dimensions with ``grid`` and ``threads`` functions
+ - pass Numba device arrays and verify the output of every configuration with a ``reference`` function
+
+Warp vector add
+~~~~~~~~~~~~~~~
+[`warp_vec_add_autotune.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/warp_vec_add_autotune.py>`__]
+ - launch the kernel with ``kernel.launch(dim, inputs=[...])``, like ``wp.launch``
+ - tune a constant in the kernel together with the thread block size ``block_dim``
+ - compute the launch dimensions from the kernel arguments and the tunable parameters
+
+cuTile vector add
+~~~~~~~~~~~~~~~~~
+[`cutile_vec_add_autotune.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/cutile_vec_add_autotune.py>`__]
+ - launch the kernel with ``kernel.launch(stream, grid, args)``, like ``ct.launch``
+ - use a function of the kernel arguments as the tuning key
+ - store the tuning results in a wisdom file, so that the next run does not tune again
+
+TileLang vector add
+~~~~~~~~~~~~~~~~~~~
+[`tilelang_vec_add_autotune.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/tilelang_vec_add_autotune.py>`__]
+ - add the decorator on top of a kernel factory decorated with ``@tilelang.jit``
+ - tune an argument of the factory, the other arguments of the factory are part of the tuning key
+
+Triton matrix multiplication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[`triton_matmul_autotune.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/triton_matmul_autotune.py>`__]
+ - tune a kernel with the ``kernel_tuner.autotune`` decorator instead of ``tune_kernel``, like ``triton.autotune``
+ - tune again when the kernel is launched with a new matrix size, the tuning key
+ - verify the outputs of every configuration against a reference function
+ - store the tuning results in wisdom files, so that the next run does not tune again

@@ -169,3 +169,58 @@ Configurations that cannot be compiled or launched because they use too many res
 to compile within the time limit, or use tile sizes that the DSL does not support, are skipped. Other
 errors, such as errors in the kernel code, stop the tuning process. Constant, shared, and texture memory
 arguments are not supported by the Python backend.
+
+
+Autotuning kernels with a decorator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Instead of calling ``tune_kernel``, a Python kernel can also be tuned inside an application with the
+:func:`kernel_tuner.autotune` decorator, which works like ``triton.autotune``. The decorator is placed on
+top of the decorator of the DSL, and the kernel is launched as usual. When the kernel is launched with a new
+*tuning key*, Kernel Tuner tunes the kernel on copies of the arguments, after which the best configuration is
+launched. Later launches with the same key launch the best configuration directly:
+
+.. code-block:: python
+
+    from kernel_tuner import autotune
+
+    @autotune(tune_params={"block_size_x": [128, 256, 512, 1024], "num_warps": [2, 4, 8]}, key=["n"])
+    @triton.jit
+    def vector_add(c_ptr, a_ptr, b_ptr, n, block_size_x: tl.constexpr):
+        ...
+
+    vector_add[lambda meta: (triton.cdiv(n, meta["block_size_x"]),)](c, a, b, n)
+
+The tuning key consists of the values of the arguments named in ``key`` and the data types of all array
+arguments, ``key`` can also be a function of the kernel arguments. Instead of ``tune_params``, you can pass a list
+of configurations with ``configs``, as dictionaries or ``triton.Config`` objects, and only these configurations
+are benchmarked. The search strategy is ``brute_force`` by default, other options of ``tune_kernel``, such as
+``strategy``, ``restrictions``, ``iterations``, and ``parallel_compile``, are passed on to ``tune_kernel``.
+
+The kernel is launched with the launch syntax of its DSL. The grid and thread block dimensions can be functions of
+a dictionary with the kernel arguments by name and the tunable parameters, as in Triton. In DSLs where the thread
+block size is part of the launch, such as Numba and CuPy, pass ``grid`` and ``threads`` functions to the decorator
+instead, these replace the launch dimensions of the launch.
+
+.. csv-table:: Launching autotuned kernels
+  :header: DSL, Launch
+  :widths: auto
+
+  Triton,             "``kernel[grid](*args)``"
+  Numba,              "``kernel[grid, block](*args)``"
+  CuPy,               "``kernel[grid, block](*args)`` or ``kernel(grid, block, args)``"
+  Warp,               "``kernel[dim](*args)`` or ``kernel.launch(dim, inputs, ...)``, a tunable parameter ``block_dim`` sets the block size"
+  Taichi,             "``kernel(*args)``"
+  CuTe,               "``kernel(*args)``"
+  Tilus,              "``Script()(*args)``, constructors with arguments are not supported"
+  TileLang,           "``factory(*factory_args)(*args)``, the factory arguments are part of the tuning key"
+  cuTile,             "``kernel[grid](*args)`` or ``kernel.launch(stream, grid, args)``"
+
+Outputs are not verified by default. To verify the outputs of every configuration, pass a ``reference`` function
+that receives the kernel arguments and returns the expected outputs, as a dictionary with the names of the output
+arguments or a list with a value for every argument (None for inputs), and optionally a tolerance ``atol``.
+
+With ``wisdom``, the tuning results are stored in a directory with *wisdom files*, one per kernel, in the format of
+`Kernel Launcher <https://github.com/KernelTuner/kernel_launcher>`__. When a kernel is launched with a tuning key
+for which the wisdom file has results on the same GPU, the best stored configuration is used without tuning.
+Wisdom files can therefore also be produced ahead of time and shipped with an application.
