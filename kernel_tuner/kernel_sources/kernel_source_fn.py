@@ -51,6 +51,9 @@ class _NoBytecodeLoader(importlib.machinery.SourceFileLoader):
     """Source loader that does not write .pyc files, kernel modules are imported only once."""
 
     def set_data(self, path, data, *, _mode=0o666):
+        # Intentionally empty: SourceFileLoader only calls set_data to write the bytecode cache (.pyc) of a module
+        # into a __pycache__ directory next to the source file. Kernel modules are temporary files that are imported
+        # once, so writing their bytecode would only leave __pycache__ directories behind in the temp directory.
         pass
 
 
