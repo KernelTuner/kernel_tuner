@@ -56,6 +56,9 @@ class GenericPythonFunctions(GPUBackend):
             logging.error("Unable to import Torch")
             raise ImportError("Unable to import Torch")
 
+        # make the requested device the current device: the DSLs launch kernels on the current device, and
+        # PyTorch creates streams, events, and tensors on it
+        torch.cuda.set_device(device)
         self.device_id = torch.cuda.current_device()
         self.device_properties = torch.cuda.get_device_properties(self.device_id)
         self.name = torch.cuda.get_device_name(self.device_id)
@@ -115,12 +118,12 @@ class GenericPythonFunctions(GPUBackend):
                 if arg.dim() == 0: # Scalar tensor, convert to Python scalar
                     torch_args.append(arg.item())
                 else:
-                    if arg.is_cuda: # already on GPU, need deep copy to not overwrite
-                        torch_args.append(arg.clone())
+                    if arg.is_cuda: # already on GPU, need deep copy to not overwrite, on the tuned device
+                        torch_args.append(arg.to(self.device_id, copy=True))
                     else: # Copy from CPU to GPU
-                        torch_args.append(arg.contiguous().to("cuda"))
+                        torch_args.append(arg.contiguous().to(self.device_id))
             elif isinstance(arg, np.ndarray): # Convert Numpy CPU array to Torch GPU Tensor
-                torch_args.append(torch.from_numpy(arg).to("cuda"))
+                torch_args.append(torch.from_numpy(arg).to(self.device_id))
             elif isinstance(arg, np.generic): # Numpy scalar, convert to Python scalar
                 torch_args.append(arg.item())
             elif isinstance(arg, (int, float, bool, str)): # Is already Python
