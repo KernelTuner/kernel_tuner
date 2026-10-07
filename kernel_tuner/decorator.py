@@ -266,12 +266,22 @@ class _TuningCallFunction:
         self._states = {}
 
     def __call__(self, kernel_function, args, kwargs, grid, threads, params):
-        grid, threads = _launch_dimensions(
+        """Launch the kernel of a configuration, see :func:`kernel_tuner.util.normalize_call_function`.
+
+        The grid and threads computed by Kernel Tuner are not used: the decorator calls tune_kernel with a problem
+        size of 1, because the launch dimensions are those of the user's launch or the decorator, which can depend
+        on the kernel arguments and the tunable parameters. The arguments are part of the signature nonetheless,
+        as Kernel Tuner only passes params to call functions that have arguments named grid, threads, and params.
+        """
+        launch_grid, launch_threads = _launch_dimensions(
             self.grid, self.threads, self.spec, self.argument_names, args, self.extra_kwargs, params
         )
         state = self._states.setdefault(id(kernel_function), {})
         launch_function = _LAUNCH_FUNCTIONS[self.dsl]
-        launch_function(kernel_function, args, {**self.extra_kwargs, **kwargs}, grid, threads, self.spec, params, state)
+        launch_function(
+            kernel_function, args, {**self.extra_kwargs, **kwargs}, launch_grid, launch_threads, self.spec, params,
+            state
+        )
 
     def __getstate__(self):
         state = self.__dict__.copy()

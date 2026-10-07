@@ -7,7 +7,7 @@ import pytest
 
 import kernel_tuner
 from kernel_tuner import autotune
-from kernel_tuner.decorator import AutotunedKernel, _configs_to_search_space
+from kernel_tuner.decorator import AutotunedKernel, _configs_to_search_space, _Launch, _TuningCallFunction
 from kernel_tuner.kernel_sources.kernel_source_fn import KernelSourceFn
 from kernel_tuner.utils import wisdom
 
@@ -120,6 +120,38 @@ def test_autotune_is_top_level():
 
     assert kernel_tuner.autotune is kernel_tuner.decorator.autotune
     assert "autotune" in kernel_tuner.__all__
+
+
+def _grid_of_meta(meta):
+    return (meta["n"] // meta["block_size_x"],)
+
+
+def test_tuning_call_function(monkeypatch):
+    """The tuning call function launches kernels like the user, ignoring the launch dimensions of Kernel Tuner."""
+    import pickle
+
+    from kernel_tuner import decorator
+    from kernel_tuner.util import normalize_call_function
+
+    launches = []
+
+    def recording_launch(kernel, args, kwargs, grid, threads, launch, params, state):
+        launches.append((kernel, args, kwargs, grid, threads))
+
+    monkeypatch.setitem(decorator._LAUNCH_FUNCTIONS, "triton", recording_launch)
+    call_function = _TuningCallFunction("triton", ["c", "a", "b", "n"], None, (128, 1, 1), _Launch(_grid_of_meta), {})
+
+    # Kernel Tuner passes params only to call functions with arguments named grid, threads, and params
+    assert normalize_call_function(call_function) is call_function
+
+    params = {"block_size_x": 256}
+    call_function("kernel", [1, 2, 3, 4096], {"block_size_x": 256}, (1, 1, 1), (1, 1, 1), params)
+    assert launches == [("kernel", [1, 2, 3, 4096], {"block_size_x": 256}, (16,), (128, 1, 1))]
+
+    # the call function can be sent to worker processes when its launch dimensions can be pickled
+    copy = pickle.loads(pickle.dumps(call_function))
+    copy("kernel", [1, 2, 3, 2048], {}, (1, 1, 1), (1, 1, 1), params)
+    assert launches[-1][3] == (8,)
 
 
 def test_autotune_needs_tune_params_or_configs():
