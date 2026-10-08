@@ -111,30 +111,36 @@
   <div class="toctree-wrapper compound">
 </div>
 <section id="backends">
-<h1>Backends<a class="headerlink" href="#backends" title="Link to this heading">¶</a></h1>
+<span id="id1"></span><h1>Backends<a class="headerlink" href="#backends" title="Link to this heading">¶</a></h1>
 <p>Kernel Tuner implements multiple backends for CUDA, one for OpenCL, one for HIP, and a generic
 Compiler backend.</p>
 <p>Selecting a backend is in most cases automatic and is done based on the kernel’s programming
 language, but sometimes you’ll want to specifically choose a backend.</p>
 <section id="cuda-backends">
 <h2>CUDA Backends<a class="headerlink" href="#cuda-backends" title="Link to this heading">¶</a></h2>
-<p>PyCUDA is default CUDA backend in Kernel Tuner. It is comparable in feature completeness with CuPy.
+<p>Kernel Tuner automatically selects a CUDA backend when it detects CUDA as the language of the
+kernel to be tuned. Depending on whether the required dependencies are installed it first checks
+if it could use the <code class="docutils literal notranslate"><span class="pre">cuda-python</span></code> backend, then <code class="docutils literal notranslate"><span class="pre">cupy</span></code>, then PyCUDA. This behavior can be overwritten
+by manually selecting a backend with the <code class="docutils literal notranslate"><span class="pre">lang=</span></code> option.
 Because the HIP kernel language is identical to the CUDA kernel language, HIP is included here as well.
-To use HIP on nvidia GPUs, see <a class="reference external" href="https://github.com/jatinx/hip-on-nv">https://github.com/jatinx/hip-on-nv</a>.</p>
-<p>While the PyCUDA backend expects all inputs and outputs to be Numpy arrays, the CuPy backend also
+To use HIP on nvidia GPUs, see <a class="reference external" href="https://github.com/jatinx/hip-on-nv">https://github.com/jatinx/hip-on-nv</a>. HIP must be indicated manually
+using the <code class="docutils literal notranslate"><span class="pre">lang=</span></code> option.</p>
+<p>Kernel inputs and outputs can be handeld slightly differently by different backends, but the default
+way to pass arguments to the kernel is through Numpy arrays, which is supported by all backends.
+For example, while the PyCUDA backend expects all inputs and outputs to be Numpy arrays, the CuPy backend also
 supports cupy arrays as input and output arguments for the kernels. This gives the user more control
 over how memory is handled by Kernel Tuner. Also checks during output verification can happen
 entirely on the GPU when using only cupy arrays.</p>
-<p>Texture memory is only supported by the PyCUDA backend, while the CuPy backend is the only one that
-support C++ signatures for the kernels. With the other backends, it is required that the kernel has
+<p>Texture memory is only supported by the PyCUDA backend. However, some other limitations apply to the PyCUDA
+backend, for example support for kernels with C++ signatures. PyCUDA requires that the kernel has
 extern “C” linkage. If not, the entire code is wrapped in an extern “C” block, which may cause issues
 if the code also contains C++ code that cannot have extern “C” linkage, including code that may be
 present in header files.</p>
-<p>As detailed further in <a class="reference internal" href="templates.html#templates"><span class="std std-ref">Templated kernels</span></a>, templated kernels are fully supported by the CuPy backend and
-limited support is implemented by Kernel Tuner to support templated kernels for the PyCUDA and
-CUDA-Python backends.</p>
-<table class="docutils align-default" id="id1">
-<caption><span class="caption-text">Backend feature support</span><a class="headerlink" href="#id1" title="Link to this table">¶</a></caption>
+<p>Templated kernels and kernels with C++ signatures are supported by the cuda-python, CuPy, and HIP backends.
+As detailed further in <a class="reference internal" href="templates.html#templates"><span class="std std-ref">Templated kernels</span></a>, Kernel Tuner has limited support for templated kernels
+when using the PyCUDA backend.</p>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Backend feature support</span><a class="headerlink" href="#id2" title="Link to this table">¶</a></caption>
 <thead>
 <tr class="row-odd"><th class="head"><p>Feature</p></th>
 <th class="head"><p>PyCUDA</p></th>
@@ -183,22 +189,26 @@ CUDA-Python backends.</p>
 <tr class="row-even"><td><p>C++ kernel signature</p></td>
 <td><p>✗</p></td>
 <td><p>✓</p></td>
-<td><p>✗</p></td>
-<td><p>✗</p></td>
+<td><p>✓</p></td>
+<td><p>✓</p></td>
 </tr>
 <tr class="row-odd"><td><p>Templated kernels</p></td>
 <td><p>✓</p></td>
 <td><p>✓</p></td>
 <td><p>✓</p></td>
-<td><p>✗</p></td>
+<td><p>✓</p></td>
 </tr>
 </tbody>
 </table>
 <p>Another important difference between the different backends is the compiler that is used. The table
 below lists which Python package is required, how the backend can be selected and which compiler is
-used to compile the kernels.</p>
-<table class="docutils align-default" id="id2">
-<caption><span class="caption-text">Backend usage and compiler</span><a class="headerlink" href="#id2" title="Link to this table">¶</a></caption>
+used to compile the kernels. Note that backends relying on <code class="docutils literal notranslate"><span class="pre">nvrtc</span></code> can be more strict about
+including headers and also having host code in the code that is passed to the compiler. When using
+<code class="docutils literal notranslate"><span class="pre">cuda-python</span></code> it is generally recommended to use an environment variable called <code class="docutils literal notranslate"><span class="pre">CUDA_HOME</span></code> that
+points to the root directory of the CUDA installation. For example, by adding
+<code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">CUDA_HOME=/usr/local/cuda</span></code> to your <code class="docutils literal notranslate"><span class="pre">.bashrc</span></code> file.</p>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">Backend usage and compiler</span><a class="headerlink" href="#id3" title="Link to this table">¶</a></caption>
 <thead>
 <tr class="row-odd"><th class="head"><p>Feature</p></th>
 <th class="head"><p>PyCUDA</p></th>
