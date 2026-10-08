@@ -6,6 +6,7 @@ from kernel_tuner.backends import nvcuda
 from kernel_tuner.core import KernelInstance, KernelSource
 
 from kernel_tuner.utils.nvcuda import cuda_error_check
+from kernel_tuner import util
 
 from .context import skip_if_no_cuda
 from .test_runners import env  # noqa: F401
@@ -152,3 +153,29 @@ def test_copy_constant_memory_args():
     dev.memcpy_dtoh(output, gpu_args[0])
 
     assert (my_constant_data == output).all()
+
+
+@skip_if_no_cuda
+def test_detect_kernel_too_much_shared_memory(env):
+
+    # The kernel below uses a crazy amount of shared memory to trigger
+    # an error at compile time
+    kernel_string = """
+    extern "C" __global__ void vector_add(float *c, float *a, float *b, int n) {
+        __shared__ float sh_mem_buf[block_size_x * 1000];
+        int i = blockIdx.x * block_size_x + threadIdx.x;
+        if (i<n) {
+            sh_mem_buf[threadIdx.x] = a[i];
+            sh_mem_buf[threadIdx.x + block_size_x] = b[i];
+            c[i] = sh_mem_buf[threadIdx.x] + sh_mem_buf[threadIdx.x + block_size_x];
+        }
+    }
+    """
+    env[1] = kernel_string
+
+    result, _ = tune_kernel(*env, lang="nvcuda", verbose=True)
+    assert len(result) > 0
+
+    for res in result:
+        assert '__error__' in res
+        assert isinstance(res['__error__'], util.CompilationFailedConfig)
