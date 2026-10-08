@@ -265,7 +265,8 @@ class nvml:
         """Control the graphics clock (may require permission), only values compatible with the memory clock can be set directly."""
         if self.use_locked_clocks:
             if new_clock != self.locked_gr_clock:
-                self.set_clocks(self.mem_clock, new_clock)
+                # keep the locked memory clock, the current memory clock can differ from the locked clock
+                self.set_clocks(self.locked_mem_clock or self.mem_clock, new_clock)
         else:
             # if using applications clocks
             if new_clock != pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_GRAPHICS):
@@ -280,7 +281,8 @@ class nvml:
     def mem_clock(self, new_clock):
         if self.use_locked_clocks:
             if new_clock != self.locked_mem_clock:
-                self.set_clocks(new_clock, self.gr_clock)
+                # keep the locked graphics clock, the current graphics clock can differ from the locked clock
+                self.set_clocks(new_clock, self.locked_gr_clock or self.gr_clock)
         # if using applications clocks
         else:
             if new_clock != pynvml.nvmlDeviceGetApplicationsClock(self.dev, pynvml.NVML_CLOCK_MEM):
