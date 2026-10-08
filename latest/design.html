@@ -184,6 +184,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.is_julia_array"><code class="docutils literal notranslate"><span class="pre">is_julia_array()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.looks_like_a_filename"><code class="docutils literal notranslate"><span class="pre">looks_like_a_filename()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.normalize_verify_function"><code class="docutils literal notranslate"><span class="pre">normalize_verify_function()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.open_cachefile"><code class="docutils literal notranslate"><span class="pre">open_cachefile()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.parse_restrictions"><code class="docutils literal notranslate"><span class="pre">parse_restrictions()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.possible_julia_vector_to_list"><code class="docutils literal notranslate"><span class="pre">possible_julia_vector_to_list()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kernel_tuner.util.prepare_kernel_string"><code class="docutils literal notranslate"><span class="pre">prepare_kernel_string()</span></code></a></li>
@@ -2217,6 +2218,12 @@ an atol keyword argument.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="kernel_tuner.util.open_cachefile">
+<span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">open_cachefile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cachefile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.util.open_cachefile" title="Link to this definition">¶</a></dt>
+<dd><p>Open a cachefile for reading or writing (depending on mode)</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="kernel_tuner.util.parse_restrictions">
 <span class="sig-prename descclassname"><span class="pre">kernel_tuner.util.</span></span><span class="sig-name descname"><span class="pre">parse_restrictions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restrictions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tune_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monolithic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Constraint</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#kernel_tuner.util.parse_restrictions" title="Link to this definition">¶</a></dt>
 <dd><p>Parses restrictions from a list of strings into compilable functions and constraints, or a single compilable function (if monolithic is True). Returns a list of tuples of (strings or constraints) and parameters.</p>
@@ -2288,7 +2295,8 @@ tunable parameter is defined as preprocessor macro instead.</p></li>
   <span class="n">kernel_name</span><span class="p">:</span> <span class="s2">"name of kernel"</span>
   <span class="n">problem_size</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
   <span class="n">tune_params_keys</span><span class="p">:</span> <span class="nb">list</span>
-  <span class="n">tune_params</span><span class="p">:</span>
+  <span class="n">tune_params</span><span class="p">:</span> <span class="nb">dict</span>
+  <span class="n">objective</span><span class="p">:</span> <span class="n">string</span>
   <span class="n">cache</span><span class="p">:</span> <span class="p">{</span>
     <span class="s2">"x1,x2,..xN"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"block_size_x"</span><span class="p">:</span> <span class="n">x1</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">0.234342</span><span class="p">},</span>
     <span class="s2">"y1,y2,..yN"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"block_size_x"</span><span class="p">:</span> <span class="n">y1</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">0.134233</span><span class="p">},</span>
