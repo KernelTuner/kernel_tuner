@@ -162,3 +162,21 @@ def test_device_argument():
         assert torch.equal(gpu_args[1].cpu(), args[1].cpu())
     finally:
         torch.cuda.set_device(current)
+
+
+@skip_if_no_torch
+def test_start_event_excludes_launch_time():
+    import time
+
+    ks, _, _ = get_context()
+    dev = DeviceInterface(ks).dev
+    x = torch.ones(16, device="cuda")
+    x.add_(1)  # load the kernel, as Kernel Tuner runs a kernel before it is benchmarked
+    torch.cuda.synchronize()
+    dev.start_event()
+    time.sleep(0.0005)  # the host takes 0.5 ms to launch the kernel
+    x.add_(1)
+    dev.stop_event()
+    torch.cuda.synchronize()
+    # only the kernel is measured, not the time before it was launched
+    assert dev.start.elapsed_time(dev.end) < 0.25

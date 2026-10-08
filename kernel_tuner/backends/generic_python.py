@@ -34,6 +34,11 @@ SERIAL_COMPILE_DSLS = PROCESS_BUILD_DSLS | MAIN_THREAD_DSLS
 PROCESS_BUILT = "process_built"
 
 
+# Number of GPU clock cycles that the sleep kernel in start_event() keeps the GPU busy before a measurement: 0.6 ms at
+# 3 GHz, much longer than the time needed to launch a kernel from Python
+LAUNCH_SLEEP_CYCLES = 2_000_000
+
+
 class GenericPythonFunctions(GPUBackend):
     """Class that groups the Python DSL functions on maintains state about the device."""
 
@@ -243,7 +248,15 @@ class GenericPythonFunctions(GPUBackend):
         return {arg_name: params[arg_name] for arg_name in signature if arg_name in params}
 
     def start_event(self):
-        """Records the event that marks the start of a measurement."""
+        """Records the event that marks the start of a measurement.
+
+        A sleep kernel before the event keeps the GPU busy while the host launches the kernel that is measured. The
+        start event completes when the sleep kernel finishes, after the kernel has been queued, so the measured time
+        does not include the time the host needs to launch the kernel (converting the arguments and launching the
+        kernel takes tens of microseconds for some DSLs). On an idle GPU, the event would complete immediately and
+        the launch time would be measured as part of the kernel.
+        """
+        torch.cuda._sleep(LAUNCH_SLEEP_CYCLES)
         self.start.record()
 
     def stop_event(self):
