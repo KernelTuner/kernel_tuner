@@ -18,13 +18,13 @@ CUDA Backends
 
 Kernel Tuner automatically selects a CUDA backend when it detects CUDA as the language of the
 kernel to be tuned. Depending on whether the required dependencies are installed it first checks
-if it could use the ``cuda-python`` backend, then ``cupy``, then PyCUDA. This behavior can be overwritten
+if it could use the ``cuda-python`` backend, then ``cupy``, then PyCUDA. This behavior can be overridden
 by manually selecting a backend with the ``lang=`` option. 
 Because the HIP kernel language is identical to the CUDA kernel language, HIP is included here as well.
 To use HIP on nvidia GPUs, see https://github.com/jatinx/hip-on-nv. HIP must be indicated manually
 using the ``lang=`` option.
 
-Kernel inputs and outputs can be handeld slightly differently by different backends, but the default
+Kernel inputs and outputs can be handled slightly differently by different backends, but the default
 way to pass arguments to the kernel is through Numpy arrays, which is supported by all backends.
 For example, while the PyCUDA backend expects all inputs and outputs to be Numpy arrays, the CuPy backend also 
 supports cupy arrays as input and output arguments for the kernels. This gives the user more control 
