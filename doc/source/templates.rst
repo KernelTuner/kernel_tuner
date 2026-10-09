@@ -6,9 +6,17 @@
 Templated kernels
 -----------------
 
-It is quite common in CUDA programming to write kernels that use C++ templates. This can be very useful when writing code that can work for several types, for example floats and doubles. However, the use of C++ templates makes it slightly more difficult to directly 
-integrate the CUDA kernel into applications that are not written in C++, for example Matlab, Fortran, or Python. And since Kernel Tuner is written in Python, we needed to take a few extra steps to provide support for templated CUDA kernels. Let's first look at an 
-example of what it's like to tune a templated kernel with Kernel Tuner.
+It is quite common in CUDA programming to write kernels that use C++ templates. This can be very useful when writing code that can 
+work for several types, for example floats and doubles. However, the use of C++ templates makes it slightly more difficult to 
+directly integrate the CUDA kernel into applications that are not written in C++, for example Matlab, Fortran, or Python. And 
+since Kernel Tuner is written in Python, we needed to take a few extra steps to provide support for templated CUDA kernels.
+
+Templated kernels and kernels with C++ signatures are now fully supported when using the cuda-python, cupy, and HIP backends. 
+Kernel Tuner implements some limited support for templated kernels when using the PyCUDA backend. If you use templated kernels, it is
+recommended that you use either the cuda-python or cupy backend.
+
+The rest of this section explains how to use Kernel Tuner with templated kernels.
+Let's first look at an example of what it's like to tune a templated kernel with Kernel Tuner.
 
 Example
 ~~~~~~~
@@ -46,35 +54,32 @@ Then the Python script to tune this kernel would be as follows:
 
     tune_kernel("vector_add<float>", "vector_add.cu", size, args, tune_params)
 
-What you can see is that in the Python code we specify the template instantiation to use. Kernel Tuner will detect the use of templated kernels when the kernel_name positional argument to tune_kernel contains a template argument.
+What you can see is that in the Python code we specify the template instantiation to use.
+Kernel Tuner will detect the use of templated kernels when the ``kernel_name`` positional
+argument to ``tune_kernel`` contains a template argument.
 
-This feature also allows use to auto-tune template parameters to the kernel. We could for example define a tunable parameter:
+This feature also allows users to auto-tune template parameters of the templated kernel.
+We could for example define a tunable parameter:
 
 .. code-block:: python
 
     tune_params["my_type"] = ["float", "double"]
 
-and call tune_kernel using a tunable parameter inside the template arguments:
+and call ``tune_kernel`` using a tunable parameter inside the template arguments:
 
 .. code-block:: python
 
     tune_kernel("vector_add<my_type>", "vector_add.cu", size, args, tune_params)
 
-Selecting a backend
-~~~~~~~~~~~~~~~~~~~
 
-Kernel Tuner supports multiple backends, for CUDA these are based on PyCUDA and Cupy. The following explains how to enable tuning of templated kernels with either backend.
-
-The PyCuda backend is the default backend in Kernel Tuner and is selected if the user does not supply the 'lang' option and CUDA code is detected in the kernel source, or when lang is set to "CUDA" by the user. PyCuda requires CUDA kernels to have extern C linkage, 
-which means that C++ templated kernels are not supported. To support templated kernels regardless of this limitation Kernel Tuner attempts to wrap the templated CUDA kernel by inserting a compile-time template instantiation statement and a wrapper kernel that calls 
-the templated CUDA kernel, which is actually demoted to a __device__ function in the process. These automatic code rewrites have a real risk of breaking the code. To minimize the chance of errors due to Kernel Tuner's automatic code rewrites, it's best to isolate the 
-templated kernel in a single source file and include it where needed in the larger application.
-
-The Cupy backend provides much more advanced support for C++ templated kernels, because it internally uses NVRTC, the Nvidia runtime compiler. NVRTC does come with some restrictions however, for example NVRTC does not allow any host code to be inside code that
-is passed. So, like with the PyCuda backend it helps to separate the source code of device and host functions into seperate files. You can force Kernel Tuner to use the Cupy backend by passing the lang="cupy" option to tune_kernel. 
-
-
-
-
-
-
+Support for templated kernels is supported in most backends. However, support for templates is 
+limited when using the PyCUDA backend. PyCuda requires CUDA kernels to have extern C linkage, 
+which means that C++ templated kernels are not supported by PyCUDA directly. To support 
+templated kernels regardless of this limitation Kernel Tuner attempts to wrap the templated 
+CUDA kernel by inserting a compile-time template instantiation statement and a wrapper kernel 
+that calls the templated CUDA kernel, which is actually demoted to a __device__ function in 
+the process. These automatic code rewrites have a real risk of breaking the code. It is 
+therefore recommended to use the cuda-python or cupy backends instead. However, if you must 
+use PyCUDA, to minimize the chance of errors due to Kernel Tuner's automatic code rewrites, 
+it's best to isolate the templated kernel in a single source file and include it where needed 
+in the larger application.
