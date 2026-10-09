@@ -4,6 +4,10 @@ Kernel Tuner Examples
 Most of the examples show how to use Kernel Tuner to tune a
 CUDA, OpenCL, or C kernel, while demonstrating a particular usecase of Kernel Tuner.
 
+The examples in `examples/python <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python>`__ show how to tune kernels written in
+Python-based DSLs, such as Triton, Numba, CuPy (``cupyx.jit``), Warp, Taichi, CuTe, Tilus, TileLang, and cuTile.
+These are described in more detail in the `README of the Python DSL examples <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/README.rst>`__.
+
 Except for `test\_vector\_add.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/test_vector_add.py>`__  and 
 `test\_vector\_add_parameterized.py <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/test_vector_add_parameterized.py>`__,
 which show how to write tests for GPU kernels with Kernel Tuner.
@@ -18,7 +22,7 @@ Below we list the example applications and the features they illustrate.
 
 Vector Add
 ----------
-[`CUDA <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/vector_add.py>`__] [`CUDA-C++ <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda-c++/vector_add.py>`__] [`OpenCL <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/vector_add.py>`__] [`C <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/c/vector_add.py>`__] [`Fortran <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/fortran/vector_add.py>`__] [`OpenACC-C++ <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/directives/vector_add_c_openacc.py>`__] [`OpenACC-Fortran <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/directives/vector_add_fortran_openacc.py>`__]
+[`CUDA <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/vector_add.py>`__] [`CUDA-C++ <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda-c++/vector_add.py>`__] [`OpenCL <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/vector_add.py>`__] [`C <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/c/vector_add.py>`__] [`Fortran <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/fortran/vector_add.py>`__] [`OpenACC-C++ <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/directives/vector_add_c_openacc.py>`__] [`OpenACC-Fortran <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/directives/vector_add_fortran_openacc.py>`__] [`Numba <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/numba_vec_add.py>`__] [`Triton <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/triton_vec_add.py>`__] [`Warp <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/warp_vec_add.py>`__] [`CuTe <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/cute_vec_add.py>`__] [`Tilus <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/tilus_vec_add.py>`__] [`TileLang <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/tilelang_vec_add.py>`__] [`cuTile <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/cutile_vec_add.py>`__]
  - use Kernel Tuner to tune a simple kernel
 
 Stencil
@@ -28,7 +32,7 @@ Stencil
 
 Matrix Multiplication
 ---------------------
-[`CUDA <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/matmul.py>`__] [`OpenCL <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/matmul.py>`__]
+[`CUDA <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/matmul.py>`__] [`OpenCL <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/matmul.py>`__] [`CuPy <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/cupy_matmul.py>`__] [`Numba <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/numba_matmul.py>`__] [`Taichi <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/taichi_matmul.py>`__] [`Warp <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/warp_matmul.py>`__] [`Triton <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/triton_matmul.py>`__] [`Tilus <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/tilus_matmul.py>`__] [`TileLang <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/tilelang_matmul.py>`__] [`CuTe <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/cute_matmul.py>`__] [`cuTile <https://github.com/kerneltuner/kernel_tuner/blob/master/examples/python/matmul/cutile_matmul.py>`__]
  -  pass a filename instead of a string with code
  -  use 2-dimensional thread blocks and tiling in both dimensions
  -  tell Kernel Tuner to compute the grid dimensions for 2D thread blocks with tiling

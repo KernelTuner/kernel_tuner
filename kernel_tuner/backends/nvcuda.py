@@ -4,9 +4,9 @@ import numpy as np
 import uuid
 import os
 
-from kernel_tuner.backends.backend import GPUBackend
+from kernel_tuner.backends.backend import GPUBackend, get_device_array, is_host_array
 from kernel_tuner.observers.nvcuda import CudaRuntimeObserver
-from kernel_tuner.util import SkippableFailure
+from kernel_tuner.util import SHARED_MEMORY_ERROR, SkippableFailure
 from kernel_tuner.utils.nvcuda import cuda_error_check, to_valid_nvrtc_gpu_arch_cc, find_cuda_home, _check
 
 def preload_python_nvrtc():
@@ -232,16 +232,20 @@ class CudaFunctions(GPUBackend):
         :param arguments: List of arguments to be passed to the kernel.
             The order should match the argument list on the CUDA kernel.
             Allowed values are numpy.ndarray, and/or numpy.int32, numpy.float32, and so on.
+            Device arrays that implement the CUDA Array Interface (e.g. PyTorch CUDA tensors,
+            CuPy arrays) and CPU PyTorch tensors are also supported.
         :type arguments: list(numpy objects)
 
         :returns: A list of arguments that can be passed to an CUDA kernel.
-        :rtype: list( pycuda.driver.DeviceAllocation, numpy.int32, ... )
+        :rtype: list( cuda.CUdeviceptr, numpy.int32, ... )
         """
         gpu_args = []
         for arg in arguments:
-            # if arg is a numpy array copy it to device
-            if isinstance(arg, np.ndarray):
-                err, device_memory = driver.cuMemAlloc(arg.nbytes)
+            # arrays are copied to a new device allocation, so the kernel never modifies the user's data
+            device_array = get_device_array(arg)
+            if device_array is not None or is_host_array(arg):
+                nbytes = device_array[1] if device_array is not None else np.asarray(arg).nbytes
+                err, device_memory = driver.cuMemAlloc(nbytes)
                 cuda_error_check(err)
                 self.allocations.append(device_memory)
                 gpu_args.append(device_memory)
@@ -255,15 +259,22 @@ class CudaFunctions(GPUBackend):
     def compile(self, kernel_instance):
         """Call the CUDA compiler to compile the kernel, return the device function.
 
-        :param kernel_name: The name of the kernel to be compiled, used to lookup the
-            function after compilation.
-        :type kernel_name: string
-
-        :param kernel_string: The CUDA kernel code that contains the function `kernel_name`
-        :type kernel_string: string
+        :param kernel_instance: The kernel instance, containing the name and code of the kernel
+        :type kernel_instance: kernel_tuner.core.KernelInstance
 
         :returns: A kernel that can be launched by the CUDA runtime
         :rtype:
+        """
+        return self.load(kernel_instance, self.build(kernel_instance))
+
+    def build(self, kernel_instance):
+        """Compile the kernel to PTX using NVRTC, this is thread-safe and does not use the device.
+
+        :param kernel_instance: The kernel instance, containing the name and code of the kernel
+        :type kernel_instance: kernel_tuner.core.KernelInstance
+
+        :returns: The PTX and the lowered name of the kernel inside the PTX
+        :rtype: tuple(bytes, bytes)
         """
         kernel_string = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
@@ -307,26 +318,10 @@ class CudaFunctions(GPUBackend):
             err = nvrtc.nvrtcGetPTX(program, buff)
             cuda_error_check(err)
 
-            # Load the module
-            err, self.current_module = driver.cuModuleLoadData(np.char.array(buff))
-            if err == driver.CUresult.CUDA_ERROR_INVALID_PTX:
-                raise SkippableFailure("uses too much shared data")
-            else:
-                cuda_error_check(err)
-
-            # First, get the "lowered" name of the kernel (i.e., the name inside the PTX).
-            # After, we can use the lowered name to lookup the kernel in the module.
+            # Get the "lowered" name of the kernel (i.e., the name inside the PTX), which is
+            # used to lookup the kernel in the module after loading it.
             err, lowered_name = nvrtc.nvrtcGetLoweredName(program, expression_name)
             cuda_error_check(err)
-            err, self.func = driver.cuModuleGetFunction(
-                self.current_module, lowered_name
-            )
-            cuda_error_check(err)
-
-            # get the number of registers per thread used in this kernel
-            num_regs = driver.cuFuncGetAttribute(driver.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
-            assert num_regs[0] == 0, f"Retrieving number of registers per thread unsuccesful: code {num_regs[0]}"
-            self.num_regs = num_regs[1]
 
         except RuntimeError as re:
             _, n = nvrtc.nvrtcGetProgramLogSize(program)
@@ -334,6 +329,37 @@ class CudaFunctions(GPUBackend):
             nvrtc.nvrtcGetProgramLog(program, log)
             print(log.decode("utf-8"))
             raise re
+
+        return buff, lowered_name
+
+    def load(self, kernel_instance, build_result):
+        """Load a kernel compiled by build() onto the device and return the device function.
+
+        :param kernel_instance: The kernel instance
+        :type kernel_instance: kernel_tuner.core.KernelInstance
+
+        :param build_result: The PTX and lowered name returned by build()
+        :type build_result: tuple(bytes, bytes)
+
+        :returns: A kernel that can be launched by the CUDA runtime
+        :rtype:
+        """
+        ptx, lowered_name = build_result
+
+        # Load the module
+        err, self.current_module = driver.cuModuleLoadData(np.char.array(ptx))
+        if err == driver.CUresult.CUDA_ERROR_INVALID_PTX:
+            raise SkippableFailure(SHARED_MEMORY_ERROR)
+        else:
+            cuda_error_check(err)
+
+        err, self.func = driver.cuModuleGetFunction(self.current_module, lowered_name)
+        cuda_error_check(err)
+
+        # get the number of registers per thread used in this kernel
+        num_regs = driver.cuFuncGetAttribute(driver.CUfunction_attribute.CU_FUNC_ATTRIBUTE_NUM_REGS, self.func)
+        assert num_regs[0] == 0, f"Retrieving number of registers per thread unsuccesful: code {num_regs[0]}"
+        self.num_regs = num_regs[1]
 
         return self.func
 
@@ -454,12 +480,13 @@ class CudaFunctions(GPUBackend):
     def memcpy_dtoh(dest, src):
         """Perform a device to host memory copy.
 
-        :param dest: A numpy array in host memory to store the data
+        :param dest: A numpy array (or CPU PyTorch tensor) in host memory to store the data
         :type dest: numpy.ndarray
 
         :param src: A GPU memory allocation unit
         :type src: cuda.CUdeviceptr
         """
+        dest = np.asarray(dest)
         err = driver.cuMemcpyDtoH(dest, src, dest.nbytes)
         cuda_error_check(err)
 
@@ -470,10 +497,17 @@ class CudaFunctions(GPUBackend):
         :param dest: A GPU memory allocation unit
         :type dest: cuda.CUdeviceptr
 
-        :param src: A numpy array in host memory to store the data
+        :param src: A numpy array (or CPU PyTorch tensor) in host memory, or a device array
+            that implements the CUDA Array Interface
         :type src: numpy.ndarray
         """
-        err = driver.cuMemcpyHtoD(dest, src, src.nbytes)
+        device_array = get_device_array(src)
+        if device_array is not None:
+            ptr, nbytes = device_array
+            err = driver.cuMemcpyDtoD(dest, ptr, nbytes)
+        else:
+            src = np.asarray(src)
+            err = driver.cuMemcpyHtoD(dest, src, src.nbytes)
         cuda_error_check(err)
 
     units = {"time": "ms"}

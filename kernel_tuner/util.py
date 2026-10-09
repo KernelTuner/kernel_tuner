@@ -117,6 +117,12 @@ class SkippableFailure(Exception):
     """Exception used to raise when compiling or launching a kernel fails for a reason that can be expected."""
 
 
+# Part of the error message of ptxas for kernels that use too much shared memory. Backends also raise
+# SkippableFailure with this message when a kernel uses too much shared memory, so that these configurations
+# are recognized as skippable by DeviceInterface.compile_kernel.
+SHARED_MEMORY_ERROR = "uses too much shared data"
+
+
 class StopCriterionReached(Exception):
     """Exception thrown when a stop criterion has been reached."""
 
@@ -163,6 +169,9 @@ def check_argument_type(dtype, kernel_argument):
 
 def check_argument_list(kernel_name, kernel_string, args, lang=None):
     """Raise an exception if kernel arguments do not match host arguments."""
+    if kernel_string is None:
+        return
+
     kernel_arguments = list()
     collected_errors = list()
 
@@ -557,20 +566,6 @@ def delete_temp_file(filename):
             raise e
 
 
-def detect_language(kernel_string):
-    """Attempt to detect language from the kernel_string."""
-    kernel_string = kernel_string.lower().strip()
-    if "__global__" in kernel_string:
-        lang = "CUDA"
-    elif "__kernel" in kernel_string:
-        lang = "OpenCL"
-    elif any(token in kernel_string for token in ["@cuda", "@kernel", "@device_code"]):
-        lang = "Julia"
-    else:
-        lang = "C"
-    return lang
-
-
 def get_best_config(results, objective, objective_higher_is_better=False):
     """Returns the best configuration from a list of results according to some objective."""
     func = max if objective_higher_is_better else min
@@ -763,6 +758,69 @@ def get_kernel_string(kernel_source, params=None):
     else:
         raise TypeError("Error kernel_source is not a string nor a callable function")
     return kernel_string
+
+
+def get_kernel_ast(kernel_name, filepath):
+    """Util function for Generic Python Backend that returns the kernel function as AST.
+
+    :param kernel_name: name of the kernel (as passed by the user)
+    :type kernel_name: string
+
+    :param filepath: the path to the file where the kernel lives (passed by the user as kernel_source)
+    :type filepath: string or Path containing a filename that points to the kernel source
+
+    :returns: ast.FunctionDef node in case the kernel is a function or a tuple
+        (ast.ClassDef node, ast.FunctionDef node) in case the kernel is represented as the __call__ function
+        of a class (for Tilus support).
+    """
+    if not isinstance(filepath, (str, Path)):
+        raise TypeError(f"kernel_source should be a path to a file, got {type(filepath)}")
+    if not Path(filepath).is_file():
+        raise FileNotFoundError(f"Kernel source file {filepath} not found")
+
+    source = read_file(filepath)
+    tree = ast.parse(source, filename=str(filepath))
+
+    # ast.walk is breadth-first, so top-level definitions are found before nested ones
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == kernel_name:
+            # Function based kernels
+            return node
+        if isinstance(node, ast.ClassDef) and node.name == kernel_name:
+            # Class based kernels, the kernel is the __call__ function of the class
+            for member in node.body:
+                if isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)) and member.name == "__call__":
+                    return (node, member)
+            raise ValueError(f"No __call__ function found inside class {kernel_name} in {filepath}")
+
+    raise ValueError(f"Kernel {kernel_name} not found in {filepath}")
+
+
+def get_arg_names(func_node: ast.FunctionDef):
+    """
+    Util to get the argument names from a Python AST function definition. This is needed to check
+    if there are any tunable parameters in the function signature.
+    """
+    args = func_node.args
+    names = []
+
+    names += [arg.arg for arg in args.args]
+    names += [arg.arg for arg in args.posonlyargs]
+    names += [arg.arg for arg in args.kwonlyargs]
+
+    # *args
+    if args.vararg:
+        names.append(args.vararg.arg)
+
+    # **kwargs
+    if args.kwarg:
+        names.append(args.kwarg.arg)
+
+    # Remove self for classes.
+    if 'self' in names:
+        names.remove('self')
+
+    return names
 
 
 def get_problem_size(problem_size, params):
@@ -1117,6 +1175,48 @@ def normalize_verify_function(v):
     if has_kw_argument(v, "atol"):
         return v
     return lambda answer, result_host, atol: v(answer, result_host)
+
+
+class _NormalizedCallFunction:
+    """Call function that accepts grid, threads and params, and passes only the ones the user function takes.
+
+    This is a class instead of a closure, so that it can be pickled to compile kernels in worker processes.
+    """
+
+    def __init__(self, function, optional_args):
+        self.function = function
+        self.optional_args = optional_args
+
+    def __call__(self, kernel_function, args, kwargs, grid, threads, params):
+        optional = {"grid": grid, "threads": threads, "params": params}
+        return self.function(kernel_function, args, kwargs, *(optional[name] for name in self.optional_args))
+
+
+def normalize_call_function(v):
+    """Normalize a user-specified call function for language Generic Python.
+
+    The user-specified function has three required positional arguments (kernel_function, 
+    args, kwargs), and three optional keyword arguments: grid, threads and params. The
+    optional keyword arguments should appear in that order. We normalize the function
+    so that it always accepts grid, threads and params.
+
+    Undefined behaviour if the passed function does not match the required signatures.
+    """
+    def has_kw_argument(func, name):
+        sig = signature(func)
+        return name in sig.parameters
+    
+    if v is None or isinstance(v, _NormalizedCallFunction):
+        return v
+
+    if has_kw_argument(v, "grid"):
+        if has_kw_argument(v, "threads"):
+            if has_kw_argument(v, "params"):
+                return v
+            return _NormalizedCallFunction(v, ("grid", "threads"))
+        return _NormalizedCallFunction(v, ("grid",))
+    return _NormalizedCallFunction(v, ())
+
 
 
 def parse_restrictions(

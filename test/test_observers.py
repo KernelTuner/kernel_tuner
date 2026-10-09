@@ -4,6 +4,7 @@ import kernel_tuner
 from kernel_tuner.observers.nvml import NVMLObserver
 from kernel_tuner.observers.observer import BenchmarkObserver
 from kernel_tuner.observers.register import RegisterObserver
+from kernel_tuner.language import Language
 
 from .context import (
     skip_if_no_cuda,
@@ -59,7 +60,7 @@ def test_lambda_observer(env_compiler):
     result, _ = kernel_tuner.tune_kernel(*env_compiler, observers=[lambda args: MyObserver(args)], compiler_options=["-fopenmp"])
 
     # Check if the observer has correctly received the lang option
-    assert result[0]["observer_args"]["lang"] == "C"
+    assert result[0]["observer_args"]["lang"] == Language.C
 
 @skip_if_no_pycuda
 def test_register_observer_pycuda(env):
