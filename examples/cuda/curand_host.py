@@ -35,6 +35,10 @@ def tune():
     args = [output, random, n]
 
     # use cuRAND to generate the random numbers on the GPU via the host API
+    driver.cuInit(0)
+    driver.cuDeviceGet(0)
+    err, ctx = driver.cuDevicePrimaryCtxRetain(dev)
+    driver.cuCtxSetCurrent(ctx)
     err, stream = driver.cuStreamCreate(driver.CUstream_flags.CU_STREAM_NON_BLOCKING.value)
     err, device_random = driver.cuMemAlloc(random.nbytes)
     gen = curand.create_generator(curand.RngType.PSEUDO_PHILOX4_32_10)
