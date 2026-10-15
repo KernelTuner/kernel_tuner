@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Example showing how to tune a CUDA kernel that draws from a curand state
-initialized on the host, and updates that state after drawing numbers"""
+initialized on the device in a separate kernel, and updates that state after
+drawing numbers"""
 
 import numpy
 from kernel_tuner import tune_kernel, run_kernel
