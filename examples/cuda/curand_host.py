@@ -63,7 +63,14 @@ def tune():
     tune_params["unroll_draws"] = [1, 2, 4, 8, 16]
 
     results, env = tune_kernel(
-        "draw_random", kernel_string, size, args, tune_params, lang="nvcuda", compiler_options=compiler_options, answer=[expected, None, None]
+        "draw_random",
+        kernel_string,
+        size,
+        args,
+        tune_params,
+        lang="nvcuda",
+        compiler_options=compiler_options,
+        answer=[expected, None, None],
     )
 
     return results
