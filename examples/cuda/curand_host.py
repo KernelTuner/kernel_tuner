@@ -50,6 +50,12 @@ def tune():
     driver.cuMemFree(device_random)
     curand.destroy_generator(gen)
     driver.cuStreamDestroy(stream)
+    driver.cuDevicePrimaryCtxRelease(dev)
+
+    # Check that something was actually generated :)
+    assert abs(random.mean() - 0.5) < 1e-3
+
+    expected = random.reshape(DRAWS_PER_THREAD, size).sum(axis=0, dtype=numpy.float32)
 
     tune_params = dict()
     tune_params["DRAWS_PER_THREAD"] = [DRAWS_PER_THREAD]
@@ -57,7 +63,7 @@ def tune():
     tune_params["unroll_draws"] = [1, 2, 4, 8, 16]
 
     results, env = tune_kernel(
-        "draw_random", kernel_string, size, args, tune_params, lang="nvcuda", compiler_options=compiler_options
+        "draw_random", kernel_string, size, args, tune_params, lang="nvcuda", compiler_options=compiler_options, answer=[expected, None, None]
     )
 
     return results
