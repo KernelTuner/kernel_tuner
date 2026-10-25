@@ -780,7 +780,7 @@ def tune_kernel(
     def preprocess_cache(filepath):
         if isinstance(filepath, Path):
             filepath = str(filepath.resolve())
-        if filepath[-5:] != ".json":
+        if filepath[-5:] != ".json" and filepath[-8:] != ".json.gz":
             filepath += ".json"
         return filepath
 
@@ -877,11 +877,26 @@ tune_kernel.__doc__ = _tune_kernel_docstring
 
 
 def tune_cache(
-    cache_path,
+    cachefile,
     restrictions=None,
     **kwargs,
 ):
-    cache = util.read_cache(cache_path, open_cache=False)
+    """ Simulate a tuning session based on a Kernel Tuner cache file
+
+    See tune_kernel for full documentation of options.
+
+    :param cachefile: filename or path to the cachefile
+    :type cachefile: string or Path
+
+    :param restrictions: search space restrictions / constraints, if not
+        passed these are simply inferred from the cachefile, which may be
+        much less efficient. Default: None
+    :type restrictions: list of string expressions or lambdas
+
+    """
+    if isinstance(cachefile, Path):
+        cachefile = str(cachefile.resolve())
+    cache = util.read_cache(cachefile, open_cache=False)
     tune_args = util.infer_args_from_cache(cache)
     _restrictions = [util.infer_restrictions_from_cache(cache)]
 
@@ -894,7 +909,7 @@ def tune_cache(
 
     tune_args.update(kwargs)
 
-    return tune_kernel(**tune_args, cache=cache_path, restrictions=_restrictions, simulation_mode=True)
+    return tune_kernel(**tune_args, cache=cachefile, restrictions=_restrictions, simulation_mode=True)
 
 
 _run_kernel_docstring = (

@@ -13,6 +13,7 @@ from .context import skip_if_no_cuda
 cache_filename = os.path.dirname(
     os.path.realpath(__file__)) + "/test_cache_file.json"
 
+cache_filename_zipped = cache_filename + ".gz"
 
 @pytest.fixture
 def env():
@@ -133,6 +134,14 @@ def test_simulation_runner(env):
 def test_tune_cache(env):
     results, env = tune_cache(cache_filename)
     assert len(results) > 10
+
+
+def test_zipped_cache_file(env):
+    result, _ = tune_kernel(*env,
+                            verbose=True,
+                            cache=cache_filename_zipped,
+                            simulation_mode=True)
+    assert len(result) > 0
 
 
 def test_constraint_aware_GA(env):
