@@ -64,12 +64,26 @@ class SequentialRunner(Runner):
         """
         logging.debug("sequential runner started for " + self.kernel_options.kernel_name)
 
+        results, worker_time, warmup_time = self._evaluate(parameter_space, tuning_options)
+        self._add_strategy_and_framework_time(results, worker_time, warmup_time)
+        return results
+
+    def _evaluate(self, parameter_space, tuning_options, prebuilt=None):
+        """Evaluate the configurations in parameter_space one after the other.
+
+        :param prebuilt: Kernel instances and builds for configurations that were built before, indexed
+            by the position of the configuration in parameter_space, see ParallelCompileRunner.
+        :type prebuilt: dict(int: tuple(KernelInstance, KernelBuild))
+
+        :returns: The results, the time spent by the worker in seconds, and the warmup time in seconds.
+        """
+        prebuilt = prebuilt or {}
         results = []
         worker_time = 0
         warmup_time = 0
 
         # iterate over parameter space
-        for element in parameter_space:
+        for index, element in enumerate(parameter_space):
             # If the time limit is exceeded, just skip this element. Add `None` to
             # indicate to CostFunc that no result is available for this config.
             if tuning_options.budget.is_done():
@@ -86,23 +100,30 @@ class SequentialRunner(Runner):
                 cache_entry = tuning_options.cache[x_int]
                 params.update(copy_without_benchmark_timings(cache_entry))
             else:
+                instance, build = prebuilt.get(index, (None, None))
+
                 # attempt to warmup the GPU by running the first config in the parameter space and ignoring the result
                 if not self.warmed_up:
                     warmup_timer = Timer()
+                    # keep the temporary files of a prebuilt instance, it is used again below
                     self.dev.compile_and_benchmark(
-                        self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options
+                        self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options,
+                        instance, build, delete_temp_files=instance is None,
                     )
                     self.warmed_up = True
                     warmup_time = warmup_timer.get()
 
                 result = self.dev.compile_and_benchmark(
-                    self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options
+                    self.kernel_source, self.gpu_args, params, self.kernel_options, tuning_options, instance, build
                 )
 
                 # Collect total time spent by worker in seconds
                 worker_time += (
                     result["compile_time"] + result["verification_time"] + result["benchmark_time"]
                 ) / 1000
+                if build is not None:
+                    # time spent building in parallel is accounted for by the runner that built the kernel
+                    worker_time -= build.time / 1000
 
                 assert check_result_type(result)
 
@@ -129,6 +150,10 @@ class SequentialRunner(Runner):
             # all visited configurations are added to results to provide a trace for optimization strategies
             results.append(params)
 
+        return results, worker_time, warmup_time
+
+    def _add_strategy_and_framework_time(self, results, worker_time, warmup_time):
+        """Amortize the time spent by the strategy and the framework over the results."""
         # Count the number of valid results
         num_valid_results = sum(bool(r) for r in results)
 
@@ -146,5 +171,3 @@ class SequentialRunner(Runner):
                     # Time must be in ms
                     result["strategy_time"] = 1000 * strategy_time / num_valid_results
                     result["framework_time"] = 1000 * framework_time / num_valid_results
-
-        return results

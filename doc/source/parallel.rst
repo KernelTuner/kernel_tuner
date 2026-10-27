@@ -148,3 +148,59 @@ Finally, launch your application using:
 .. code-block::
 
    RAY_ADDRESS=145.184.221.164:6379 python my_tuning_script.py
+
+
+Parallel Compilation
+--------------------
+
+Compiling kernels can take a significant part of the tuning time, in particular for kernels written in
+Python-based DSLs, where compiling a single configuration can take seconds to minutes. Independently of
+parallel tuning with Ray, Kernel Tuner can compile kernels in parallel threads on the local machine, by passing
+the ``parallel_compile`` argument to ``tune_kernel``:
+
+.. code-block:: python
+
+    kernel_tuner.tune_kernel(
+        "vector_add",
+        kernel_string,
+        size,
+        args,
+        tune_params,
+        parallel_compile=True,
+    )
+
+If ``parallel_compile`` is set to ``True``, Kernel Tuner uses as many threads as there are CPU cores, or it can be
+set to an integer ``n`` to use exactly ``n`` threads. When the optimization strategy evaluates multiple
+configurations at once, Kernel Tuner first compiles all these configurations in parallel, and then verifies and
+benchmarks them one after the other. Kernels are never benchmarked while other kernels are being compiled, so the
+compilation does not affect the benchmark results. As with parallel tuning, strategies with maximum or limited
+parallelism benefit from parallel compilation, while strategies without parallelism compile one configuration at a
+time.
+
+Parallel compilation is supported by the CUDA backends (CUDA-Python, CuPy, and PyCUDA) and by the Python backend
+for all supported DSLs. Other backends compile the kernels one at a time.
+``parallel_compile`` cannot be combined with ``parallel`` or ``simulation_mode``.
+
+Numba, Warp, cuTile, CuTe, and Tilus cannot compile kernels in parallel threads: Numba, Warp, and cuTile compile
+one kernel at a time because of a global compiler lock, CuTe kernels can only be launched from the thread that
+compiled them, and Tilus keeps the state of the kernel it is compiling in global variables.
+These kernels are compiled in worker processes instead, at most one per thread, and at most 8 when
+``parallel_compile`` is set to ``True``. A worker process compiles the
+kernel by running it once, after which Kernel Tuner loads the compiled kernel from disk. Numba and CuTe kernels are
+stored in a temporary cache that Kernel Tuner removes, Warp, cuTile, and Tilus kernels are stored in the kernel
+caches of these DSLs. Note that:
+
+* Starting the worker processes takes several seconds, so compiling in worker processes only pays off when
+  compiling a kernel takes long, or when many kernels are compiled.
+* Numba cannot store some kernels in its cache, such as kernels that use float16. Kernel Tuner then prints a
+  warning and compiles these kernels one at a time.
+* Each worker process creates its own CUDA context on the GPU and a copy of the kernel arguments, which uses GPU
+  memory. Use a smaller number for ``parallel_compile`` if the GPU runs out of memory.
+* The worker processes are started with the ``spawn`` method of ``multiprocessing``, which imports the script that
+  calls ``tune_kernel`` in each worker process. Protect the code that starts tuning with
+  ``if __name__ == "__main__":``, as the examples do. A ``call_function`` must be defined at the top level of a
+  module, so that it can be sent to the worker processes. When kernels cannot be compiled in worker processes,
+  Kernel Tuner prints a warning and compiles them one at a time.
+
+Taichi kernels cannot be compiled in parallel threads either. Taichi compiles kernels quickly, so these are
+compiled one at a time in the main thread.

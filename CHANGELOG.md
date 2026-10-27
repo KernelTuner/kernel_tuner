@@ -3,7 +3,17 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
+- Require Python 3.12.2 or newer, Python 3.10 and 3.11 are no longer supported
 - Fix `np.shuffle` crash and wrong return type in `Searchspace` distributed random and LHS samplers
+- Add support for tuning kernels written in Python DSLs, such as Triton, Numba, Warp, Taichi, Tilus, TileLang, CuTe, cuTile, and CuPy (cupyx.jit), using `lang="generic_python"` and a `call_function`
+- Detect kernels in Python files as `lang="generic_python"`, and detect the DSL of Python kernels to select a default `call_function` when none is given
+- Add `parallel_compile` option to compile kernels in parallel threads before benchmarking them one after the other, supported by the CUDA backends and all Python DSLs. Numba, Warp, cuTile, CuTe, and Tilus kernels are compiled in worker processes instead of threads, Taichi kernels one at a time in the main thread
+- Add `kernel_tuner.autotune` decorator that tunes Python DSL kernels inside an application when they are launched with a new tuning key, like `triton.autotune`, with optional verification and wisdom files in the format of Kernel Launcher to store tuning results
+- Fix PyCUDA backend raising an error instead of skipping configurations that use too much shared memory
+- Add support for PyTorch tensors and other objects implementing the CUDA Array Interface as kernel arguments in the cuda-python (nvcuda) backend
+- Change PyCUDA backend to copy PyTorch CUDA tensors to a separate device allocation, the user's tensors are no longer modified by the kernel
+- Fix output verification failing for PyTorch tensors as expected answers
+- Fix outputs not being reset between kernel runs for PyTorch tensors in the PyCUDA backend
 
 ## [1.5.0] - 2026-08-20
 - Kernel Tuner can now be used from Julia, [see KernelTuner.jl](https://github.com/KernelTuner/KernelTuner.jl)

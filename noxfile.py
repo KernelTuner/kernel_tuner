@@ -21,7 +21,7 @@ from julia_helper import backend_map, detect_julia_gpu_backends  # noqa: E402, F
 
 # set the test parameters
 verbose = False
-python_versions_to_test = ["3.14", "3.13", "3.12", "3.11"]
+python_versions_to_test = ["3.14", "3.13", "3.12"]
 nox.options.stop_on_first_error = True
 nox.options.error_on_missing_interpreters = True
 nox.options.default_venv_backend = "virtualenv"
@@ -72,9 +72,9 @@ def create_settings(session: Session) -> None:
 # obtain workspace level settings from the 'noxsettings.toml' file
 if settings_file_path.exists():
     with settings_file_path.open(mode="rb") as fp:
-        import tomli
+        import tomllib
 
-        nox_settings = tomli.load(fp)
+        nox_settings = tomllib.load(fp)
         venvbackend = nox_settings["venvbackend"]
         envdir = nox_settings["envdir"]
         assert venvbackend in venvbackend_values, (

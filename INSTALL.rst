@@ -20,7 +20,7 @@ Linux users could type the following to download and install Python 3 using Mini
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
 
-You are of course also free to use your own Python installation, and the Kernel Tuner is developed to be fully compatible with Python 3.10 and newer.
+You are of course also free to use your own Python installation, and the Kernel Tuner is developed to be fully compatible with Python 3.12.2 and newer.
 
 Installing Python Packages
 --------------------------
@@ -144,6 +144,62 @@ Then install the HIP Python package(s) as follows:
     python3 -m pip install -i https://test.pypi.org/simple hip-python-as-cuda~=$rocm_version
 
 For other installation options check `hip-python on GitHub <https://github.com/ROCm/hip-python>`_
+
+.. _installing python dsls:
+
+Python DSLs
+-----------
+
+Kernel Tuner can also tune kernels written in Python-based domain-specific languages (DSLs), such as
+Triton, Numba, CuPy, Warp, Taichi, CuTe, Tilus, TileLang, and cuTile. These kernels are tuned using
+the Python backend, which currently only supports NVIDIA GPUs.
+
+The Python backend requires PyTorch with CUDA support, which Kernel Tuner uses to select the GPU,
+allocate the kernel arguments, and time the kernels. Make sure to install a PyTorch build that matches
+the CUDA version supported by your driver, see the `PyTorch installation guide <https://pytorch.org/get-started/locally/>`__.
+For example:
+
+.. code-block:: bash
+
+    pip install torch --index-url https://download.pytorch.org/whl/cu130
+
+You can check that PyTorch can use your GPU with:
+
+.. code-block:: bash
+
+    python -c "import torch; print(torch.cuda.is_available())"
+
+Next, install the DSLs that you want to use. Kernel Tuner only imports a DSL when you tune a kernel
+written in that DSL, so you only need to install the DSLs that you actually use.
+
+.. csv-table:: Python packages for each DSL
+  :header: DSL, Install command
+  :widths: auto
+
+  Triton,   "``pip install triton``"
+  Numba,    "``pip install numba-cuda``"
+  CuPy,     "``pip install cupy-cuda13x`` (or ``cupy-cuda12x`` for CUDA 12)"
+  Warp,     "``pip install warp-lang``"
+  Taichi,   "``pip install taichi``"
+  CuTe,     "``pip install nvidia-cutlass-dsl``"
+  Tilus,    "``pip install tilus``"
+  TileLang, "``pip install tilelang``"
+  cuTile,   "``pip install cuda-tile``"
+
+Some DSLs have additional requirements:
+
+- TileLang compiles the generated code with a C++ compiler that supports C++20. If your default
+  ``g++`` is too old, point the ``CXX`` environment variable to a newer compiler, e.g. ``export CXX=g++-12``.
+  If compilation fails, every configuration is skipped silently; use ``verbose=True`` to see the compiler errors.
+- cuTile uses the ``tileiras`` compiler that is part of the CUDA toolkit (CUDA 13.1 or newer), so make sure
+  that the CUDA toolkit's ``bin`` directory is on your ``PATH``.
+- Taichi loads ``libcuda.so`` at runtime. On WSL, you may need to add ``/usr/lib/wsl/lib`` to ``LD_LIBRARY_PATH``.
+
+Please refer to the documentation of each DSL for more detailed installation instructions, to the
+documentation on `backends <https://kerneltuner.github.io/kernel_tuner/stable/backends.html>`__ for how
+to tune kernels written in Python DSLs, and to
+`examples/python <https://github.com/kerneltuner/kernel_tuner/tree/master/examples/python>`__ for
+examples in each DSL.
 
 Installing the git version
 --------------------------

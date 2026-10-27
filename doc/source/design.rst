@@ -101,6 +101,12 @@ kernel_tuner.runners.sequential.SimulationRunner
     :special-members: __init__
     :members:
 
+kernel_tuner.runners.parallel_compile.ParallelCompileRunner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: kernel_tuner.runners.parallel_compile.ParallelCompileRunner
+    :special-members: __init__
+    :members:
+
 
 Backends
 --------
@@ -150,3 +156,13 @@ kernel_tuner.util
 .. automodule:: kernel_tuner.util
     :members:
 
+
+kernel_tuner.utils.language_detection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.utils.language_detection
+    :members:
+
+kernel_tuner.utils.call_functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: kernel_tuner.utils.call_functions
+    :members:

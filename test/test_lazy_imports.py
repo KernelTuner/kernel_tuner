@@ -45,3 +45,22 @@ print(json.dumps(loaded))
 """
     loaded = json.loads(_run_isolated(code))
     assert loaded == []
+
+
+def test_python_dsls_not_imported_by_detection(tmp_path):
+    kernel_file = tmp_path / "kernel.py"
+    kernel_file.write_text(
+        "import triton\nimport warp\nimport taichi\nimport tilus\nimport tilelang\nimport cuda.tile as ct\n"
+        "import cutlass.cute\nfrom numba import cuda\nfrom cupyx import jit\n\n@ct.kernel\ndef k(a): pass\n"
+    )
+    code = f"""
+import json, sys
+from kernel_tuner.kernel_sources.kernel_source import KernelSource
+from kernel_tuner.utils.language_detection import detect_python_dsl
+dsl = detect_python_dsl("k", {str(kernel_file)!r})
+ks = KernelSource("k", {str(kernel_file)!r}, None)
+dsls = ["triton", "numba", "cupy", "cupyx", "warp", "taichi", "cutlass", "tilus", "tilelang", "cuda.tile"]
+print(json.dumps({{"dsl": dsl, "lang": str(ks.lang), "loaded": [m for m in dsls if m in sys.modules]}}))
+"""
+    result = json.loads(_run_isolated(code))
+    assert result == {"dsl": "cutile", "lang": "GENERIC_PYTHON", "loaded": []}
