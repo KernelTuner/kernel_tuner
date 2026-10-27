@@ -16,7 +16,7 @@
 
 
 Create optimized GPU applications in any mainstream GPU 
-programming language (CUDA, HIP, OpenCL, OpenACC, OpenMP).
+programming language (CUDA, HIP, OpenCL, OpenACC, OpenMP) or Python-based DSL (Triton, TileLang, Tilus, cuTile, CuTe DSL, Warp, Taichi, Numba, CuPy).
 
 What Kernel Tuner does:
 
@@ -29,7 +29,6 @@ What Kernel Tuner does:
 - ... and much more! For example, [caching](https://kerneltuner.github.io/kernel_tuner/stable/cache_files.html), [output verification](https://kerneltuner.github.io/kernel_tuner/stable/correctness.html), [tuning host and device code](https://kerneltuner.github.io/kernel_tuner/stable/hostcode.html), [user defined metrics](https://kerneltuner.github.io/kernel_tuner/stable/metrics.html), see [the full documentation](https://kerneltuner.github.io/kernel_tuner/stable/index.html).
 
 
-
 ## Installation
 
 - First, make sure you have your [CUDA](https://kerneltuner.github.io/kernel_tuner/stable/install.html#cuda-and-pycuda), [OpenCL](https://kerneltuner.github.io/kernel_tuner/stable/install.html#opencl-and-pyopencl), or [HIP](https://kerneltuner.github.io/kernel_tuner/stable/install.html#hip-and-hip-python) compiler installed
@@ -38,7 +37,7 @@ What Kernel Tuner does:
 
 More information on installation, also for other languages, in the [installation guide](http://kerneltuner.github.io/kernel_tuner/stable/install.html).
 
-## Example
+## CUDA Example
 
 ```python
 import numpy as np
@@ -66,7 +65,38 @@ tune_params = {"block_size_x": [32, 64, 128, 256, 512]}
 tune_kernel("vector_add", kernel_string, n, args, tune_params)
 ```
 
+## Triton Example
+
+```python
+import torch
+import triton
+import triton.language as tl
+
+import kernel_tuner as kt
+
+@kt.autotune(
+    tune_params={"BLOCK_SIZE": [128, 256, 512, 1024], "num_warps": [2, 4, 8]},
+    key=["n"],  # tune again for every new vector size
+)
+@triton.jit
+def vector_add(c_ptr, a_ptr, b_ptr, n, BLOCK_SIZE: tl.constexpr):
+    offsets = tl.program_id(axis=0) * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
+    mask = offsets < n
+    a = tl.load(a_ptr + offsets, mask=mask)
+    b = tl.load(b_ptr + offsets, mask=mask)
+    tl.store(c_ptr + offsets, a + b, mask=mask)
+
+
+n = 10_000_000
+a = torch.randn(n, device="cuda")
+b = torch.randn(n, device="cuda")
+c = torch.empty_like(a)
+grid = lambda p: (triton.cdiv(n, p['BLOCK_SIZE']), )
+vector_add[grid](c, a, b, n)  # tunes on the first launch
+```
+
 More [examples here](https://kerneltuner.github.io/kernel_tuner/stable/examples.html).
+
 
 ## Resources
 
