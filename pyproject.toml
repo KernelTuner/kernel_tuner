@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [project]
 name = "kernel_tuner"
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "1.5.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+version = "1.5.1" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
@@ -44,7 +44,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.14",   # TODO when least supported Python version is 3.14, remove juliapkg[zstd] from the optional dependencies
     "Programming Language :: Python :: 3.15"
 ]
 
@@ -100,7 +100,11 @@ cuda = ["cuda-python>=12.6.0", "nvidia-ml-py>=12.535.108", "pynvml>=11.4.1"] # A
 opencl = ["pyopencl"]                                                   # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
 cuda_opencl = ["cuda-python>=12.6.0", "pyopencl"]                            # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 hip = ["hip-python"]
-julia = ["juliapkg>=0.1.28", "juliacall>=0.9.37"]   # optionally juliapkg[zstd] for Python<3.14 and Julia>=1.13 due to zstd registry default
+julia = [
+    "juliapkg>=0.1.28; python_version >= '3.14'",
+    "juliapkg[zstd]>=0.1.28; python_version < '3.14'",  # zstd is required for Julia>=1.13 and Python<3.14 due to zstd registry default
+    "juliacall>=0.9.37"
+]
 tutorial = ["jupyter>=1.0.0", "matplotlib>=3.5.0", "nvidia-ml-py>=12.535.108"]
 
 # ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt --output doc/requirements.txt`
