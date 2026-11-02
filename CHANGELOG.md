@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
+- Added Python 3.15 support, dropped 3.10 support due to removed support from required dependencies. 
+- Removed tomli dependency in favor of built-in tomllib.
 - Fix `np.shuffle` crash and wrong return type in `Searchspace` distributed random and LHS samplers
 
 ## [1.5.0] - 2026-08-20
