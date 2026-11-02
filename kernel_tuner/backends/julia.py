@@ -248,7 +248,7 @@ class JuliaFunctions(GPUBackend):
         gpu_args = []
         for arg in arguments:
             try:
-                arr = self.to_gpuarray(arg)
+                arr = self.to_gpuarray(arg) if not np.isscalar(arg) else arg
                 gpu_args.append(arr)
                 self.allocations.append(arr)
             except Exception as e:
