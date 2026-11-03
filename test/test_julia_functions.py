@@ -118,15 +118,16 @@ def test_tune_kernel_observers(env):
             continue  # Skip configurations that failed to compile or run
         assert "time" in r
         assert r["time"] > 0
-        assert "metal_power" in r
-        assert "metal_freq_hz" in r
-        assert "metal_load" in r
-        assert "metal_energy" in r
-        if r["time"] > 0.1:
-            assert r["metal_power"] > 0
-            assert r["metal_freq_hz"] > 0
-            assert r["metal_load"] > 0
-            assert r["metal_energy"] > 0
+        if backend.lower() == "metal":
+            assert "metal_power" in r
+            assert "metal_freq_hz" in r
+            assert "metal_load" in r
+            assert "metal_energy" in r
+            if r["time"] > 0.1:
+                assert r["metal_power"] > 0
+                assert r["metal_freq_hz"] > 0
+                assert r["metal_load"] > 0
+                assert r["metal_energy"] > 0
 
 
 @pytest.fixture
