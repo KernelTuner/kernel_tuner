@@ -1,3 +1,5 @@
+# Base file for Julia functions. For backend-specific functionality, see the extension files, e.g. `julia_helper_ext_cuda.jl`.
+
 export to_gpuarray, launch_kernel, synchronize_gpu, metal_create_buffer, metal_create_global_buffer, metal_get_global_buffer, metal_reset_global_buffer, metal_commit_buffer, metal_buffer_is_completed
 
 function to_gpuarray(a)

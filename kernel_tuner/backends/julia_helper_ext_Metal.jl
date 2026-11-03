@@ -1,4 +1,4 @@
-# Extension of the julia_helper.jl file for Metal backend, to avoid polluting the main julia_helper.jl file with Metal-specific code and allow Metal-specific types
+# Extension of the julia_helper.jl file for the Metal backend. You can assume `using Metal` has ran.
 
 function metal_create_buffer()::Metal.MTL.MTLCommandBuffer
     queue = Metal.global_queue(Metal.device())

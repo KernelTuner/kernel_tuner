@@ -124,7 +124,7 @@ class JuliaFunctions(GPUBackend):
                     const GPUArrayType = {self.GPUArrayType}
                     global_metal_buffer = nothing
                     include("{str(Path(__file__).parent / "julia_helper.jl")}")
-                    include("{str(Path(__file__).parent / str("julia_helper_ext_" + self.backend_mod_name + ".jl"))}")
+                    include("{str(Path(__file__).parent / str("julia_helper_ext_" + self.backend_mod_name.lower() + ".jl"))}")
                 end
                 """
             )
