@@ -124,6 +124,7 @@ class JuliaFunctions(GPUBackend):
                     const GPUArrayType = {self.GPUArrayType}
                     global_metal_buffer = nothing
                     include("{str(Path(__file__).parent / "julia_helper.jl")}")
+                    include("{str(Path(__file__).parent / str("julia_helper_ext_" + self.backend_mod_name + ".jl"))}")
                 end
                 """
             )
@@ -134,12 +135,13 @@ class JuliaFunctions(GPUBackend):
 
         # Metal specific functions
         self.use_metal_buffer = self.backend_mod_name == "Metal"
-        self.metal_create_buffer = jl.KernelTunerHelper.metal_create_buffer
-        self.metal_create_global_buffer = jl.KernelTunerHelper.metal_create_global_buffer
-        self.metal_get_global_buffer = jl.KernelTunerHelper.metal_get_global_buffer
-        self.metal_reset_global_buffer = jl.KernelTunerHelper.metal_reset_global_buffer
-        self.metal_commit_buffer = jl.KernelTunerHelper.metal_commit_buffer
-        self.metal_buffer_is_completed = jl.KernelTunerHelper.metal_buffer_is_completed
+        if self.use_metal_buffer:
+            self.metal_create_buffer = jl.KernelTunerHelper.metal_create_buffer
+            self.metal_create_global_buffer = jl.KernelTunerHelper.metal_create_global_buffer
+            self.metal_get_global_buffer = jl.KernelTunerHelper.metal_get_global_buffer
+            self.metal_reset_global_buffer = jl.KernelTunerHelper.metal_reset_global_buffer
+            self.metal_commit_buffer = jl.KernelTunerHelper.metal_commit_buffer
+            self.metal_buffer_is_completed = jl.KernelTunerHelper.metal_buffer_is_completed
 
         # env info
         self.env = {
