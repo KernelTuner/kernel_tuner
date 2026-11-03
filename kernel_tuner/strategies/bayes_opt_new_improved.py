@@ -370,32 +370,38 @@ class BayesianOptimization:
         random_offsets = np.round(rng.standard_normal(self.num_initial_samples) * random_offset_size)
 
         # first apply the initial sampling method
-        if self.initial_sample_method == 'lhs' and self.num_initial_samples - self.fevals > 1:
-            indices = self.get_lhs_samples(random_offsets)
-            for param_config_index in indices.tolist():
-                if param_config_index in list_param_config_indices:
-                    continue
-                list_param_config_indices.append(param_config_index)
-                self.evaluate_config(param_config_index)
-        elif self.initial_sample_method == 'random':
+        try:
+            if self.initial_sample_method == 'lhs' and self.num_initial_samples - self.fevals > 1:
+                indices = self.get_lhs_samples(random_offsets)
+                for param_config_index in indices.tolist():
+                    if param_config_index in list_param_config_indices:
+                        continue
+                    list_param_config_indices.append(param_config_index)
+                    self.evaluate_config(param_config_index)
+            elif self.initial_sample_method == 'random':
+                while self.fevals < self.num_initial_samples:
+                    param_config_index = randint(0, self.size - 1)
+                    if param_config_index in list_param_config_indices:
+                        continue
+                    list_param_config_indices.append(param_config_index)
+                    self.evaluate_config(param_config_index)
+
+            # then take index-spaced samples until all samples are valid
             while self.fevals < self.num_initial_samples:
-                param_config_index = randint(0, self.size - 1)
+                least_evaluated_region_index = self.get_middle_index_of_least_evaluated_region()
+                param_config_index = min(max(int(least_evaluated_region_index + random_offsets[self.fevals].item()), 0), self.size - 1)
                 if param_config_index in list_param_config_indices:
-                    continue
+                    warnings.warn(
+                        f"An already evaluated configuration ({param_config_index}) was selected for index-spaced sampling. " +
+                        "If this happens regularly, reduce the initial sample random offset factor.", AlreadyEvaluatedConflict)
+                    param_config_index = least_evaluated_region_index
                 list_param_config_indices.append(param_config_index)
                 self.evaluate_config(param_config_index)
 
-        # then take index-spaced samples until all samples are valid
-        while self.fevals < self.num_initial_samples:
-            least_evaluated_region_index = self.get_middle_index_of_least_evaluated_region()
-            param_config_index = min(max(int(least_evaluated_region_index + random_offsets[self.fevals].item()), 0), self.size - 1)
-            if param_config_index in list_param_config_indices:
-                warnings.warn(
-                    f"An already evaluated configuration ({param_config_index}) was selected for index-spaced sampling. " +
-                    "If this happens regularly, reduce the initial sample random offset factor.", AlreadyEvaluatedConflict)
-                param_config_index = least_evaluated_region_index
-            list_param_config_indices.append(param_config_index)
-            self.evaluate_config(param_config_index)
+        except StopCriterionReached:
+            if self.tuning_options.verbose:
+                print(f"Stop criterion reached: {self.fevals+1}")
+            return
 
         # set the current optimum, initial sample mean and initial sample std
         self.current_optimum = self.opt(self.train_y).item()
