@@ -1009,6 +1009,7 @@ def _default_verify_function(instance, answer, result_host, atol, verbose):
                 diff = lib.abs(expected - result)
                 indices = lib.where(diff > atol)
                 print(diff[indices])
+                print(indices)
             correct = correct and output_test
 
     if not correct:
