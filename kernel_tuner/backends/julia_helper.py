@@ -19,6 +19,8 @@ backend_map = {
         "name": "CUDA.name(CUDA.device())",
         "max_threads": "CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)",
         "capability": "CUDA.capability(CUDA.device())",
+        "uuid": lambda d: f"NVML.uuid(CUDA.NVML.Device({d}))",
+        "pci_bus_id": None,
         "GPUArrayType": "CuArray",
     },
     "AMD": {
@@ -29,6 +31,8 @@ backend_map = {
         "name": "AMDGPU.HIP.name(AMDGPU.HIP.device())",
         "max_threads": "AMDGPU.HIP.attribute(AMDGPU.HIP.device(), AMDGPU.HIP.hipDeviceAttributeMaxThreadsPerBlock)",
         "capability": None,
+        "uuid": None,
+        "pci_bus_id": None,
         "GPUArrayType": "ROCArray",
     },
     "INTEL": {
@@ -39,6 +43,8 @@ backend_map = {
         "name": "oneAPI.name(oneAPI.device())",
         "max_threads": "oneAPI.compute_properties(oneAPI.device()).maxTotalGroupSize",
         "capability": None,
+        "uuid": None,
+        "pci_bus_id": None,
         "GPUArrayType": "oneArray",
     },
     "METAL": {
@@ -49,6 +55,8 @@ backend_map = {
         "name": "Metal.device().name",
         "max_threads": "Int(Metal.device().maxThreadsPerThreadgroup.width)",
         "capability": None,
+        "uuid": None,
+        "pci_bus_id": None,
         "GPUArrayType": "MtlArray",
     },
     "CPU": {
@@ -59,6 +67,8 @@ backend_map = {
         "name": "CPU",
         "max_threads": "1024", # arbitrary as CPU doesn't have a max threads per block concept
         "capability": None,
+        "uuid": None,
+        "pci_bus_id": None,
         "GPUArrayType": "Array",
     },
 }

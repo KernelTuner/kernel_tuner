@@ -82,6 +82,16 @@ class JuliaFunctions(GPUBackend):
         self.launch_kernel_time_start = None
         self.initialize_backend(device, backend_name=backend_name)
 
+        # set device environment info
+        self.env = {
+            "device_name": self.name,
+            "compute_capability": self.cc,
+            "iterations": iterations,
+            "compiler_options": self.compiler_options,
+            "uuid": self.uuid,
+            "pci_bus_id": self.pci_bus_id,
+        }
+
         # setup observers
         self.observers = observers or []
         self.observers.append(
@@ -142,14 +152,6 @@ class JuliaFunctions(GPUBackend):
             self.metal_reset_global_buffer = jl.KernelTunerHelper.metal_reset_global_buffer
             self.metal_commit_buffer = jl.KernelTunerHelper.metal_commit_buffer
             self.metal_buffer_is_completed = jl.KernelTunerHelper.metal_buffer_is_completed
-
-        # env info
-        self.env = {
-            "device_name": self.name,
-            "compute_capability": self.cc,
-            "iterations": iterations,
-            "compiler_options": self.compiler_options,
-        }
 
     def initialize_backend(self, device, backend_name):
         """Initialize for a choice of Julia backends by backend_name, one of 'cuda', 'amd', 'intel', 'metal'."""
@@ -213,6 +215,20 @@ class JuliaFunctions(GPUBackend):
             self.max_threads = int(jl.seval(info["max_threads"]))
         except JuliaError:
             self.max_threads = None
+
+        # Query UUID and PCI bus ID if available
+        self.uuid = None
+        self.pci_bus_id = None
+        if info["uuid"] is not None:
+            try:
+                self.uuid = str(jl.seval(info["uuid"](int(device))))
+            except JuliaError:
+                self.uuid = None
+        if info["pci_bus_id"] is not None:
+            try:
+                self.pci_bus_id = str(jl.seval(info["pci_bus_id"](int(device))))
+            except JuliaError:
+                self.pci_bus_id = None
 
         # Get the device and context
         try:
