@@ -12,6 +12,27 @@ except ImportError:
     pynvml = None
 
 
+SUPPORTED_OBSERVABLES = [
+    "power_readings",
+    "nvml_power",
+    "nvml_energy",
+    "core_freq",
+    "mem_freq",
+    "temperature",
+    "gr_voltage",
+]
+
+FIELD_TYPE_MAP = {
+    "power_readings": list,
+    "nvml_power": float,
+    "nvml_energy": float,
+    "core_freq": int,
+    "mem_freq": int,
+    "temperature": float,
+    "gr_voltage": float,
+}
+
+
 class nvml:
     """Class that gathers the NVML functionality for one device."""
 
@@ -375,18 +396,9 @@ class NVMLObserver(BenchmarkObserver):
         self.nvml_kwargs["use_locked_clocks"] = use_locked_clocks
         self.nvml_kwargs["nvidia_smi_fallback"] = nvidia_smi_fallback
 
-        supported = [
-            "power_readings",
-            "nvml_power",
-            "nvml_energy",
-            "core_freq",
-            "mem_freq",
-            "temperature",
-            "gr_voltage",
-        ]
         for obs in observables:
-            if obs not in supported:
-                raise ValueError(f"Observable {obs} not in supported: {supported}")
+            if obs not in SUPPORTED_OBSERVABLES:
+                raise ValueError(f"Observable {obs} not in supported: {SUPPORTED_OBSERVABLES}")
         self.observables = observables
 
         self.measure_power = False
