@@ -16,7 +16,7 @@ cache_filename = os.path.dirname(
 cache_filename_zipped = cache_filename + ".gz"
 
 @pytest.fixture
-def env():
+def env(request):
     kernel_string = """
     extern "C" __global__ void vector_add(float *c, float *a, float *b, int n) {
         int i = blockIdx.x * block_size_x + threadIdx.x;
@@ -26,7 +26,7 @@ def env():
     }
     """
 
-    size = 100
+    size = request.param if hasattr(request, 'param') else 100
     a = np.random.randn(size).astype(np.float32)
     b = np.random.randn(size).astype(np.float32)
     c = np.zeros_like(b)
