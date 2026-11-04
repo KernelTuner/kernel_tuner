@@ -6,7 +6,6 @@ from kernel_tuner.backends.julia_helper import detect_julia_gpu_backends
 from kernel_tuner import run_kernel, tune_kernel
 from kernel_tuner.backends.julia import JuliaFunctions
 from kernel_tuner.core import KernelInstance, KernelSource
-from kernel_tuner.observers.metal import MetalObserver, SUPPORTED_OBSERVABLES
 
 from .test_runners import env  # noqa: F401
 from .context import skip_if_no_julia
@@ -94,6 +93,7 @@ def test_tune_kernel(env):
         assert r["time"] > 0
 
 @skip_if_no_julia
+@pytest.mark.parametrize("env", [100000000], indirect=True)    # test with a larger problem size to ensure that we can measure meaningful power and energy usage
 def test_tune_kernel_observers(env):
     """Run a minimal Julia kernel tuner example with observers."""
     env[0] = kernel_name
@@ -103,13 +103,22 @@ def test_tune_kernel_observers(env):
     # create an observer based on the backend
     backend = detect_julia_gpu_backends()[0]
     if backend.lower() == "metal":
-        # create a MetalObserver with all supported observables
+        from kernel_tuner.observers.metal import MetalObserver, SUPPORTED_OBSERVABLES, FIELD_TYPE_MAP
         observers = [MetalObserver(observables=SUPPORTED_OBSERVABLES)]
+        expected_observables = SUPPORTED_OBSERVABLES
+    elif backend.lower() == "cuda":
+        from kernel_tuner.observers.nvml import NVMLObserver as CudaObserver, SUPPORTED_OBSERVABLES, FIELD_TYPE_MAP
+        del SUPPORTED_OBSERVABLES[SUPPORTED_OBSERVABLES.index("gr_voltage")]  # gr_voltage is not supported on all GPUs
+        observers = [CudaObserver(observables=SUPPORTED_OBSERVABLES)]
     else:
         observers = []
 
-    # run the kernel tuner with the observers
+    # tune the kernel with the observers
     result, _ = tune_kernel(*env, observers=observers, lang="julia", verbose=True)
+
+    # Define the expected observables and numerical observables
+    expected_observables = SUPPORTED_OBSERVABLES or []
+    expected_numerical_observables = [o for o in expected_observables if FIELD_TYPE_MAP[o] in [int, float]] or []
 
     # check that the results contain the expected observables
     assert len(result) > 0
@@ -118,16 +127,12 @@ def test_tune_kernel_observers(env):
             continue  # Skip configurations that failed to compile or run
         assert "time" in r
         assert r["time"] > 0
-        if backend.lower() == "metal":
-            assert "metal_power" in r
-            assert "metal_freq_hz" in r
-            assert "metal_load" in r
-            assert "metal_energy" in r
+        for observable in expected_observables:
+            assert observable in r, f"Expected {observable=} not found in config {r}"
+        for observable in expected_numerical_observables:
+            assert isinstance(r[observable], (int, float))
             if r["time"] > 0.1:
-                assert r["metal_power"] > 0
-                assert r["metal_freq_hz"] > 0
-                assert r["metal_load"] > 0
-                assert r["metal_energy"] > 0
+                assert r[observable] > 0, f"Expected {observable=} to be > 0 in config {r}"
 
 
 @pytest.fixture
