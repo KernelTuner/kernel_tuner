@@ -266,9 +266,14 @@ class JuliaFunctions(GPUBackend):
         gpu_args = []
         for arg in arguments:
             try:
-                arr = self.to_gpuarray(arg) if not np.isscalar(arg) else arg
-                gpu_args.append(arr)
-                self.allocations.append(arr)
+                if np.isscalar(arg):
+                    # if not explicitly float64, it should be a float32 for GPU kernels
+                    if isinstance(arg, float) and not isinstance(arg, np.float64):
+                        arg = np.float32(arg)
+                else:
+                    arg = self.to_gpuarray(arg)
+                gpu_args.append(arg)
+                self.allocations.append(arg)
             except Exception as e:
                 raise RuntimeError(f"Failed to move array to GPU: {e}")
         return gpu_args
