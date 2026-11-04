@@ -93,12 +93,13 @@ def test_tune_kernel(env):
         assert r["time"] > 0
 
 @skip_if_no_julia
-@pytest.mark.parametrize("env", [100000000], indirect=True)    # test with a larger problem size to ensure that we can measure meaningful power and energy usage
+@pytest.mark.parametrize("env", [100, 100000000], indirect=True)    # test with a larger problem size to ensure that we can measure meaningful power and energy usage
 def test_tune_kernel_observers(env):
     """Run a minimal Julia kernel tuner example with observers."""
     env[0] = kernel_name
     env[1] = kernel_string
     env[4] = list(env[4].items()) # convert from a dict to a list of tuples to preserve order
+    size = env[2]
 
     # create an observer based on the backend
     backend = detect_julia_gpu_backends()[0]
@@ -131,7 +132,7 @@ def test_tune_kernel_observers(env):
             assert observable in r, f"Expected {observable=} not found in config {r}"
         for observable in expected_numerical_observables:
             assert isinstance(r[observable], (int, float))
-            if r["time"] > 0.1:
+            if size >= 100000000:  # only check for positive values if the problem size is large enough to produce meaningful measurements
                 assert r[observable] > 0, f"Expected {observable=} to be > 0 in config {r}"
 
 

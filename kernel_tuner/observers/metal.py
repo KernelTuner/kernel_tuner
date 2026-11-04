@@ -223,7 +223,7 @@ class MetalObserver(BenchmarkObserver):
         observables=SUPPORTED_OBSERVABLES,
         *,
         device_id=None,
-        prefix="metal",
+        prefix=None,
         use_continuous_observer=True,
         continuous_duration=1.0,
         interval_ms=50,
