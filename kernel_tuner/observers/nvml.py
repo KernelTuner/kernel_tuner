@@ -440,7 +440,7 @@ class NVMLObserver(BenchmarkObserver):
         elif pci_bus is not None:
             self.nvml = nvml(device_pci_bus=pci_bus, **self.nvml_kwargs)
         else:
-            raise ValueError("failed to detect NVIDIA device: no UUID or PCI-bus-id in environment")
+            raise ValueError(f"failed to detect NVIDIA device: no UUID or PCI-bus-id in environment: {env}")
 
     def read_power(self):
         """ Return power in Watt """
