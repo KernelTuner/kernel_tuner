@@ -1,9 +1,12 @@
 from time import perf_counter
 from warnings import warn
+import logging
 
 import numpy as np
 
 from kernel_tuner.observers.observer import BenchmarkObserver, PrologueObserver
+
+logger = logging.getLogger(__name__)
 
 
 class JuliaRuntimeObserver(BenchmarkObserver):
@@ -82,7 +85,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         # If both GPU and host timing are available, check for discrepancies
         if ms is not None and ms_hostside is not None and ms > ms_hostside and ms_hostside > 0.0:
             if ms < 1 and (ms > 1.2 * ms_hostside):
-                warn(
+                logger.info(
                     f"Measured GPU time {ms:.3f} ms is greater than host time {ms_hostside:.3f} ms; "
                     "this may happen with very short execution times."
                 )
