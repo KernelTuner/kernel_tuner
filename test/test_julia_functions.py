@@ -109,7 +109,8 @@ def test_tune_kernel_observers(env):
         expected_observables = SUPPORTED_OBSERVABLES
     elif backend.lower() == "cuda":
         from kernel_tuner.observers.nvml import NVMLObserver as CudaObserver, SUPPORTED_OBSERVABLES, FIELD_TYPE_MAP
-        del SUPPORTED_OBSERVABLES[SUPPORTED_OBSERVABLES.index("gr_voltage")]  # gr_voltage is not supported on all GPUs
+        if "gr_voltage" in SUPPORTED_OBSERVABLES:
+            del SUPPORTED_OBSERVABLES[SUPPORTED_OBSERVABLES.index("gr_voltage")]  # gr_voltage is not supported on all GPUs
         observers = [CudaObserver(observables=SUPPORTED_OBSERVABLES)]
     else:
         observers = []
