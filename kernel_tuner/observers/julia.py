@@ -84,7 +84,13 @@ class JuliaRuntimeObserver(BenchmarkObserver):
 
         # If both GPU and host timing are available, check for discrepancies
         if ms is not None and ms_hostside is not None and ms > ms_hostside and ms_hostside > 0.0:
-            if ms < 1 and (ms > 1.2 * ms_hostside):
+            if ms > 10 * ms_hostside:
+                warn(
+                    f"Measured GPU time {ms:.3f} ms is more than 10x host time {ms_hostside:.3f} ms; "
+                    "this may indicate an issue with the timing measurement. Replacing GPU time with host time for this measurement."
+                )
+                ms = ms_hostside
+            elif ms < 1 and (ms > 1.2 * ms_hostside):
                 logger.info(
                     f"Measured GPU time {ms:.3f} ms is greater than host time {ms_hostside:.3f} ms; "
                     "this may happen with very short execution times."
@@ -100,8 +106,24 @@ class JuliaRuntimeObserver(BenchmarkObserver):
     def get_results(self):
         times_avg = self.times.copy()
         if len(self.times) >= 5:
-            # remove the first to avoid JIT warmup effects
-            times_avg = self.times[1:]
+            # due to interactivity, the Julia runtime observer may have rare outliers
+            # check if there is a major outlier, if so, remove it
+            arr = np.array(times_avg)
+            mean = np.mean(arr)
+            std = np.std(arr)
+            threshold = 2
+            z_scores = (arr - mean) / std
+            num_outliers = np.sum(z_scores > threshold)
+            if num_outliers > 0:
+                log_str = f"Detected {num_outliers} major outliers (> {threshold} z-score) in the measured times: {self.times}."
+                if num_outliers == 1:
+                    logger.info(log_str)
+                else:
+                    logger.warning(log_str)
+                times_avg = arr[z_scores <= threshold]
+            else:
+                # remove the first to avoid JIT warmup effects
+                times_avg = self.times[1:]
         results = {
             "time": np.average(times_avg),
             "times": self.times.copy(),
