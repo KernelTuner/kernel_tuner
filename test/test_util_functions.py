@@ -884,3 +884,34 @@ def test_convert_constraint_lambdas_illformatted():
         print(result)
     except ValueError:
         pass
+
+
+class JuliaError(Exception):
+    """Stand-in for JuliaCall's JuliaError, which holds the Julia exception in `exception`."""
+
+    def __init__(self, exception):
+        super().__init__(exception)
+        self.exception = exception
+
+
+def test_is_interrupt():
+    from kernel_tuner.util import is_interrupt, raise_if_interrupt
+
+    assert is_interrupt(KeyboardInterrupt())
+    assert is_interrupt(JuliaError("InterruptException()"))
+    assert is_interrupt(JuliaError("Python: KeyboardInterrupt"))  # from Python code called from Julia
+    assert not is_interrupt(JuliaError("BoundsError()"))
+    assert not is_interrupt(RuntimeError("Kernel launch failed"))
+
+    # an interrupt re-raised as another exception by a backend
+    try:
+        try:
+            raise JuliaError("InterruptException()")
+        except JuliaError as e:
+            raise RuntimeError("Julia synchronize failed") from e
+    except RuntimeError as e:
+        assert is_interrupt(e)
+        with pytest.raises(KeyboardInterrupt):
+            raise_if_interrupt(e)
+
+    raise_if_interrupt(RuntimeError("not an interrupt"))  # does nothing

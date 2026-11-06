@@ -467,8 +467,13 @@ class DeviceInterface(object):
         for obs in self.continuous_observers:
             obs.before_start()
         self.dev.start_event()
+        # for very short kernels, launching can take longer than running the kernel, so `iterations` launches would take
+        # much longer than `duration`; stop launching once `duration` has passed, the GPU has been as busy as it can be
+        launch_deadline = time.perf_counter() + duration
         for _ in range(iterations):
             self.dev.run_kernel(func, gpu_args, threads, grid)
+            if time.perf_counter() > launch_deadline:
+                break
         self.dev.stop_event()
         for obs in self.continuous_observers:
             obs.after_start()
@@ -531,6 +536,7 @@ class DeviceInterface(object):
                 self.benchmark_continuous(func, gpu_args, instance.threads, instance.grid, result, duration)
 
         except Exception as e:
+            util.raise_if_interrupt(e)  # Ctrl-C stops tuning instead of failing this configuration
             # some launches may fail because too many registers are required
             # to run the kernel given the current thread block size
             # the desired behavior is to simply skip over this configuration
@@ -685,6 +691,7 @@ class DeviceInterface(object):
                     last_benchmark_time = 1000 * (time.perf_counter() - start_benchmark)
 
             except Exception as e:
+                util.raise_if_interrupt(e)  # Ctrl-C stops tuning instead of failing this configuration
                 # dump kernel sources to temp file
                 temp_filenames = instance.prepare_temp_files_for_error_msg()
                 print("Error while compiling or benchmarking, see source files: " + " ".join(temp_filenames))
@@ -710,6 +717,7 @@ class DeviceInterface(object):
         try:
             func = self.dev.compile(instance)
         except Exception as e:
+            util.raise_if_interrupt(e)  # Ctrl-C stops tuning instead of failing this configuration
             # compiles may fail because certain kernel configurations use too
             # much shared memory for example, the desired behavior is to simply
             # skip over this configuration and try the next one
@@ -835,6 +843,7 @@ class DeviceInterface(object):
         try:
             self.dev.run_kernel(func, gpu_args, instance.threads, instance.grid)
         except Exception as e:
+            util.raise_if_interrupt(e)  # Ctrl-C stops tuning instead of failing this configuration
             if "too many resources requested for launch" in str(e) or "OUT_OF_RESOURCES" in str(e):
                 logging.debug("ignoring runtime failure due to too many resources required")
                 return False

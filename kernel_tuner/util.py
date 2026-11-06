@@ -121,6 +121,40 @@ class StopCriterionReached(Exception):
     """Exception thrown when a stop criterion has been reached."""
 
 
+def is_interrupt(exception) -> bool:
+    """Whether `exception`, or an exception that caused it, is an interrupt (Ctrl-C).
+
+    With the Julia backend, Julia handles the interrupt signal, so Ctrl-C arrives as a Julia `InterruptException`,
+    wrapped in a `JuliaError` by JuliaCall, and possibly re-raised as another exception by the backend.
+    """
+    seen = set()
+    pending = [exception]
+    while pending:
+        exc = pending.pop()
+        if exc is None or id(exc) in seen:
+            continue
+        seen.add(id(exc))
+        if isinstance(exc, KeyboardInterrupt):
+            return True
+        if type(exc).__name__ == "JuliaError":
+            julia_exception = repr(getattr(exc, "exception", ""))
+            # an interrupt in Julia, or a KeyboardInterrupt in Python code called from Julia
+            if "InterruptException" in julia_exception or "KeyboardInterrupt" in julia_exception:
+                return True
+        pending.extend([exc.__cause__, exc.__context__])
+    return False
+
+
+def raise_if_interrupt(exception):
+    """Raise a `KeyboardInterrupt` if `exception` is caused by an interrupt, so that it stops tuning.
+
+    Use this in handlers that catch any exception, as an interrupt arriving through Julia (see `is_interrupt`) would
+    otherwise only make the current configuration fail.
+    """
+    if is_interrupt(exception):
+        raise KeyboardInterrupt() from exception
+
+
 try:
     import torch
 except ImportError:

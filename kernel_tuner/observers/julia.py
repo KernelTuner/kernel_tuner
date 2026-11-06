@@ -15,7 +15,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
     - CUDA: CuEvent timing
     - ROCBackend: HIPEvent timing
     - OneAPI: host-side timing (less accurate, no events available)
-    - Metal: timing by wrapping the kernel launch with a command buffer
+    - Metal: GPU start and end times of the command buffers that ran the kernel
     """
 
     def __init__(
@@ -47,7 +47,6 @@ class JuliaRuntimeObserver(BenchmarkObserver):
     def after_finish(self):
         ms = None
         ms_hostside = self.kt_backend._host_time_julia
-        ms_overhead = 0.0
 
         if self.name == "cuda":
             # CUDA: use events stored in backend
@@ -58,10 +57,10 @@ class JuliaRuntimeObserver(BenchmarkObserver):
             if self.kt_backend._start_event is not None and self.kt_backend._end_event is not None:
                 ms = float(self.backend_mod.HIP.elapsed(self.kt_backend._start_event, self.kt_backend._end_event) * 1000.0)
         elif self.name == "metal":
-            # register the overhead from the command buffer 
-            buf = self.kt_backend.metal_get_global_buffer()
-            if buf is not None:
-                ms_overhead = float((buf.GPUEndTime - buf.GPUStartTime) * 1000.0)
+            # GPU time of the command buffers that ran the kernel
+            gpu_ms = self.kt_backend.metal_gpu_time_ms()
+            if gpu_ms is not None:
+                ms = float(gpu_ms)
         elif self.name in ("intel", "cpu"):
             # uses host-side timing
             pass
@@ -69,7 +68,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
         # If GPU timing failed or not available, fall back to host-side timing if available
         if ms is None and ms_hostside is not None:
             ms = ms_hostside
-            if self.name == "cuda" or self.name == "amdgpu":
+            if self.name in ("cuda", "amdgpu", "metal"):
                 warn(f"Using host-side timing for Julia {self.name} backend; results may be less accurate.")
         if ms is None:
             if self.kt_backend._host_start_time is not None and self.kt_backend._host_stop_time is not None:
@@ -78,9 +77,6 @@ class JuliaRuntimeObserver(BenchmarkObserver):
                 warn(f"Using Python host-side timing for Julia {self.name} backend; results may be less accurate.")
         if ms is None:
             raise RuntimeError(f"Failed to measure GPU time for Julia {self.name} backend; no timing information available.")
-        else:
-            # Subtract any known overhead
-            ms -= ms_overhead
 
         # If both GPU and host timing are available, check for discrepancies
         if ms is not None and ms_hostside is not None and ms > ms_hostside and ms_hostside > 0.0:

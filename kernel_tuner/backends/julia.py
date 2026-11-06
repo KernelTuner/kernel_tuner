@@ -12,12 +12,44 @@ Notes:
 - Currently supports CuArray and scalar arguments; constant and texture memory are not implemented.
 """
 
+import os
+import sys
 from pathlib import Path
 from warnings import warn
 from dataclasses import dataclass
 from time import perf_counter
 
 import numpy as np
+
+# Julia stops its threads for garbage collection by letting them access a protected memory page, and handles the
+# resulting signal itself, but only if JuliaCall lets Julia install its signal handlers. GPU packages run Julia code on
+# threads of their own (e.g. Metal.jl waits for the GPU on GPUToolbox worker threads), even if Julia was started with a
+# single thread, so without this a garbage collection can crash Python with a bus error or segmentation fault.
+# JuliaCall reads this setting when it is first imported, so it is set here, before any import of JuliaCall.
+# This also lets Julia take over Ctrl-C, which the backend hands back to Python (see `give_interrupts_to_python`).
+JULIACALL_HANDLE_SIGNALS = "PYTHON_JULIACALL_HANDLE_SIGNALS"
+if "juliacall" not in sys.modules:
+    os.environ.setdefault(JULIACALL_HANDLE_SIGNALS, "yes")
+
+
+
+def give_interrupts_to_python(jl):
+    """Let Ctrl-C raise a KeyboardInterrupt in Python again, after JuliaCall started Julia with signal handling.
+
+    Julia only needs its own signal handlers for garbage collection (SIGSEGV / SIGBUS), but it also takes over the
+    interrupt signal (SIGINT), so that Ctrl-C would not stop tuning. Python's handler is installed again, so that Ctrl-C
+    raises a KeyboardInterrupt once the current call into Julia returns. Julia is told not to exit on Ctrl-C, in case
+    its handler is still in place (Python can only install signal handlers from the main thread).
+    """
+    import signal
+    import threading
+
+    jl.seval("Base.exit_on_sigint(false)")
+    if threading.current_thread() is threading.main_thread():
+        handler = signal.getsignal(signal.SIGINT)  # Python's handler (e.g. that of a Jupyter kernel), overridden by Julia
+        if handler is not None:
+            signal.signal(signal.SIGINT, handler)
+
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.julia import JuliaRuntimeObserver
@@ -46,6 +78,14 @@ class JuliaFunctions(GPUBackend):
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
         """Initialize Julia backend using JuliaCall."""
         # lazy import to avoid mixing e.g. CUDA drivers
+        # (when Julia runs Python instead, e.g. from KernelTuner.jl, JuliaCall did not start Julia and Julia handles signals)
+        juliacall_config = getattr(sys.modules.get("juliacall"), "CONFIG", {})
+        if juliacall_config.get("inited") and juliacall_config.get("opt_handle_signals") != "yes":
+            warn(
+                "JuliaCall started Julia without signal handling, "
+                "which can crash Python with a bus error or segmentation fault during garbage collection. "
+                f"Set the environment variable {JULIACALL_HANDLE_SIGNALS}=yes before JuliaCall is first imported."
+            )
         try:
             from juliacall import JuliaError
             from juliacall import Main as jl
@@ -56,6 +96,8 @@ class JuliaFunctions(GPUBackend):
             jl = None
         if jl is None:
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
+        if getattr(sys.modules.get("juliacall"), "CONFIG", {}).get("opt_handle_signals") == "yes":
+            give_interrupts_to_python(jl)
 
         # process passed options and backends
         self.process_compiler_options(compiler_options)
@@ -119,7 +161,6 @@ class JuliaFunctions(GPUBackend):
                     using KernelAbstractions
                     const kt_julia_backend = CPU()
                     const GPUArrayType = {self.GPUArrayType}
-                    global_metal_buffer = nothing
                     include("{str(Path(__file__).parent / "julia_helper.jl")}")
                 end
                 """
@@ -132,7 +173,6 @@ class JuliaFunctions(GPUBackend):
                     using {self.backend_mod_name}
                     const kt_julia_backend = {self.backend_mod_instname}()
                     const GPUArrayType = {self.GPUArrayType}
-                    global_metal_buffer = nothing
                     include("{str(Path(__file__).parent / "julia_helper.jl")}")
                     include("{str(Path(__file__).parent / str("julia_helper_ext_" + self.backend_mod_name.lower() + ".jl"))}")
                 end
@@ -146,12 +186,8 @@ class JuliaFunctions(GPUBackend):
         # Metal specific functions
         self.use_metal_buffer = self.backend_mod_name == "Metal"
         if self.use_metal_buffer:
-            self.metal_create_buffer = jl.KernelTunerHelper.metal_create_buffer
-            self.metal_create_global_buffer = jl.KernelTunerHelper.metal_create_global_buffer
-            self.metal_get_global_buffer = jl.KernelTunerHelper.metal_get_global_buffer
-            self.metal_reset_global_buffer = jl.KernelTunerHelper.metal_reset_global_buffer
-            self.metal_commit_buffer = jl.KernelTunerHelper.metal_commit_buffer
-            self.metal_buffer_is_completed = jl.KernelTunerHelper.metal_buffer_is_completed
+            self.metal_kernel_finished = jl.KernelTunerHelper.metal_kernel_finished
+            self.metal_gpu_time_ms = jl.KernelTunerHelper.metal_gpu_time_ms
 
     def initialize_backend(self, device, backend_name):
         """Initialize for a choice of Julia backends by backend_name, one of 'cuda', 'amd', 'intel', 'metal'."""
@@ -326,9 +362,6 @@ end
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """Launch a compiled Julia kernel."""
-        if self.use_metal_buffer:
-            # immediately reset Metal global buffer to avoid using old buffers and prevent early termination in continous observer
-            self.metal_reset_global_buffer()
         self.launch_kernel_time = None  # reset host time for this kernel instance
         self.launch_kernel_time_start = None
         if func is None or not isinstance(func, JuliaKernel):
@@ -423,7 +456,7 @@ end
                 return bool(result)
             return True
         elif self.backend_mod_name == "Metal":
-            return self.metal_buffer_is_completed()
+            return bool(self.metal_kernel_finished())
         elif self.backend_mod_name in ("INTEL", "CPU"):
             # No hardware events
             return True

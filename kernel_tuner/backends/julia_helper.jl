@@ -1,6 +1,6 @@
 # Base file for Julia functions. For backend-specific functionality, see the extension files, e.g. `julia_helper_ext_cuda.jl`.
 
-export to_gpuarray, launch_kernel, synchronize_gpu, metal_create_buffer, metal_create_global_buffer, metal_get_global_buffer, metal_reset_global_buffer, metal_commit_buffer, metal_buffer_is_completed
+export to_gpuarray, launch_kernel, synchronize_gpu, metal_kernel_finished, metal_gpu_time_ms
 
 function to_gpuarray(a)
     a = deepcopy(a) # ensure we have a separate copy of the array to avoid unintended side effects
@@ -16,9 +16,6 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
     # Check if this is a KernelAbstractions kernel
     if isdefined(Main, :KernelAbstractions) && kt_julia_backend !== nothing && applicable(kernel, kt_julia_backend, workgroupsize)
         configured_kernel = kernel(kt_julia_backend, workgroupsize)
-        if use_metal_buffer
-            metal_create_global_buffer()
-        end
         # Launch kernel asynchronously
         mktemp() do tmppath, _
             open(tmppath, "w") do tmpio
@@ -27,14 +24,17 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
                     try
                         val_params = Val.(params)  # convert parameters to Val types for kernel invocation
                         launch_time_start = time_ns()
-                        configured_kernel(args..., val_params...; ndrange=ndrange)  # launch the kernel (async)
                         if use_metal_buffer
-                            metal_commit_buffer(global_metal_buffer)
+                            # record the command buffers of this launch, used for GPU timing (see julia_helper_ext_metal.jl)
+                            metal_launch_recorded(() -> configured_kernel(args..., val_params...; ndrange=ndrange))
+                        else
+                            configured_kernel(args..., val_params...; ndrange=ndrange)  # launch the kernel (async)
                         end
                         launch_time = float((time_ns() - launch_time_start) / 1e6) # convert to milliseconds
                         # Note: kernel launch is asynchronous
                         # Synchronization and event recording is handled by the Python backend
                     catch e
+                        e isa InterruptException && rethrow()  # Ctrl-C: Kernel Tuner stops tuning (see `util.is_interrupt`)
                         redirect_stdout(stdout) # restore stdout
                         close(tmpio)
                         stdout_output = read(tmppath, String)
