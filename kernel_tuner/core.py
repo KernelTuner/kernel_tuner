@@ -470,13 +470,24 @@ class DeviceInterface(object):
         # for very short kernels, launching can take longer than running the kernel, so `iterations` launches would take
         # much longer than `duration`; stop launching once `duration` has passed, the GPU has been as busy as it can be
         launch_deadline = time.perf_counter() + duration
-        for _ in range(iterations):
+        # the observers are polled while launching too, as the GPU may finish right after the last launch, which leaves
+        # no time to poll afterwards; at most once per `poll_interval`, so that polling hardly delays the launches
+        poll_interval = 1e-3
+        last_poll = None
+        for i in range(iterations):
             self.dev.run_kernel(func, gpu_args, threads, grid)
-            if time.perf_counter() > launch_deadline:
+            now = time.perf_counter()
+            if i == 0:
+                for obs in self.continuous_observers:
+                    obs.after_start()
+                last_poll = now
+            elif now - last_poll >= poll_interval:
+                for obs in self.continuous_observers:
+                    obs.during()
+                last_poll = now
+            if now > launch_deadline:
                 break
         self.dev.stop_event()
-        for obs in self.continuous_observers:
-            obs.after_start()
         while not self.dev.kernel_finished():
             for obs in self.continuous_observers:
                 obs.during()
