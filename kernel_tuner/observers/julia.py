@@ -99,24 +99,44 @@ class JuliaRuntimeObserver(BenchmarkObserver):
 
         self.times.append(ms)
 
+    # a measured time is an outlier if it deviates from the median both statistically (robust z-score, based on the
+    # median absolute deviation) and substantially (relative to the median), so that tiny differences between otherwise
+    # consistent measurements (e.g. 0.031 vs. 0.033 ms) are not regarded as outliers
+    outlier_robust_z = 3.0
+    outlier_rel_deviation = 0.25
+    outlier_warn_fraction = 0.1
+
+    @classmethod
+    def find_outliers(cls, arr):
+        """Returns a boolean mask of the times in `arr` that are outliers (only slower times are regarded as such)."""
+        median = np.median(arr)
+        deviation = arr - median
+        substantial = deviation > cls.outlier_rel_deviation * median
+        mad = np.median(np.abs(deviation))
+        if mad == 0:
+            # at least half of the times are identical, any substantial deviation is an outlier
+            return substantial
+        robust_z = 0.6745 * deviation / mad
+        return substantial & (robust_z > cls.outlier_robust_z)
+
     def get_results(self):
         times_avg = self.times.copy()
         if len(self.times) >= 5:
-            # due to interactivity, the Julia runtime observer may have rare outliers
-            # check if there is a major outlier, if so, remove it
+            # due to interactivity, the Julia runtime observer may have rare outliers; remove them if there are any
             arr = np.array(times_avg)
-            mean = np.mean(arr)
-            std = np.std(arr)
-            threshold = 2
-            z_scores = (arr - mean) / std
-            num_outliers = np.sum(z_scores > threshold)
+            outliers = self.find_outliers(arr)
+            num_outliers = int(np.sum(outliers))
             if num_outliers > 0:
-                log_str = f"Detected {num_outliers} major outliers (> {threshold} z-score) in the measured times: {self.times}."
-                if num_outliers == 1:
-                    logger.info(log_str)
-                else:
+                log_str = (
+                    f"Removed {num_outliers} of {len(arr)} measured times as outliers "
+                    f"({', '.join(f'{t:.4f}' for t in arr[outliers])} ms vs. median {np.median(arr):.4f} ms)."
+                )
+                # only warn when outliers are frequent, as that indicates unreliable measurements
+                if num_outliers > self.outlier_warn_fraction * len(arr):
                     logger.warning(log_str)
-                times_avg = arr[z_scores <= threshold]
+                else:
+                    logger.info(log_str)
+                times_avg = arr[~outliers]
             else:
                 # remove the first to avoid JIT warmup effects
                 times_avg = self.times[1:]
