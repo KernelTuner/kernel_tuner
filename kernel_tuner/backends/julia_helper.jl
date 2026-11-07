@@ -2,6 +2,11 @@
 
 export to_gpuarray, launch_kernel, synchronize_gpu, metal_kernel_finished, metal_gpu_time_ms
 
+# GPU timing events recorded directly around a kernel launch, specialized in the backend extension files.
+# By default (backends without timing events), there are no events.
+create_timing_events(backend) = (nothing, nothing)
+record_timing_event(::Nothing) = nothing
+
 function to_gpuarray(a)
     a = deepcopy(a) # ensure we have a separate copy of the array to avoid unintended side effects
     if isa(a, AbstractArray)
@@ -10,9 +15,11 @@ function to_gpuarray(a)
     return a
 end
 
-function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workgroupsize::Tuple, shmem::Int, start_evt::Any, end_evt::Any, stream::Any, use_metal_buffer::Bool)
+function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workgroupsize::Tuple, shmem::Int, use_metal_buffer::Bool)
     launch_time = Inf
     launch_time_start = nothing
+    start_evt = nothing
+    end_evt = nothing
     # Check if this is a KernelAbstractions kernel
     if isdefined(Main, :KernelAbstractions) && kt_julia_backend !== nothing && applicable(kernel, kt_julia_backend, workgroupsize)
         configured_kernel = kernel(kt_julia_backend, workgroupsize)
@@ -23,14 +30,25 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
                 redirect_stdout(tmpio) do
                     try
                         val_params = Val.(params)  # convert parameters to Val types for kernel invocation
-                        launch_time_start = time_ns()
-                        if use_metal_buffer
-                            # record the command buffers of this launch, used for GPU timing (see julia_helper_ext_metal.jl)
-                            metal_launch_recorded(() -> configured_kernel(args..., val_params...; ndrange=ndrange))
-                        else
-                            configured_kernel(args..., val_params...; ndrange=ndrange)  # launch the kernel (async)
+                        start_evt, end_evt = create_timing_events(kt_julia_backend)
+                        # Record the timing events directly around the launch, so that host-side work before the
+                        # launch is not measured as GPU time. The GC is disabled meanwhile, as a GC pause between
+                        # recording the start event and launching would otherwise be measured as GPU time.
+                        gc_was_enabled = GC.enable(false)
+                        try
+                            launch_time_start = time_ns()
+                            record_timing_event(start_evt)
+                            if use_metal_buffer
+                                # record the command buffers of this launch, used for GPU timing (see julia_helper_ext_metal.jl)
+                                metal_launch_recorded(() -> configured_kernel(args..., val_params...; ndrange=ndrange))
+                            else
+                                configured_kernel(args..., val_params...; ndrange=ndrange)  # launch the kernel (async)
+                            end
+                            record_timing_event(end_evt)
+                            launch_time = float((time_ns() - launch_time_start) / 1e6) # convert to milliseconds
+                        finally
+                            GC.enable(gc_was_enabled)
                         end
-                        launch_time = float((time_ns() - launch_time_start) / 1e6) # convert to milliseconds
                         # Note: kernel launch is asynchronous
                         # Synchronization and event recording is handled by the Python backend
                     catch e
@@ -50,8 +68,8 @@ function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workg
     else
         error("Only KernelAbstractions kernels are supported.")
     end
-    # return launch time; actual timing is done via events in Python backend
-    return launch_time, launch_time_start
+    # return the launch time and the GPU timing events (if any), which are used by the observer in the Python backend
+    return launch_time, launch_time_start, start_evt, end_evt
 end
 
 function synchronize_gpu(launch_time_start)

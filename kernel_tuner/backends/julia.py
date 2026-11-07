@@ -388,18 +388,18 @@ end
 
         # run the kernel
         try:
-            self.launch_kernel_time, self.launch_kernel_time_start = self.launch_kernel(
+            # the GPU timing events (CUDA, AMDGPU) are recorded in Julia directly around the launch
+            self.launch_kernel_time, self.launch_kernel_time_start, start_evt, end_evt = self.launch_kernel(
                 julia_func,
                 args_tuple,
                 params,
                 ndrange,
                 workgroupsize,
                 int(self.smem_size),
-                self.observers[-1].start,
-                self.observers[-1].end,
-                self.observers[-1].stream,
                 self.use_metal_buffer,
             )
+            self._start_event = start_evt
+            self._end_event = end_evt
         except JuliaError as e:
             if self.raise_errors:
                 raise e
@@ -407,39 +407,19 @@ end
                 raise SkippableFailure(f"Julia kernel launch failed for {params=}: {e}")
 
     def start_event(self):
-        """Records the event that marks the start of a measurement (non-blocking)."""
+        """Marks the start of a measurement (non-blocking).
+
+        The GPU timing events (CUDA, AMDGPU) and Metal command buffers are recorded in Julia directly around the kernel
+        launch in `run_kernel`, so that host-side work before the launch (e.g. Python to Julia calls, GC pauses) is
+        not measured as GPU time.
+        """
         self._host_start_time = perf_counter()
-        if self.backend_mod_name == "CUDA":
-            evt = self.start_evt()
-            self.backend_mod.record(evt, self.stream)
-            self._start_event = evt
-        elif self.backend_mod_name == "AMDGPU":
-            evt = self.start_evt(self.stream, do_record=False, timing=True)
-            self.backend_mod.HIP.record(evt)
-            self._start_event = evt
-        elif self.backend_mod_name == "Metal":
-            # Metal command buffer is handled in julia_helper for much better performance
-            pass
-        elif self.backend_mod_name in ("INTEL", "CPU"):
-            # No hardware events, use host timing
-            self._start_event = None
+        self._start_event = None
+        self._end_event = None
 
     def stop_event(self):
-        """Records the event that marks the end of a measurement (non-blocking)."""
-        if self.backend_mod_name == "CUDA":
-            evt = self.end_evt()
-            self.backend_mod.record(evt, self.stream)
-            self._end_event = evt
-        elif self.backend_mod_name == "AMDGPU":
-            evt = self.end_evt(self.stream, do_record=False, timing=True)
-            self.backend_mod.HIP.record(evt)
-            self._end_event = evt
-        elif self.backend_mod_name == "Metal":
-            # Metal command buffer is handled in julia_helper for much better performance
-            pass
-        elif self.backend_mod_name in ("INTEL", "CPU"):
-            # No hardware events, use host timing
-            self._end_event = None
+        """Marks the end of a measurement (non-blocking); the events are recorded in `run_kernel`."""
+        pass
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise."""
