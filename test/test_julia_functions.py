@@ -108,18 +108,18 @@ def test_tune_kernel_observers(env):
         observers = [MetalObserver(observables=SUPPORTED_OBSERVABLES)]
         expected_observables = SUPPORTED_OBSERVABLES
     elif backend.lower() == "cuda":
-        from kernel_tuner.observers.nvml import NVMLObserver as CudaObserver, SUPPORTED_OBSERVABLES, FIELD_TYPE_MAP
-        if "gr_voltage" in SUPPORTED_OBSERVABLES:
-            del SUPPORTED_OBSERVABLES[SUPPORTED_OBSERVABLES.index("gr_voltage")]  # gr_voltage is not supported on all GPUs
-        observers = [CudaObserver(observables=SUPPORTED_OBSERVABLES)]
+        from kernel_tuner.observers.julia_nvml import JuliaNVMLObserver, SUPPORTED_OBSERVABLES, FIELD_TYPE_MAP
+        # gr_voltage is not supported on all GPUs
+        expected_observables = [o for o in SUPPORTED_OBSERVABLES if o != "gr_voltage"]
+        observers = [JuliaNVMLObserver(observables=expected_observables)]
     else:
         observers = []
+        expected_observables = []
 
     # tune the kernel with the observers
     result, _ = tune_kernel(*env, observers=observers, lang="julia", verbose=True)
 
-    # Define the expected observables and numerical observables
-    expected_observables = SUPPORTED_OBSERVABLES or []
+    # Define the numerical observables
     expected_numerical_observables = [o for o in expected_observables if FIELD_TYPE_MAP[o] in [int, float]] or []
 
     # check that the results contain the expected observables

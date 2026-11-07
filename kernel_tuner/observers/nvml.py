@@ -485,12 +485,8 @@ class NVMLObserver(BenchmarkObserver):
             self.results["mem_freqs"].append(np.average(self.iteration["mem_freq"]))
 
         if "gr_voltage" in self.observables:
-            execution_time = time.time() - self.t0
-            gr_voltage_readings = self.gr_voltage_readings
-            gr_voltage_readings = [[0.0, gr_voltage_readings[0][1]]] + gr_voltage_readings
-            gr_voltage_readings = gr_voltage_readings + [[execution_time, gr_voltage_readings[-1][1]]]
-            # time in s, graphics voltage in millivolts
-            self.results["gr_voltages"].append(np.average(gr_voltage_readings[:][:][1]))
+            # readings are [time in s, graphics voltage in millivolts]
+            self.results["gr_voltages"].append(np.average([voltage for _, voltage in self.gr_voltage_readings]))
 
     def get_results(self):
         averaged_results = {}
