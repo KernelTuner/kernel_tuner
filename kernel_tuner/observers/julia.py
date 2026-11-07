@@ -102,9 +102,8 @@ class JuliaRuntimeObserver(BenchmarkObserver):
     # a measured time is an outlier if it deviates from the median both statistically (robust z-score, based on the
     # median absolute deviation) and substantially (relative to the median), so that tiny differences between otherwise
     # consistent measurements (e.g. 0.031 vs. 0.033 ms) are not regarded as outliers
-    outlier_robust_z = 3.0
+    outlier_robust_z = 3.5
     outlier_rel_deviation = 0.25
-    outlier_warn_fraction = 0.1
 
     @classmethod
     def find_outliers(cls, arr):
@@ -131,8 +130,8 @@ class JuliaRuntimeObserver(BenchmarkObserver):
                     f"Removed {num_outliers} of {len(arr)} measured times as outliers "
                     f"({', '.join(f'{t:.4f}' for t in arr[outliers])} ms vs. median {np.median(arr):.4f} ms)."
                 )
-                # only warn when outliers are frequent, as that indicates unreliable measurements
-                if num_outliers > self.outlier_warn_fraction * len(arr):
+                # only warn when there is more than one outlier, as that indicates unreliable measurements rather than warmup effects
+                if num_outliers > 1:
                     logger.warning(log_str)
                 else:
                     logger.info(log_str)
