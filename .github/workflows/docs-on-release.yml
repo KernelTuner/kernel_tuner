@@ -7,19 +7,22 @@ on:
     # Allows you to run this workflow manually from the Actions tab
     workflow_dispatch:
 
+permissions:
+    contents: write # needed to push the built documentation to the gh-pages branch
+
 jobs:
     build:
         environment: dev_environment
         runs-on: ubuntu-latest
         steps:
-            - name: Get Python 3.10
-              uses: actions/setup-python@v4
+            - name: Get Python 3.12
+              uses: actions/setup-python@v7
               with:
-                  python-version: "3.10"
+                  python-version: "3.12"
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
-                  fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
+                  fetch-depth: 0 # also fetches the gh-pages branch
             - name: Get version set env, exit if beta release
               run: |
                   echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
@@ -29,24 +32,32 @@ jobs:
                   fi
             - name: Install dependencies
               run: |
-                  sudo apt-get update;
-                  sudo apt-get install pandoc;
+                  sudo apt-get update
+                  sudo apt-get install pandoc
                   pip install -e .
-            - name: Build and Commit
-              uses: sphinx-notes/pages@v2
-              with:
-                  requirements_path: doc/requirements.txt
-                  documentation_path: doc/source
-                  target_path: ${{ env.RELEASE_VERSION }}
+                  pip install -r doc/requirements.txt
+            - name: Build documentation
+              run: sphinx-build -b html doc/source "$RUNNER_TEMP/html"
+            - name: Commit documentation to gh-pages
+              run: |
+                  git config --global user.name "GitHub Action"
+                  git config --global user.email "action@github.com"
+                  git worktree add -B gh-pages "$RUNNER_TEMP/gh-pages" origin/gh-pages
+                  cd "$RUNNER_TEMP/gh-pages"
+                  rm -rf "$RELEASE_VERSION"
+                  mkdir -p "$RELEASE_VERSION"
+                  cp -r "$RUNNER_TEMP/html/." "$RELEASE_VERSION"
+                  rm -rf "$RELEASE_VERSION/.doctrees"
+                  touch "$RELEASE_VERSION/.nojekyll"
+                  git add -A "$RELEASE_VERSION"
+                  git commit --allow-empty -m "Add changes for $GITHUB_SHA"
             - name: Redirect stable to new release
               run: |
                   echo "Redirecting stable to newly released version " $RELEASE_VERSION
+                  cd "$RUNNER_TEMP/gh-pages"
                   rm -rf stable
                   ln -s $RELEASE_VERSION stable
                   git add stable
                   git commit -m "redirect stable to new version $RELEASE_VERSION"
             - name: Push changes
-              uses: ad-m/github-push-action@master
-              with:
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
-                  branch: gh-pages
+              run: git -C "$RUNNER_TEMP/gh-pages" push origin gh-pages
