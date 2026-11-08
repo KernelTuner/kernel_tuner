@@ -1037,7 +1037,8 @@ def run_kernel(
         elif isinstance(arg, torch.Tensor):
             results.append(arg.cpu())
         else:
-            results.append(numpy.zeros_like(arg))
+            # numpy.zeros_like on a wrapped Julia array is very slow (element-wise), while numpy.asarray is a zero-copy view
+            results.append(numpy.zeros_like(numpy.asarray(arg) if util.is_julia_array(arg) else arg))
             dev.memcpy_dtoh(results[-1], gpu_args[i])
 
     return results

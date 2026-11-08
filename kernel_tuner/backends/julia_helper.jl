@@ -8,11 +8,12 @@ create_timing_events(backend) = (nothing, nothing)
 record_timing_event(::Nothing) = nothing
 
 function to_gpuarray(a)
-    a = deepcopy(a) # ensure we have a separate copy of the array to avoid unintended side effects
-    if isa(a, AbstractArray)
-        a = GPUArrayType(a)
-    end
-    return a
+    # ensure we have a separate copy to avoid unintended side effects; for arrays, the conversion to a GPU array
+    # already copies, while a deepcopy of a view would needlessly copy its entire parent array
+    # (on the CPU backend, `Array(a)` returns `a` itself for an `Array`, in which case it is copied explicitly)
+    isa(a, AbstractArray) || return deepcopy(a)
+    b = GPUArrayType(a)
+    return b === a ? deepcopy(a) : b
 end
 
 function launch_kernel(kernel, args::Tuple, params::Tuple, ndrange::Tuple, workgroupsize::Tuple, shmem::Int, use_metal_buffer::Bool)
