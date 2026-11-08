@@ -873,7 +873,8 @@ class DeviceInterface(object):
             cp = _get_cupy()
             cupy_ndarray = (cp.ndarray,) if cp is not None else ()
             if isinstance(arg, (np.ndarray,) + cupy_ndarray) or util.is_julia_array(arg):
-                result_host.append(np.zeros_like(arg))
+                # np.zeros_like on a wrapped Julia array is very slow (element-wise), while np.asarray is a zero-copy view
+                result_host.append(np.zeros_like(np.asarray(arg) if util.is_julia_array(arg) else arg))
                 self.dev.memcpy_dtoh(result_host[-1], gpu_args[i])
             elif isinstance(arg, torch.Tensor) and isinstance(answer[i], torch.Tensor):
                 if not answer[i].is_cuda:
