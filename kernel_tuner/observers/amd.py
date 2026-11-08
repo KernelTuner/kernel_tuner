@@ -92,14 +92,14 @@ class AMDDevice:
     def current_power_usage(self):
         info = amdsmi.amdsmi_get_power_info(self.device)
 
-        if "current_socket_power" in info:
-            # For newer Mi300+ cards
-            return info["current_socket_power"]
-        elif "average_socket_power" in info:
-            # For older cards
-            return info["average_socket_power"]
-        else:
-            raise RuntimeError(f"invalid result from amdsmi_get_power_info: {info}")
+        # Newer MI300+ cards report "current_socket_power", older cards (e.g., MI210) only "average_socket_power".
+        # Unsupported fields are present but have the value "N/A", so check the value rather than the key.
+        for key in ("current_socket_power", "average_socket_power", "socket_power"):
+            value = info.get(key)
+            if value is not None and not isinstance(value, str):
+                return value
+
+        raise RuntimeError(f"invalid result from amdsmi_get_power_info: {info}")
 
     def core_voltage(self):
         """Returns current voltage in Volt."""

@@ -14,6 +14,7 @@ Notes:
 
 import os
 import sys
+import uuid
 from pathlib import Path
 from warnings import warn
 from dataclasses import dataclass
@@ -133,6 +134,11 @@ class JuliaFunctions(GPUBackend):
             "uuid": self.uuid,
             "pci_bus_id": self.pci_bus_id,
         }
+        # PCI domain and device ID are only known for some backends (AMD), only add them when available
+        if self.pci_domain_id is not None:
+            self.env["pci_domain_id"] = self.pci_domain_id
+        if self.pci_device_id is not None:
+            self.env["pci_device_id"] = self.pci_device_id
 
         # setup observers
         self.observers = observers or []
@@ -265,6 +271,10 @@ class JuliaFunctions(GPUBackend):
                 self.pci_bus_id = str(jl.seval(info["pci_bus_id"](int(device))))
             except JuliaError:
                 self.pci_bus_id = None
+        self.pci_domain_id = None
+        self.pci_device_id = None
+        if backend_name == "AMD":
+            self.query_amd_device_identity()
 
         # Get the device and context
         try:
@@ -283,6 +293,27 @@ class JuliaFunctions(GPUBackend):
             self.contextqueue = self.backend_mod.global_queue(self.backend_device)
 
         self.setup_streams(backend_name)
+
+    def query_amd_device_identity(self):
+        """Query the UUID and PCI location of the selected AMDGPU device, used by e.g. the AMDSMIObserver to find the device.
+
+        The UUID and PCI information follow the same format as the HIP backend.
+        """
+        try:
+            uuid_bytes, pci_domain, pci_bus, pci_device = jl.seval(
+                """
+                let props = AMDGPU.HIP.properties(AMDGPU.HIP.device())
+                    (collect(reinterpret(UInt8, collect(props.uuid.bytes))),
+                     Int(props.pciDomainID), Int(props.pciBusID), Int(props.pciDeviceID))
+                end
+                """
+            )
+            self.uuid = str(uuid.UUID(bytes=bytes(int(b) for b in uuid_bytes)))
+            self.pci_domain_id = int(pci_domain)
+            self.pci_bus_id = int(pci_bus)
+            self.pci_device_id = int(pci_device)
+        except (JuliaError, ValueError) as e:
+            warn(f"Could not query the UUID and PCI information of the AMDGPU device: {e}")
 
     def __del__(self):
         # drop GPUArray references to let Julia GC handle them
