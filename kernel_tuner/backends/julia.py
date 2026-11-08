@@ -499,6 +499,11 @@ end
     def memcpy_dtoh(dest, src):
         """Perform a device to host memory copy."""
         try:
+            if not isinstance(src, np.ndarray):
+                # NumPy cannot view device memory, so on a (wrapped) GPU array `np.copyto` falls back to a very slow
+                # generic conversion (seconds for a few million elements). Copy to a host `Array` in Julia instead,
+                # which NumPy can then read through the buffer protocol without further copies.
+                src = np.asarray(jl.Array(src))
             np.copyto(dest, src)
         except JuliaError as e:
             raise RuntimeError(f"Julia memcpy_dtoh failed: {e}")
