@@ -1,15 +1,18 @@
+import logging
 import os
+import plistlib
 import select
 import signal
 import subprocess
-from warnings import warn
-import plistlib
-import logging
 import time
+from warnings import warn
+
 import numpy as np
+
 from kernel_tuner.observers import BenchmarkObserver, ContinuousObserver
 
 logger = logging.getLogger(__name__)
+PLIST_END = b"</plist>"
 
 SUPPORTED_OBSERVABLES = [
     "energy",
@@ -51,24 +54,16 @@ class MetalDevice:
         """Check if the user has non-interactive sudo permissions to run powermetrics."""
         try:
             # check if we have non-interactive sudo rights on powermetrics
-            cmd_check = [
-                "sudo",
-                "-n",
-                "powermetrics",
-                "-n",
-                "1",
-                *self.cmd_powermetrics_options
-            ]
-            subprocess.run(
-                cmd_check, 
-                capture_output=True, 
-                text=True, 
-                check=True
-            )
+            cmd_check = ["sudo", "-n", "powermetrics", "-n", "1", *self.cmd_powermetrics_options]
+            subprocess.run(cmd_check, capture_output=True, text=True, check=True)
         except subprocess.CalledProcessError as e:
             if "password is required" in e.stderr:
-                logger.warning(f"Metal observers ideally have non-interactive sudo privileges for powermetrics; {e}, {e.stderr}")
-                warn("Metal observers ideally have non-interactive sudo privileges for powermetrics. Please run `sudo visudo` and add to the bottom: `your_username ALL=(ALL) NOPASSWD: /usr/bin/powermetrics`")
+                logger.warning(
+                    f"Metal observers ideally have non-interactive sudo privileges for powermetrics; {e}, {e.stderr}"
+                )
+                warn(
+                    "Metal observers ideally have non-interactive sudo privileges for powermetrics. Please run `sudo visudo` and add to the bottom: `your_username ALL=(ALL) NOPASSWD: /usr/bin/powermetrics`"
+                )
                 return False
         return True
 
@@ -111,8 +106,8 @@ class MetalDevice:
             if not data:  # powermetrics has exited
                 break
             self._buffer += data
-        while b"</plist>" in self._buffer:
-            end = self._buffer.index(b"</plist>") + len(b"</plist>")
+        while PLIST_END in self._buffer:
+            end = self._buffer.index(PLIST_END) + len(PLIST_END)
             document, self._buffer = self._buffer[:end], self._buffer[end:]
             start = document.find(b"<?xml")
             start = document.find(b"<plist") if start < 0 else start
@@ -145,7 +140,9 @@ class MetalDevice:
         except Exception as e:
             logger.error(f"Failed to send SIGIO to powermetrics: {e}")
         # wait until the samples cover the whole window (a periodic sample may arrive before the requested one)
-        covered = lambda: len(self._samples) > 1 and sum(s["elapsed_s"] for s in self._samples[1:]) >= window_duration - 2e-3
+        covered = lambda: (
+            len(self._samples) > 1 and sum(s["elapsed_s"] for s in self._samples[1:]) >= window_duration - 2e-3
+        )
         if not self._read_until(covered, timeout=max(1.0, 3 * self.interval_ms / 1e3)):
             logger.warning("powermetrics samples do not cover the full measurement window")
 
@@ -230,10 +227,8 @@ class MetalContinuousObserver(ContinuousObserver):
         return results
 
 
-
 class MetalObserver(BenchmarkObserver):
-    """
-    BenchmarkObserver that uses powermetrics to monitor Apple Metal GPUs and measure
+    """BenchmarkObserver that uses powermetrics to monitor Apple Metal GPUs and measure
     energy usage (`energy`), power (`power`), GPU frequency (`freq_hz`), and load (`load`).
     """
 
@@ -248,8 +243,7 @@ class MetalObserver(BenchmarkObserver):
         interval_ms=50,
         min_load=0.1,
     ):
-        """
-        Initialize the MetalObserver.
+        """Initialize the MetalObserver.
 
         Supported observables are: `energy`, `power`, `freq_hz`, and `load`.
 
@@ -273,7 +267,9 @@ class MetalObserver(BenchmarkObserver):
         self.device_id = device_id
         self.device = None
         self.use_continuous_observer = use_continuous_observer
-        self.passthrough_observer = use_continuous_observer  # This observer is only used as a passthrough for the continuous observer
+        self.passthrough_observer = (
+            use_continuous_observer  # This observer is only used as a passthrough for the continuous observer
+        )
         self.continuous_duration = continuous_duration
         self.interval_ms = interval_ms
         self.min_load = min_load
@@ -287,9 +283,7 @@ class MetalObserver(BenchmarkObserver):
         self.device = MetalDevice(interval_ms=self.interval_ms)
 
         if self.use_continuous_observer:
-            self.continuous_observer = MetalContinuousObserver(
-                self, continuous_duration=self.continuous_duration
-            )
+            self.continuous_observer = MetalContinuousObserver(self, continuous_duration=self.continuous_duration)
 
     def field_name(self, name):
         if self.prefix:
