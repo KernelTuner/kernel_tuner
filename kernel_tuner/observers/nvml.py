@@ -38,12 +38,7 @@ class nvml:
     """Class that gathers the NVML functionality for one device."""
 
     def __init__(
-            self,
-            device_id=None,
-            device_uuid=None,
-            device_pci_bus=None,
-            nvidia_smi_fallback=None,
-            use_locked_clocks=False
+        self, device_id=None, device_uuid=None, device_pci_bus=None, nvidia_smi_fallback=None, use_locked_clocks=False
     ):
         """Create object to control device using NVML."""
         # We set these first as __del__ checks these
@@ -203,7 +198,6 @@ class nvml:
 
     def set_clocks(self, mem_clock, gr_clock):
         """Set the memory and graphics clock for this device (may require permission)."""
-
         mem_clock = min(self.supported_mem_clocks, key=lambda x: abs(x - mem_clock))
         if mem_clock not in self.supported_mem_clocks:
             raise ValueError("Illegal value for memory clock")
@@ -244,6 +238,7 @@ class nvml:
         # Store the fact that we have modified the clocks
         if not self.modified_clocks:
             import atexit
+
             atexit.register(self.reset_clocks)
         self.modified_clocks = True
 
@@ -476,7 +471,9 @@ class NVMLObserver(BenchmarkObserver):
             self.measure_power = True
             power_observables = [obs for obs in observables if obs in self.needs_power]
             continuous_observer = NVMLContinuousObserver if use_energy_counter else ContinuousObserver
-            self.continuous_observer = continuous_observer("nvml", power_observables, self, continuous_duration=continuous_duration)
+            self.continuous_observer = continuous_observer(
+                "nvml", power_observables, self, continuous_duration=continuous_duration
+            )
 
         # remove power observables
         self.observables = [obs for obs in observables if obs not in self.needs_power]
@@ -513,11 +510,11 @@ class NVMLObserver(BenchmarkObserver):
             raise ValueError(f"failed to detect NVIDIA device: no UUID or PCI-bus-id in environment: {env}")
 
     def read_power(self):
-        """ Return power in Watt """
+        """Return power in Watt"""
         return self.nvml.pwr_usage() / 1e3
 
     def read_energy(self):
-        """ Return cumulative energy usage in Joule """
+        """Return cumulative energy usage in Joule"""
         now = self.nvml.energy_usage()
 
         if self.initial_energy_reading is None:
@@ -645,4 +642,3 @@ def get_idle_power(device, n=5, sleep_s=0.1):
         time.sleep(sleep_s)
         readings.append(d.pwr_usage())
     return np.mean(readings) * 1e-3  # Watt
-

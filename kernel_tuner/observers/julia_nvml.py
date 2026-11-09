@@ -384,7 +384,9 @@ class JuliaNVMLObserver(NVMLObserver):
         elif pci_bus is not None:
             self.nvml = JuliaNVML(device_pci_bus=pci_bus, **self.nvml_kwargs)
         else:
-            raise ValueError(f"failed to detect NVIDIA device: not a Julia CUDA backend, and no UUID or PCI-bus-id in environment: {env}")
+            raise ValueError(
+                f"failed to detect NVIDIA device: not a Julia CUDA backend, and no UUID or PCI-bus-id in environment: {env}"
+            )
 
 
 # High-level Helper functions, the same as those in kernel_tuner.observers.nvml

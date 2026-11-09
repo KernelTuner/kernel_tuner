@@ -35,7 +35,7 @@ function pci_bus(dev::NVML.Device)
     info = Ref{NVML.nvmlPciInfo_t}()
     NVML.nvmlDeviceGetPciInfo_v3(dev, info)
     chars = collect(info[].busId)
-    return String(UInt8.(chars[1:something(findfirst(iszero, chars), length(chars) + 1) - 1]))
+    return String(UInt8.(chars[1:(something(findfirst(iszero, chars), length(chars)+1)-1)]))
 end
 
 
