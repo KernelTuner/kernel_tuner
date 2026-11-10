@@ -225,6 +225,11 @@ def check_individual_arguments(i, arg, kernel_argument):
     if isinstance(arg, Tunable):
         return correct, ""
 
+    # Handle compiler backend extended return values
+    # TODO: De-duplicate this string literal
+    if isinstance(arg, str) and arg == "KernelTunerExtendedReturnValue":
+        return correct, ""
+
     # Handle numpy arrays and other array types
     if not isinstance(arg, (np.ndarray, np.generic, torch.Tensor, DeviceArray) + cupy_ndarray):
         if is_julia_array(arg):
