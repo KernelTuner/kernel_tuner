@@ -13,7 +13,7 @@ import numpy as np
 import numpy.ctypeslib
 
 from kernel_tuner.backends.backend import CompilerBackend
-from kernel_tuner.observers.compiler import CompilerRuntimeObserver
+from kernel_tuner.observers.compiler import CompilerDefaultObserver
 from kernel_tuner.util import (
     delete_temp_file,
     get_temp_filename,
@@ -95,7 +95,7 @@ class CompilerFunctions(CompilerBackend):
         # allocations contains a clean copy of the memory
         self.allocations = []
         self.observers = observers or []
-        self.observers.append(CompilerRuntimeObserver(self))
+        self.observers.append(CompilerDefaultObserver(self))
         for obs in self.observers:
             obs.register_device(self)
 
