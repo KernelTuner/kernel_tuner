@@ -130,11 +130,7 @@ class JuliaRuntimeObserver(BenchmarkObserver):
                     f"Removed {num_outliers} of {len(arr)} measured times as outliers "
                     f"({', '.join(f'{t:.4f}' for t in arr[outliers])} ms vs. median {np.median(arr):.4f} ms)."
                 )
-                # only warn when there is more than one outlier, as that indicates unreliable measurements rather than warmup effects
-                if num_outliers > 1:
-                    logger.warning(log_str)
-                else:
-                    logger.info(log_str)
+                logger.info(log_str)
                 times_avg = arr[~outliers]
             else:
                 # remove the first to avoid JIT warmup effects

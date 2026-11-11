@@ -901,14 +901,25 @@ def get_total_timings(results, env, overhead_time):
 
 def print_config(config, tuning_options, runner):
     """Print the configuration string with tunable parameters and benchmark results."""
-    print_config_output(tuning_options.tune_params, config, runner.quiet, tuning_options.metrics, runner.units)
+    print_config_output(tuning_options, config, runner.quiet, runner.units)
 
 
-def print_config_output(tune_params, params, quiet, metrics, units):
+def print_config_output(tuning_options, params, quiet, units):
     """Print the configuration string with tunable parameters and benchmark results."""
-    print_keys = list(tune_params.keys()) + ["time"]
-    if metrics:
-        print_keys += metrics.keys()
+    objectives = list(tuning_options.get('objectives', []))
+    if tuning_options.get('objective', None) is not None:
+        if isinstance(tuning_options.objective, list):
+            for obj in tuning_options.objective:
+                if obj not in objectives:
+                    objectives.append(obj)
+        else:
+            if tuning_options.objective not in objectives:
+                objectives.append(tuning_options.objective)
+    if "time" not in objectives:
+        objectives.append("time")
+    print_keys = list(tuning_options.tune_params.keys()) + objectives
+    if tuning_options.get('metrics', dict()):
+        print_keys += [k for k in tuning_options.metrics.keys() if k not in print_keys]
     output_string = get_config_string(params, print_keys, units)
     if not quiet:
         print(output_string)

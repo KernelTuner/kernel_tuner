@@ -366,9 +366,7 @@ class ParallelRunner(Runner):
                 )
 
             # print configuration to the console
-            print_config_output(
-                tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units
-            )
+            print_config_output(tuning_options, result, self.quiet, self.units)
 
             # add configuration to cache
             store_cache(key, result, tuning_options.cachefile, tuning_options.cache)

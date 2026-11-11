@@ -114,7 +114,7 @@ class SimulationRunner(Runner):
                     result = util.copy_without_benchmark_timings(result)
                 else:
                     # configuration is evaluated for the first time, print to the console
-                    util.print_config_output(tuning_options.tune_params, result, self.quiet, tuning_options.metrics, self.units)
+                    util.print_config_output(tuning_options, result, self.quiet, self.units)
                     self.visited_results.add(key)
                     tuning_options.budget.add_evaluations(1)
 
