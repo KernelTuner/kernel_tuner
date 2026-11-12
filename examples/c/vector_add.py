@@ -13,6 +13,7 @@ typedef float vfloat __attribute__ ((vector_size (vecsize*4)));
 
 // TODO: Supply a C header file which provides this struct and helper functions
 // to fill it
+// TODO: Add versioning to this strict somehow. (In the name or a first field?)
 struct KernelTunerExtendedReturnValue {
     bool success;
     char error[256];
