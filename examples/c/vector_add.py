@@ -7,10 +7,22 @@ from collections import OrderedDict
 
 kernel_string = """ 
 #include <omp.h>
+#include <string.h>
 
 typedef float vfloat __attribute__ ((vector_size (vecsize*4)));
 
-extern "C" float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
+// TODO: Supply a C header file which provides this struct and helper functions
+// to fill it
+// TODO: Add versioning to this strict somehow. (In the name or a first field?)
+struct KernelTunerExtendedReturnValue {
+    bool success;
+    char error[256];
+    int count;
+    char keys[8][16];
+    float values[8];
+};
+
+extern "C" void vector_add(vfloat *c, vfloat *a, vfloat *b, int n, KernelTunerExtendedReturnValue *ret) {
     double start = omp_get_wtime();
     int chunk = n/(vecsize*nthreads);
 
@@ -22,7 +34,10 @@ extern "C" float vector_add(vfloat *c, vfloat *a, vfloat *b, int n) {
         }
     }
 
-    return (float)((omp_get_wtime() - start)*1e3);
+    ret->success = true;
+    ret->count = 1;
+    strcpy(ret->keys[0], "time");
+    ret->values[0] = (float)((omp_get_wtime() - start)*1e3);
 }
 """
 
@@ -33,12 +48,12 @@ b = numpy.random.randn(size).astype(numpy.float32)
 c = numpy.zeros_like(b)
 n = numpy.int32(size)
 
-args = [c, a, b, n]
+args = [c, a, b, n, "KernelTunerExtendedReturnValue"]
 
 tune_params = OrderedDict()
 tune_params["nthreads"] = [1, 2, 3, 4, 8, 12, 16, 24, 32]
 tune_params["vecsize"] = [1, 2, 4, 8, 16]
 
-answer = [a + b, None, None, None]
+answer = [a + b, None, None, None, None]
 
 tune_kernel("vector_add", kernel_string, size, args, tune_params, answer=answer, compiler_options=["-fopenmp", "-O3"])
