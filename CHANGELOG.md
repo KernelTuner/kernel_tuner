@@ -3,10 +3,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
+
+## [1.6.0] - 2026-11-13
 - Extended Julia functionality:
   - Implemented Julia observers for Metal, Nvidia and AMD energy measurements.
   - Improved timing stability. 
   - Include the new tests of #407, additional new and updated tests.
+  - Fixed issue #423.
 - Improved performance and data handling.
 - Improved NVML and AMD observers.
 - Improved signal handling.
