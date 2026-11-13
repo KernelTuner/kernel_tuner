@@ -1,9 +1,10 @@
-# NVML functionality for the JuliaNVMLObserver, using the NVML wrapper of CUDA.jl.
+# NVML functionality for the JuliaNVMLObserver, using NVML.jl (the NVML wrapper of CUDA.jl).
 # Functions raise `NVML.NVMLError` on failure; `error_code` lets Python tell e.g. "not supported" from "no permission".
 # Units follow NVML: power in milliwatt, energy in millijoule, clocks in MHz, temperature in degrees Celsius.
 module KernelTunerNVML
 
-using CUDA: CUDA, NVML
+import CUDACore
+import NVML
 
 # NVML return code of an exception, or -1 if it is not an NVML error
 error_code(err) = err isa NVML.NVMLError ? Int(err.code) : -1
@@ -13,7 +14,7 @@ error_code(err) = err isa NVML.NVMLError ? Int(err.code) : -1
 
 # the device (not a MIG instance, as power and clocks are controlled per device) that runs the given CUDA device,
 # found by UUID, as CUDA and NVML can number the devices differently (e.g. with CUDA_VISIBLE_DEVICES)
-device_of(cuda_device::CUDA.CuDevice) = NVML.Device(CUDA.parent_uuid(cuda_device))
+device_of(cuda_device::CUDACore.CuDevice) = NVML.Device(CUDACore.parent_uuid(cuda_device))
 
 device_by_index(index::Integer) = NVML.Device(index)
 

@@ -17,7 +17,12 @@ from nox_poetry import Session, session
 # TODO this should be changed to something more robust
 REPO_ROOT = Path(__file__).parent.joinpath(Path("kernel_tuner/backends")).resolve()
 sys.path.append(str(REPO_ROOT))
-from julia_helper import backend_map, detect_julia_gpu_backends  # noqa: E402, F401
+from julia_helper import (  # noqa: E402, F401
+    CUDA_TOOLKIT_JLLS,
+    backend_map,
+    detect_julia_gpu_backends,
+    local_cuda_toolkit_preferences,
+)
 
 # set the test parameters
 verbose = False
@@ -367,12 +372,18 @@ def tests(session: Session) -> None:
         session.env["PYTHON_JULIAPKG_PROJECT"] = julia_project_path
         env_vars["PYTHON_JULIAPKG_PROJECT"] = julia_project_path
         # install any additional dependencies used by the tests, as `check_package_and_install` won't work from Nox
+        gpu_backends_string = ""
         if julia_use_gpu:
-            gpu_backends_string = "".join(
-                f'juliapkg.add("{backend_map[backend]["pkg"]}"); ' if backend_map[backend]["pkg"] else "" for backend in detect_julia_gpu_backends()
-            )
-        else:
-            gpu_backends_string = ""
+            for backend in detect_julia_gpu_backends():
+                if backend_map[backend]["pkg"] is None:
+                    continue
+                for pkg in [backend_map[backend]["pkg"]] + backend_map[backend].get("extra_pkgs", []):
+                    gpu_backends_string += f'juliapkg.add("{pkg}"); '
+                if backend == "CUDA":
+                    # use a compatible local CUDA toolkit instead of letting CUDA.jl download one, if available
+                    for jll, preferences in (local_cuda_toolkit_preferences() or {}).items():
+                        gpu_backends_string += f'juliapkg.add("{jll}", "{CUDA_TOOLKIT_JLLS[jll]}", preferences={preferences!r}); '
+
         session.run(
             "python", "-c", 
             f"{preamble}; juliapkg.resolve(); juliapkg.add('KernelAbstractions'); {gpu_backends_string} juliapkg.resolve();", 

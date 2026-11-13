@@ -1,4 +1,4 @@
-"""NVML observer for the Julia backend, using the NVML wrapper of CUDA.jl instead of pynvml.
+"""NVML observer for the Julia backend, using NVML.jl (the NVML wrapper of CUDA.jl) instead of pynvml.
 
 The observables and tunable parameters are the same as those of the :class:`~kernel_tuner.observers.nvml.NVMLObserver`.
 The NVML calls are made from the Julia process that runs the kernels, so pynvml is not needed. See ``julia_nvml.jl``
@@ -52,7 +52,7 @@ class _JuliaNVMLLibrary:
             try:
                 jl.include(str(Path(__file__).parent / "julia_nvml.jl"))
             except JuliaError as e:
-                raise ImportError(f"Could not load NVML through CUDA.jl, is CUDA.jl installed? {e}") from e
+                raise ImportError(f"Could not load NVML.jl, are CUDACore.jl and NVML.jl installed? {e}") from e
         self._module = jl.KernelTunerNVML
 
     def __getattr__(self, name):
@@ -84,10 +84,10 @@ def julia_nvml_library():
 
 
 class JuliaNVML:
-    """Class that gathers the NVML functionality for one device, through CUDA.jl.
+    """Class that gathers the NVML functionality for one device, through NVML.jl.
 
     Has the same interface as :class:`kernel_tuner.observers.nvml.nvml`. The device is selected by exactly one of
-    ``cuda_device`` (a ``CUDA.CuDevice`` from Julia), ``device_id`` (the NVML index, as reported by nvidia-smi),
+    ``cuda_device`` (a ``CUDACore.CuDevice`` from Julia), ``device_id`` (the NVML index, as reported by nvidia-smi),
     ``device_uuid``, or ``device_pci_bus``.
     """
 
@@ -100,7 +100,7 @@ class JuliaNVML:
         use_locked_clocks=False,
         cuda_device=None,
     ):
-        """Create object to control device using NVML through CUDA.jl."""
+        """Create object to control device using NVML through NVML.jl."""
         # set these first, as __del__ uses them and this __init__ may raise an exception midway
         self.pwr_limit_default = None
         self.modified_clocks = False
@@ -347,7 +347,7 @@ class JuliaNVML:
 
 
 class JuliaNVMLObserver(NVMLObserver):
-    """Observer for the Julia backend that uses NVML through CUDA.jl to monitor power, energy, clock frequencies, voltages and temperature.
+    """Observer for the Julia backend that uses NVML through NVML.jl to monitor power, energy, clock frequencies, voltages and temperature.
 
     Takes the same arguments and supports the same observables and tunable parameters (``nvml_pwr_limit``,
     ``nvml_gr_clock``, and ``nvml_mem_clock``) as the :class:`~kernel_tuner.observers.nvml.NVMLObserver`, see there.
@@ -370,7 +370,7 @@ class JuliaNVMLObserver(NVMLObserver):
         return self._last_power
 
     def register_device(self, dev):
-        cuda_device = getattr(dev, "backend_device", None) if getattr(dev, "backend_mod_name", None) == "CUDA" else None
+        cuda_device = getattr(dev, "backend_device", None) if getattr(dev, "backend_name", None) == "CUDA" else None
         env = getattr(dev, "env", dict())
         uuid = env.get("uuid")
         pci_bus = env.get("pci_bus_id")

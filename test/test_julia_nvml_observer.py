@@ -180,7 +180,7 @@ def test_tune_kernel_with_julia_nvml_observer():
     from juliacall import Main as jl
 
     # the observer measures the GPU that the Julia backend runs on
-    assert observer.nvml.uuid == "GPU-" + str(jl.seval("CUDA.uuid(CUDA.device())"))
+    assert observer.nvml.uuid == "GPU-" + str(jl.seval("CUDACore.uuid(CUDACore.device())"))
     for r in results:
         for observable in observables:
             assert r[observable] > 0, f"{observable} not positive in {r}"

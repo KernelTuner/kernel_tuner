@@ -1,10 +1,12 @@
-"""Kernel Tuner backend for running Julia CUDA.jl kernels via JuliaCall.
+"""Kernel Tuner backend for running Julia GPU kernels (KernelAbstractions.jl) via JuliaCall.
 
 This backend allows Julia kernels to be compiled, launched, and observed from Python using Kernel Tuner.
 
 Requirements:
   pip install juliacall
-  and in Julia: ] add CUDA / ROCBackend / oneAPI / Metal (will be automatically installed if not present)
+  and in Julia: ] add CUDACore NVML / AMDGPU / oneAPI / Metal (will be automatically installed if not present)
+  When installing CUDACore, a compatible local CUDA toolkit is used if available instead of downloading one,
+  see `KERNEL_TUNER_JULIA_LOCAL_CUDA_TOOLKIT` in julia_helper.py.
 
 Notes:
 - The kernel string should contain a valid Julia GPU kernel function definition.
@@ -56,7 +58,7 @@ from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.julia import JuliaRuntimeObserver
 from kernel_tuner.util import SkippableFailure
 
-from .julia_helper import backend_map, detect_julia_gpu_backends
+from .julia_helper import CUDA_TOOLKIT_JLLS, backend_map, detect_julia_gpu_backends, local_cuda_toolkit_preferences
 
 
 jl = None
@@ -180,7 +182,7 @@ class JuliaFunctions(GPUBackend):
                     const kt_julia_backend = {self.backend_mod_instname}()
                     const GPUArrayType = {self.GPUArrayType}
                     include("{str(Path(__file__).parent / "julia_helper.jl")}")
-                    include("{str(Path(__file__).parent / str("julia_helper_ext_" + self.backend_mod_name.lower() + ".jl"))}")
+                    include("{str(Path(__file__).parent / f"julia_helper_ext_{self.helper_ext}.jl")}")
                 end
                 """
             )
@@ -201,11 +203,20 @@ class JuliaFunctions(GPUBackend):
         if backend_name not in backend_map:
             raise ValueError(f"Unknown backend: {backend_name}")
         info = backend_map[backend_name]
+        self.backend_name = backend_name
+        self.helper_ext = info["helper_ext"]
         backend_pkg = info["pkg"]
 
         if backend_pkg is not None:
             # Ensure the package is installed
-            self.check_package_and_install(backend_pkg, allow_install=backend_name != "INTEL")  # avoid Intel false positives
+            packages = [backend_pkg] + info.get("extra_pkgs", [])
+            preferences = None
+            if backend_name == "CUDA" and not self.package_available(backend_pkg):
+                # CUDA.jl downloads a CUDA toolkit on installation, prefer a compatible local toolkit instead
+                preferences = local_cuda_toolkit_preferences()
+            self.check_package_and_install(
+                packages, allow_install=backend_name != "INTEL", preferences=preferences
+            )  # avoid Intel false positives
 
             # # Set debug level if needed
             # if backend_name == "cuda":
@@ -220,6 +231,8 @@ class JuliaFunctions(GPUBackend):
         jl.seval("using KernelAbstractions")
         if backend_pkg is not None:
             jl.seval(f"using {info['module']}")
+            for extra_pkg in info.get("extra_pkgs", []):
+                jl.seval(f"import {extra_pkg}")
         backend_mod = getattr(jl.Main, self.backend_mod_name)
         self.backend_mod = backend_mod
         jl.seval(f"tmp_arr = {info['GPUArrayType']}(Float32.(zeros(2)))")
@@ -229,7 +242,7 @@ class JuliaFunctions(GPUBackend):
 
         # Select device
         try:
-            if int(device) == 0 and backend_pkg != "CUDA":
+            if int(device) == 0 and backend_name != "CUDA":
                 # Julia uses 1-based indexing, but the CUDA backend uses 0-based so we skip that
                 device = 1
             jl.seval(info["device_select"](int(device)))
@@ -456,7 +469,7 @@ end
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise."""
-        if self.backend_mod_name == "CUDA":
+        if self.backend_name == "CUDA":
             if self._end_event is not None:
                 return bool(self.backend_mod.isdone(self._end_event))
             return True
@@ -539,24 +552,45 @@ end
     # Helper functions
     # -------------------------
 
-    def check_package_and_install(self, package, allow_install=True):
-        """Checks if the Julia package is available, and installs it if not."""
+    @staticmethod
+    def package_available(package):
+        """Checks if the Julia package can be imported."""
         try:
             jl.seval(f"import {package}")
+            return True
         except Exception:
-            if not allow_install:
-                warn(f"{package} not found in your Julia environment. Run `using Pkg; Pkg.add(\"{package}\")` to install it.")
-                return
-            try:
-                warn(f"{package} not found, attempting to install it directly.")
-                import juliapkg
+            return False
+
+    def check_package_and_install(self, packages, allow_install=True, preferences=None):
+        """Checks if the Julia package(s) are available, and installs the missing ones if not.
+
+        ``preferences`` optionally maps package names to Julia preferences that are set before installing, e.g. to
+        configure the CUDA toolkit JLLs. Packages that only appear in ``preferences`` are added as dependencies.
+        """
+        packages = [packages] if isinstance(packages, str) else list(packages)
+        missing = [package for package in packages if not self.package_available(package)]
+        if not missing:
+            return
+        add_command = "using Pkg; Pkg.add([" + ", ".join(f'\"{package}\"' for package in missing) + "])"
+        if not allow_install:
+            warn(f"{', '.join(missing)} not found in your Julia environment. Run `{add_command}` to install it.")
+            return
+        try:
+            warn(f"{', '.join(missing)} not found, attempting to install it directly.")
+            import juliapkg
+
+            for package in missing:
                 juliapkg.add(package)
-                juliapkg.resolve()
+            for package, package_preferences in (preferences or {}).items():
+                # the preferences must be in place before installation, as CUDA.jl selects the toolkit at that point
+                juliapkg.add(package, CUDA_TOOLKIT_JLLS.get(package), preferences=package_preferences)
+            juliapkg.resolve()
+            for package in missing:
                 jl.seval(f"import {package}")
-            except Exception as e:
-                raise ImportError(
-                    f'{package} not found in your Julia environment. Run `using Pkg; Pkg.add(\"{package}\")` to install it.'
-                ) from e
+        except Exception as e:
+            raise ImportError(
+                f"{', '.join(missing)} not found in your Julia environment. Run `{add_command}` to install it."
+            ) from e
 
     def setup_streams(self, backend_name: str):
         """Set up stream and event attributes for observers."""
