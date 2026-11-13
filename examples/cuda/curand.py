@@ -3,6 +3,7 @@
 initialized on the device in a separate kernel, and updates that state after
 drawing numbers"""
 
+import os
 import numpy
 from kernel_tuner import tune_kernel, run_kernel
 
@@ -44,7 +45,9 @@ def tune():
     size = 10_000_000
     n = numpy.int32(size)
     seed = numpy.uint64(42)
-    compiler_options = ["--dopt=on"]
+    # since CUDA 13, curand_kernel.h needs the libcu++ headers in include/cccl, which require C++17
+    cuda_home = os.environ.get("CUDA_HOME", "/usr/local/cuda")
+    compiler_options = ["--dopt=on", "--std=c++17", f"-I{cuda_home}/include/cccl"]
 
     # curandState is opaque, host-side content is irrelevant, only its size matters
     state = numpy.zeros(size * CURAND_STATE_SIZE, dtype=numpy.uint8)
