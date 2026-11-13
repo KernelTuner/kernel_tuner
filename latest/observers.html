@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Observers &mdash; Kernel Tuner 1.5.0 documentation</title>
+  <title>Observers &mdash; Kernel Tuner 1.6.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -13,7 +13,7 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/documentation_options.js?v=e0a75244"></script>
+        <script src="_static/documentation_options.js?v=72d88caf"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -36,7 +36,7 @@
             Kernel Tuner
           </a>
               <div class="version">
-                1.5.0
+                1.6.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -261,7 +261,7 @@ almost all Nvidia GPUs, so this method is much more accessible to end-users comp
 custom hardware, such as PowerSensor2.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="kernel_tuner.observers.nvml.NVMLObserver">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.nvml.</span></span><span class="sig-name descname"><span class="pre">NVMLObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nvidia_smi_fallback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_locked_clocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuous_duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.nvml.NVMLObserver" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">kernel_tuner.observers.nvml.</span></span><span class="sig-name descname"><span class="pre">NVMLObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nvidia_smi_fallback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_locked_clocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuous_duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_energy_counter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#kernel_tuner.observers.nvml.NVMLObserver" title="Link to this definition">¶</a></dt>
 <dd><p>Observer that uses NVML to monitor power, energy, clock frequencies, voltages and temperature.</p>
 <p>The NVMLObserver can also be used to tune application-specific clock frequencies or power limits
 in combination with other parameters.</p>
@@ -270,7 +270,9 @@ in combination with other parameters.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>observables</strong> (<em>list</em><em> of </em><em>strings</em>) – List of quantities that should be observed during tuning, supported are: “power_readings”,
 “nvml_power”, “nvml_energy”, “core_freq”, “mem_freq”, “temperature”, “gr_voltage”. If you want to measure the average power
-consumption of a GPU kernel executing on the GPU use “nvml_power”. The “power_readings” are the individual power readings
+consumption of a GPU kernel executing on the GPU use “nvml_power”, in Watt; “nvml_energy” is the energy of a single
+kernel execution in Joule. Both are measured while the kernel runs back-to-back for <cite>continuous_duration</cite> seconds,
+see also <cite>use_energy_counter</cite>. The “power_readings” are the individual power readings
 as reported by NVML and will return a lot of data if you are benchmarking many different kernel configurations.</p></li>
 <li><p><strong>device</strong> (<em>integer</em>) – Device ordinal used by Nvidia to identify your device, same as reported by nvidia-smi.</p></li>
 <li><p><strong>save_all</strong> (<em>boolean</em>) – If set to True, all data collected by the NVMLObserver for every iteration during benchmarking will be returned.
@@ -282,6 +284,10 @@ If set to True, using locked clocks will be preferred over application clocks. I
 will set the GPU clocks using the application clocks feature.
 Default is False.</p></li>
 <li><p><strong>continuous_duration</strong> (<em>float</em>) – Duration to use for energy/power measurements in seconds, default 1 second.</p></li>
+<li><p><strong>use_energy_counter</strong> (<em>boolean</em>) – Measure “nvml_power” and “nvml_energy” from the change in NVML’s energy counter, which is
+updated more often than its power readings, instead of from the median of the power readings. If the counter
+disagrees strongly with the power readings, as it does on some systems, the power readings are used with a warning.
+See <code class="xref py py-class docutils literal notranslate"><span class="pre">NVMLContinuousObserver</span></code>. Default is False.</p></li>
 </ul>
 </dd>
 </dl>
