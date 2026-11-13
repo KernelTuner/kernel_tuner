@@ -215,6 +215,8 @@ class JuliaFunctions(GPUBackend):
         self.backend_mod_name = info["module"]
         self.backend_mod_instname = info["module_backend"]
         # jl.seval(f"using KernelAbstractions, {info['module']}")
+        # KernelAbstractions is a dependency of the backend packages, but must be a direct dependency to be loaded
+        self.check_package_and_install("KernelAbstractions")
         jl.seval("using KernelAbstractions")
         if backend_pkg is not None:
             jl.seval(f"using {info['module']}")
