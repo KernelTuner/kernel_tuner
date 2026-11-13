@@ -4,6 +4,7 @@ import numpy as np
 
 class BenchmarkObserver(ABC):
     """Base class for Benchmark Observers"""
+    passthrough_observer = False    # do not execute as a benchmark observer, only used as a passthrough for other observers
 
     def register_device(self, dev):
         """Sets self.dev, for inspection by the observer at various points during benchmarking"""
@@ -96,9 +97,9 @@ class ContinuousObserver(BenchmarkObserver):
 
     def after_finish(self):
         self.parent.after_finish()
-        # safeguard in case we have no measurements, perhaps the kernel was too short to measure anything
+        # the run may have finished before the observer was polled, take at least one reading instead of reporting zero
         if not self.power_readings:
-            return
+            self.power_readings.append([time.perf_counter() - self.t0, self.parent.read_power()])
 
         # convert to seconds from milliseconds
         execution_time = self.results["time"] / 1e3

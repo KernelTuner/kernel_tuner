@@ -1,6 +1,7 @@
 import re
 import subprocess
 import time
+from warnings import warn
 
 import numpy as np
 
@@ -12,16 +13,32 @@ except ImportError:
     pynvml = None
 
 
+SUPPORTED_OBSERVABLES = [
+    "power_readings",
+    "nvml_power",
+    "nvml_energy",
+    "core_freq",
+    "mem_freq",
+    "temperature",
+    "gr_voltage",
+]
+
+FIELD_TYPE_MAP = {
+    "power_readings": list,
+    "nvml_power": float,
+    "nvml_energy": float,
+    "core_freq": int,
+    "mem_freq": int,
+    "temperature": float,
+    "gr_voltage": float,
+}
+
+
 class nvml:
     """Class that gathers the NVML functionality for one device."""
 
     def __init__(
-            self,
-            device_id=None,
-            device_uuid=None,
-            device_pci_bus=None,
-            nvidia_smi_fallback=None,
-            use_locked_clocks=False
+        self, device_id=None, device_uuid=None, device_pci_bus=None, nvidia_smi_fallback=None, use_locked_clocks=False
     ):
         """Create object to control device using NVML."""
         # We set these first as __del__ checks these
@@ -181,7 +198,6 @@ class nvml:
 
     def set_clocks(self, mem_clock, gr_clock):
         """Set the memory and graphics clock for this device (may require permission)."""
-
         mem_clock = min(self.supported_mem_clocks, key=lambda x: abs(x - mem_clock))
         if mem_clock not in self.supported_mem_clocks:
             raise ValueError("Illegal value for memory clock")
@@ -222,6 +238,7 @@ class nvml:
         # Store the fact that we have modified the clocks
         if not self.modified_clocks:
             import atexit
+
             atexit.register(self.reset_clocks)
         self.modified_clocks = True
 
@@ -325,6 +342,65 @@ class nvml:
             return np.nan
 
 
+class NVMLContinuousObserver(ContinuousObserver):
+    """Continuous observer that measures the average power from the change in the energy counter of NVML.
+
+    NVML updates its power readings infrequently (e.g. every 500 ms on an RTX A6000), so the median of the power
+    readings in a measurement window of about a second rests on only a few values. The cumulative energy counter is
+    updated more often (e.g. every 100 ms). The observer records when the counter changes during the window; the energy
+    between the first and the last change, divided by the time between them, is the average power. As both ends are
+    taken at a change of the counter, the delay with which the counter is updated cancels out.
+
+    If the counter changes fewer than twice in the window (e.g. the window is too short, or the device has no energy
+    counter), the power is the median of the power readings instead. The same happens, with a warning, if the power
+    from the counter differs more than `max_disagreement` times from the mean of the power readings: on some systems
+    the counter is wrong (e.g. it increased about 15 times too slowly on an RTX A6000 with driver 595.91.07).
+    """
+
+    # minimum time in seconds between two readings of the energy counter, the counter changes much less often
+    energy_read_interval = 1e-3
+    # maximum factor between the power from the counter and the mean of the power readings before the counter is distrusted
+    max_disagreement = 2.0
+    _warned = False
+
+    def before_start(self):
+        super().before_start()
+        self.energy_readings = []  # [time in s, energy counter in mJ], every time the counter changed
+        self._last_energy_read = None
+
+    def during(self):
+        super().during()
+        now = time.perf_counter()
+        if self._last_energy_read is None or now - self._last_energy_read >= self.energy_read_interval:
+            self._last_energy_read = now
+            try:
+                energy = self.parent.nvml.energy_usage()
+            except Exception:
+                return  # no energy counter, the power readings are used instead
+            if not self.energy_readings or energy != self.energy_readings[-1][1]:
+                self.energy_readings.append([now - self.t0, energy])
+
+    def after_finish(self):
+        super().after_finish()
+        # the first reading only marks the counter value before the first observed change
+        changes = self.energy_readings[1:]
+        if len(changes) < 2:
+            return
+        (t_first, e_first), (t_last, e_last) = changes[0], changes[-1]
+        counter_power = (e_last - e_first) / 1e3 / (t_last - t_first)
+        readings_power = np.mean([power for _, power in self.power_readings])
+        if not readings_power / self.max_disagreement <= counter_power <= readings_power * self.max_disagreement:
+            if not self._warned:
+                warn(
+                    f"The power from NVML's energy counter ({counter_power:.1f} W) differs more than {self.max_disagreement}x "
+                    f"from its power readings ({readings_power:.1f} W), using the power readings instead"
+                )
+                self._warned = True
+            return
+        self.power = counter_power
+        self.energy = self.power * self.results["time"] / 1e3
+
+
 class NVMLObserver(BenchmarkObserver):
     """Observer that uses NVML to monitor power, energy, clock frequencies, voltages and temperature.
 
@@ -333,7 +409,9 @@ class NVMLObserver(BenchmarkObserver):
 
     :param observables: List of quantities that should be observed during tuning, supported are: "power_readings",
         "nvml_power", "nvml_energy", "core_freq", "mem_freq", "temperature", "gr_voltage". If you want to measure the average power
-        consumption of a GPU kernel executing on the GPU use "nvml_power". The "power_readings" are the individual power readings
+        consumption of a GPU kernel executing on the GPU use "nvml_power", in Watt; "nvml_energy" is the energy of a single
+        kernel execution in Joule. Both are measured while the kernel runs back-to-back for `continuous_duration` seconds,
+        see also `use_energy_counter`. The "power_readings" are the individual power readings
         as reported by NVML and will return a lot of data if you are benchmarking many different kernel configurations.
     :type observables: list of strings
 
@@ -357,6 +435,12 @@ class NVMLObserver(BenchmarkObserver):
     :param continuous_duration: Duration to use for energy/power measurements in seconds, default 1 second.
     :type continuous_duration: float
 
+    :param use_energy_counter: Measure "nvml_power" and "nvml_energy" from the change in NVML's energy counter, which is
+        updated more often than its power readings, instead of from the median of the power readings. If the counter
+        disagrees strongly with the power readings, as it does on some systems, the power readings are used with a warning.
+        See :class:`NVMLContinuousObserver`. Default is False.
+    :type use_energy_counter: boolean
+
     """
 
     def __init__(
@@ -367,6 +451,7 @@ class NVMLObserver(BenchmarkObserver):
         nvidia_smi_fallback=None,
         use_locked_clocks=False,
         continuous_duration=1,
+        use_energy_counter=False,
     ):
         """Create an NVMLObserver."""
         self.save_all = save_all
@@ -375,18 +460,9 @@ class NVMLObserver(BenchmarkObserver):
         self.nvml_kwargs["use_locked_clocks"] = use_locked_clocks
         self.nvml_kwargs["nvidia_smi_fallback"] = nvidia_smi_fallback
 
-        supported = [
-            "power_readings",
-            "nvml_power",
-            "nvml_energy",
-            "core_freq",
-            "mem_freq",
-            "temperature",
-            "gr_voltage",
-        ]
         for obs in observables:
-            if obs not in supported:
-                raise ValueError(f"Observable {obs} not in supported: {supported}")
+            if obs not in SUPPORTED_OBSERVABLES:
+                raise ValueError(f"Observable {obs} not in supported: {SUPPORTED_OBSERVABLES}")
         self.observables = observables
 
         self.measure_power = False
@@ -394,7 +470,10 @@ class NVMLObserver(BenchmarkObserver):
         if any([obs in self.needs_power for obs in observables]):
             self.measure_power = True
             power_observables = [obs for obs in observables if obs in self.needs_power]
-            self.continuous_observer = ContinuousObserver("nvml", power_observables, self, continuous_duration=continuous_duration)
+            continuous_observer = NVMLContinuousObserver if use_energy_counter else ContinuousObserver
+            self.continuous_observer = continuous_observer(
+                "nvml", power_observables, self, continuous_duration=continuous_duration
+            )
 
         # remove power observables
         self.observables = [obs for obs in observables if obs not in self.needs_power]
@@ -428,14 +507,14 @@ class NVMLObserver(BenchmarkObserver):
         elif pci_bus is not None:
             self.nvml = nvml(device_pci_bus=pci_bus, **self.nvml_kwargs)
         else:
-            raise ValueError("failed to detect NVIDIA device: no UUID or PCI-bus-id in environment")
+            raise ValueError(f"failed to detect NVIDIA device: no UUID or PCI-bus-id in environment: {env}")
 
     def read_power(self):
-        """ Return power in Watt """
+        """Return power in Watt"""
         return self.nvml.pwr_usage() / 1e3
 
     def read_energy(self):
-        """ Return cumulative energy usage in Joule """
+        """Return cumulative energy usage in Joule"""
         now = self.nvml.energy_usage()
 
         if self.initial_energy_reading is None:
@@ -473,12 +552,8 @@ class NVMLObserver(BenchmarkObserver):
             self.results["mem_freqs"].append(np.average(self.iteration["mem_freq"]))
 
         if "gr_voltage" in self.observables:
-            execution_time = time.time() - self.t0
-            gr_voltage_readings = self.gr_voltage_readings
-            gr_voltage_readings = [[0.0, gr_voltage_readings[0][1]]] + gr_voltage_readings
-            gr_voltage_readings = gr_voltage_readings + [[execution_time, gr_voltage_readings[-1][1]]]
-            # time in s, graphics voltage in millivolts
-            self.results["gr_voltages"].append(np.average(gr_voltage_readings[:][:][1]))
+            # readings are [time in s, graphics voltage in millivolts]
+            self.results["gr_voltages"].append(np.average([voltage for _, voltage in self.gr_voltage_readings]))
 
     def get_results(self):
         averaged_results = {}
@@ -567,4 +642,3 @@ def get_idle_power(device, n=5, sleep_s=0.1):
         time.sleep(sleep_s)
         readings.append(d.pwr_usage())
     return np.mean(readings) * 1e-3  # Watt
-

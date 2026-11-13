@@ -1,7 +1,8 @@
-import amdsmi
 import logging
-import numpy as np
 import time
+
+import amdsmi
+import numpy as np
 
 # Trapz was renamed to trapezoid in Numpy 2.0
 try:
@@ -10,6 +11,7 @@ except ImportError:
     from numpy import trapz as trapezoid
 
 from uuid import UUID
+
 from kernel_tuner.observers import BenchmarkObserver, ContinuousObserver
 
 logger = logging.getLogger(__name__)
@@ -77,7 +79,6 @@ class AMDDevice:
 
     def total_energy_usage(self):
         """Returns total energy usage since startup."""
-
         result = amdsmi.amdsmi_get_energy_count(self.device)
 
         # This field changed name in rocm 6.4
@@ -92,18 +93,17 @@ class AMDDevice:
     def current_power_usage(self):
         info = amdsmi.amdsmi_get_power_info(self.device)
 
-        if "current_socket_power" in info:
-            # For newer Mi300+ cards
-            return info["current_socket_power"]
-        elif "average_socket_power" in info:
-            # For older cards
-            return info["average_socket_power"]
-        else:
-            raise RuntimeError(f"invalid result from amdsmi_get_power_info: {info}")
+        # Newer MI300+ cards report "current_socket_power", older cards (e.g., MI210) only "average_socket_power".
+        # Unsupported fields are present but have the value "N/A", so check the value rather than the key.
+        for key in ("current_socket_power", "average_socket_power", "socket_power"):
+            value = info.get(key)
+            if value is not None and not isinstance(value, str):
+                return value
+
+        raise RuntimeError(f"invalid result from amdsmi_get_power_info: {info}")
 
     def core_voltage(self):
         """Returns current voltage in Volt."""
-
         milli_volt = amdsmi.amdsmi_get_gpu_volt_metric(
             self.device,
             amdsmi.AmdSmiVoltageType.VDDGFX,
@@ -227,8 +227,7 @@ class AMDSMIContinuousObserver(ContinuousObserver):
 
 
 class AMDSMIObserver(BenchmarkObserver):
-    """
-    BenchmarkObserver that uses amdsmi to monitor AMD GPUs and measure energy usage (`energy`),
+    """BenchmarkObserver that uses amdsmi to monitor AMD GPUs and measure energy usage (`energy`),
     core clock frequency (`core_freq`), memory clock frequency (`mem_freq`), temperature (`temperature`),
     and core voltage (`core_voltage`).
     """
@@ -242,8 +241,7 @@ class AMDSMIObserver(BenchmarkObserver):
         use_continuous_observer=True,
         continuous_duration=1.0,
     ):
-        """
-        Initialize the AMDSMIObserver.
+        """Initialize the AMDSMIObserver.
 
         Supported observables are: `energy`, `core_freq`, `mem_freq`, `temperature`, and `core_voltage`.
 

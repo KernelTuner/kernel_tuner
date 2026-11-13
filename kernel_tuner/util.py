@@ -86,7 +86,9 @@ class NpEncoder(json.JSONEncoder):
         return super(NpEncoder, self).default(obj)
 
 
-def get_result_cost(result: dict, objectives: list[str], objective_higher_is_better: list[bool], invalid_value) -> list[float]:
+def get_result_cost(
+    result: dict, objectives: list[str], objective_higher_is_better: list[bool], invalid_value
+) -> list[float]:
     """Returns the cost of a result, taking the objective directions into account."""
     # return the highest cost for invalid results
     if "__error__" in result:
@@ -119,6 +121,40 @@ class SkippableFailure(Exception):
 
 class StopCriterionReached(Exception):
     """Exception thrown when a stop criterion has been reached."""
+
+
+def is_interrupt(exception) -> bool:
+    """Whether `exception`, or an exception that caused it, is an interrupt (Ctrl-C).
+
+    With the Julia backend, Julia handles the interrupt signal, so Ctrl-C arrives as a Julia `InterruptException`,
+    wrapped in a `JuliaError` by JuliaCall, and possibly re-raised as another exception by the backend.
+    """
+    seen = set()
+    pending = [exception]
+    while pending:
+        exc = pending.pop()
+        if exc is None or id(exc) in seen:
+            continue
+        seen.add(id(exc))
+        if isinstance(exc, KeyboardInterrupt):
+            return True
+        if type(exc).__name__ == "JuliaError":
+            julia_exception = repr(getattr(exc, "exception", ""))
+            # an interrupt in Julia, or a KeyboardInterrupt in Python code called from Julia
+            if "InterruptException" in julia_exception or "KeyboardInterrupt" in julia_exception:
+                return True
+        pending.extend([exc.__cause__, exc.__context__])
+    return False
+
+
+def raise_if_interrupt(exception):
+    """Raise a `KeyboardInterrupt` if `exception` is caused by an interrupt, so that it stops tuning.
+
+    Use this in handlers that catch any exception, as an interrupt arriving through Julia (see `is_interrupt`) would
+    otherwise only make the current configuration fail.
+    """
+    if is_interrupt(exception):
+        raise KeyboardInterrupt() from exception
 
 
 try:
@@ -865,14 +901,25 @@ def get_total_timings(results, env, overhead_time):
 
 def print_config(config, tuning_options, runner):
     """Print the configuration string with tunable parameters and benchmark results."""
-    print_config_output(tuning_options.tune_params, config, runner.quiet, tuning_options.metrics, runner.units)
+    print_config_output(tuning_options, config, runner.quiet, runner.units)
 
 
-def print_config_output(tune_params, params, quiet, metrics, units):
+def print_config_output(tuning_options, params, quiet, units):
     """Print the configuration string with tunable parameters and benchmark results."""
-    print_keys = list(tune_params.keys()) + ["time"]
-    if metrics:
-        print_keys += metrics.keys()
+    objectives = list(tuning_options.get('objectives', []))
+    if tuning_options.get('objective', None) is not None:
+        if isinstance(tuning_options.objective, list):
+            for obj in tuning_options.objective:
+                if obj not in objectives:
+                    objectives.append(obj)
+        else:
+            if tuning_options.objective not in objectives:
+                objectives.append(tuning_options.objective)
+    if "time" not in objectives:
+        objectives.append("time")
+    print_keys = list(tuning_options.tune_params.keys()) + objectives
+    if tuning_options.get('metrics', dict()):
+        print_keys += [k for k in tuning_options.metrics.keys() if k not in print_keys]
     output_string = get_config_string(params, print_keys, units)
     if not quiet:
         print(output_string)
@@ -1382,7 +1429,7 @@ def check_matching_problem_size(cached_problem_size, problem_size):
 
 
 def open_cachefile(cachefile, mode):
-    """ Open a cachefile for reading or writing (depending on mode) """
+    """Open a cachefile for reading or writing (depending on mode)"""
     if cachefile[-3:] == ".gz":
         return gzip.open(cachefile, mode)
     return open(cachefile, mode)

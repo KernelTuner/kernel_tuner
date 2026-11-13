@@ -119,7 +119,7 @@ class SequentialRunner(Runner):
 
             if result:
                 # print configuration to the console
-                print_config_output(tuning_options.tune_params, params, self.quiet, tuning_options.metrics, self.units)
+                print_config_output(tuning_options, params, self.quiet, self.units)
 
                 # add configuration to cache
                 store_cache(x_int, params, tuning_options.cachefile, tuning_options.cache)

@@ -21,18 +21,18 @@ jobs:
 
         strategy:
             matrix:
-                os: [ubuntu-latest, macos-latest]
+                os: [ubuntu-26.04, macos-latest]    # set to ubuntu-latest when it is updated to 26.04
 
         steps:
             - uses: actions/checkout@v7
             - name: Setup Nox
               uses: fjwillemsen/setup-nox2@v4
             - name: Setup Poetry
-              uses: Gr1N/setup-poetry@v9
+              uses: Gr1N/setup-poetry@v10
             - run: poetry self add poetry-plugin-export
             - uses: julia-actions/setup-julia@v3
               with:
-                  version: '1.11'   # when changed, also see `require_julia` in noxfile.py and the Julia version in Project.toml
+                  version: '1.13'   # when changed, also see `require_julia` in noxfile.py and the Julia version in Project.toml
             - name: Run tests with Nox
               run: |
                   rm -rf .nox

@@ -12,11 +12,45 @@ Notes:
 - Currently supports CuArray and scalar arguments; constant and texture memory are not implemented.
 """
 
+import os
+import sys
+import uuid
 from pathlib import Path
 from warnings import warn
 from dataclasses import dataclass
+from time import perf_counter
 
 import numpy as np
+
+# Julia stops its threads for garbage collection by letting them access a protected memory page, and handles the
+# resulting signal itself, but only if JuliaCall lets Julia install its signal handlers. GPU packages run Julia code on
+# threads of their own (e.g. Metal.jl waits for the GPU on GPUToolbox worker threads), even if Julia was started with a
+# single thread, so without this a garbage collection can crash Python with a bus error or segmentation fault.
+# JuliaCall reads this setting when it is first imported, so it is set here, before any import of JuliaCall.
+# This also lets Julia take over Ctrl-C, which the backend hands back to Python (see `give_interrupts_to_python`).
+JULIACALL_HANDLE_SIGNALS = "PYTHON_JULIACALL_HANDLE_SIGNALS"
+if "juliacall" not in sys.modules:
+    os.environ.setdefault(JULIACALL_HANDLE_SIGNALS, "yes")
+
+
+
+def give_interrupts_to_python(jl):
+    """Let Ctrl-C raise a KeyboardInterrupt in Python again, after JuliaCall started Julia with signal handling.
+
+    Julia only needs its own signal handlers for garbage collection (SIGSEGV / SIGBUS), but it also takes over the
+    interrupt signal (SIGINT), so that Ctrl-C would not stop tuning. Python's handler is installed again, so that Ctrl-C
+    raises a KeyboardInterrupt once the current call into Julia returns. Julia is told not to exit on Ctrl-C, in case
+    its handler is still in place (Python can only install signal handlers from the main thread).
+    """
+    import signal
+    import threading
+
+    jl.seval("Base.exit_on_sigint(false)")
+    if threading.current_thread() is threading.main_thread():
+        handler = signal.getsignal(signal.SIGINT)  # Python's handler (e.g. that of a Jupyter kernel), overridden by Julia
+        if handler is not None:
+            signal.signal(signal.SIGINT, handler)
+
 
 from kernel_tuner.backends.backend import GPUBackend
 from kernel_tuner.observers.julia import JuliaRuntimeObserver
@@ -45,6 +79,14 @@ class JuliaFunctions(GPUBackend):
     def __init__(self, device=0, iterations=7, compiler_options=None, observers=None):
         """Initialize Julia backend using JuliaCall."""
         # lazy import to avoid mixing e.g. CUDA drivers
+        # (when Julia runs Python instead, e.g. from KernelTuner.jl, JuliaCall did not start Julia and Julia handles signals)
+        juliacall_config = getattr(sys.modules.get("juliacall"), "CONFIG", {})
+        if juliacall_config.get("inited") and juliacall_config.get("opt_handle_signals") != "yes":
+            warn(
+                "JuliaCall started Julia without signal handling, "
+                "which can crash Python with a bus error or segmentation fault during garbage collection. "
+                f"Set the environment variable {JULIACALL_HANDLE_SIGNALS}=yes before JuliaCall is first imported."
+            )
         try:
             from juliacall import JuliaError
             from juliacall import Main as jl
@@ -55,6 +97,8 @@ class JuliaFunctions(GPUBackend):
             jl = None
         if jl is None:
             raise ImportError("JuliaCall not installed. Please run `pip install juliacall`.")
+        if getattr(sys.modules.get("juliacall"), "CONFIG", {}).get("opt_handle_signals") == "yes":
+            give_interrupts_to_python(jl)
 
         # process passed options and backends
         self.process_compiler_options(compiler_options)
@@ -69,12 +113,32 @@ class JuliaFunctions(GPUBackend):
         self.current_kernel = None
         self.smem_size = 0
 
+        # Event tracking for async kernel launches
+        self._start_event = None
+        self._end_event = None
+
         # Initialize Julia backend
         self.backend = None
         self.start_evt = None
         self.end_evt = None
-        self.host_time = None
+        self.launch_kernel_time = None
+        self.launch_kernel_time_start = None
         self.initialize_backend(device, backend_name=backend_name)
+
+        # set device environment info
+        self.env = {
+            "device_name": self.name,
+            "compute_capability": self.cc,
+            "iterations": iterations,
+            "compiler_options": self.compiler_options,
+            "uuid": self.uuid,
+            "pci_bus_id": self.pci_bus_id,
+        }
+        # PCI domain and device ID are only known for some backends (AMD), only add them when available
+        if self.pci_domain_id is not None:
+            self.env["pci_domain_id"] = self.pci_domain_id
+        if self.pci_device_id is not None:
+            self.env["pci_device_id"] = self.pci_device_id
 
         # setup observers
         self.observers = observers or []
@@ -116,20 +180,20 @@ class JuliaFunctions(GPUBackend):
                     const kt_julia_backend = {self.backend_mod_instname}()
                     const GPUArrayType = {self.GPUArrayType}
                     include("{str(Path(__file__).parent / "julia_helper.jl")}")
+                    include("{str(Path(__file__).parent / str("julia_helper_ext_" + self.backend_mod_name.lower() + ".jl"))}")
                 end
                 """
             )
 
-        self.to_gpuarray = jl.KernelTunerHelper.to_gpuarray
         self.launch_kernel = jl.KernelTunerHelper.launch_kernel
+        self.synchronize_gpu = jl.KernelTunerHelper.synchronize_gpu
+        self.to_gpuarray = jl.KernelTunerHelper.to_gpuarray
 
-        # env info
-        self.env = {
-            "device_name": self.name,
-            "compute_capability": self.cc,
-            "iterations": iterations,
-            "compiler_options": self.compiler_options,
-        }
+        # Metal specific functions
+        self.use_metal_buffer = self.backend_mod_name == "Metal"
+        if self.use_metal_buffer:
+            self.metal_kernel_finished = jl.KernelTunerHelper.metal_kernel_finished
+            self.metal_gpu_time_ms = jl.KernelTunerHelper.metal_gpu_time_ms
 
     def initialize_backend(self, device, backend_name):
         """Initialize for a choice of Julia backends by backend_name, one of 'cuda', 'amd', 'intel', 'metal'."""
@@ -151,6 +215,8 @@ class JuliaFunctions(GPUBackend):
         self.backend_mod_name = info["module"]
         self.backend_mod_instname = info["module_backend"]
         # jl.seval(f"using KernelAbstractions, {info['module']}")
+        # KernelAbstractions is a dependency of the backend packages, but must be a direct dependency to be loaded
+        self.check_package_and_install("KernelAbstractions")
         jl.seval("using KernelAbstractions")
         if backend_pkg is not None:
             jl.seval(f"using {info['module']}")
@@ -194,6 +260,24 @@ class JuliaFunctions(GPUBackend):
         except JuliaError:
             self.max_threads = None
 
+        # Query UUID and PCI bus ID if available
+        self.uuid = None
+        self.pci_bus_id = None
+        if info["uuid"] is not None:
+            try:
+                self.uuid = str(jl.seval(info["uuid"](int(device))))
+            except JuliaError:
+                self.uuid = None
+        if info["pci_bus_id"] is not None:
+            try:
+                self.pci_bus_id = str(jl.seval(info["pci_bus_id"](int(device))))
+            except JuliaError:
+                self.pci_bus_id = None
+        self.pci_domain_id = None
+        self.pci_device_id = None
+        if backend_name == "AMD":
+            self.query_amd_device_identity()
+
         # Get the device and context
         try:
             self.backend_device = self.backend_mod.device()
@@ -208,9 +292,30 @@ class JuliaFunctions(GPUBackend):
         #         f"ZeCommandQueue(ZeContext(first(drivers())), devices(first(drivers()))[{int(device) + 1}]))"
         #     )
         elif backend_name == "METAL":
-            self.contextqueue = self.backend_mod.MTLCommandQueue(self.backend_device)
+            self.contextqueue = self.backend_mod.global_queue(self.backend_device)
 
         self.setup_streams(backend_name)
+
+    def query_amd_device_identity(self):
+        """Query the UUID and PCI location of the selected AMDGPU device, used by e.g. the AMDSMIObserver to find the device.
+
+        The UUID and PCI information follow the same format as the HIP backend.
+        """
+        try:
+            uuid_bytes, pci_domain, pci_bus, pci_device = jl.seval(
+                """
+                let props = AMDGPU.HIP.properties(AMDGPU.HIP.device())
+                    (collect(reinterpret(UInt8, collect(props.uuid.bytes))),
+                     Int(props.pciDomainID), Int(props.pciBusID), Int(props.pciDeviceID))
+                end
+                """
+            )
+            self.uuid = str(uuid.UUID(bytes=bytes(int(b) for b in uuid_bytes)))
+            self.pci_domain_id = int(pci_domain)
+            self.pci_bus_id = int(pci_bus)
+            self.pci_device_id = int(pci_device)
+        except (JuliaError, ValueError) as e:
+            warn(f"Could not query the UUID and PCI information of the AMDGPU device: {e}")
 
     def __del__(self):
         # drop GPUArray references to let Julia GC handle them
@@ -230,9 +335,14 @@ class JuliaFunctions(GPUBackend):
         gpu_args = []
         for arg in arguments:
             try:
-                arr = self.to_gpuarray(arg)
-                gpu_args.append(arr)
-                self.allocations.append(arr)
+                if np.isscalar(arg):
+                    # if not explicitly float64, it should be a float32 for GPU kernels
+                    if isinstance(arg, float) and not isinstance(arg, np.float64):
+                        arg = np.float32(arg)
+                else:
+                    arg = self.to_gpuarray(arg)
+                gpu_args.append(arg)
+                self.allocations.append(arg)
             except Exception as e:
                 raise RuntimeError(f"Failed to move array to GPU: {e}")
         return gpu_args
@@ -246,7 +356,6 @@ class JuliaFunctions(GPUBackend):
         kernel_code = kernel_instance.kernel_string
         kernel_name = kernel_instance.name
         self.kernel_source = kernel_instance.kernel_source
-        self.host_time = None  # reset host time for this kernel instance
 
         # Extract all 'using' statements and check for required packages
         uses = []
@@ -286,6 +395,8 @@ end
 
     def run_kernel(self, func, gpu_args, threads, grid, stream=None):
         """Launch a compiled Julia kernel."""
+        self.launch_kernel_time = None  # reset host time for this kernel instance
+        self.launch_kernel_time_start = None
         if func is None or not isinstance(func, JuliaKernel):
             raise RuntimeError("No Julia kernel compiled or provided.")
 
@@ -310,17 +421,18 @@ end
 
         # run the kernel
         try:
-            self.host_time = self.launch_kernel(
+            # the GPU timing events (CUDA, AMDGPU) are recorded in Julia directly around the launch
+            self.launch_kernel_time, self.launch_kernel_time_start, start_evt, end_evt = self.launch_kernel(
                 julia_func,
                 args_tuple,
                 params,
                 ndrange,
                 workgroupsize,
                 int(self.smem_size),
-                self.observers[-1].start,
-                self.observers[-1].end,
-                self.observers[-1].stream,
+                self.use_metal_buffer,
             )
+            self._start_event = start_evt
+            self._end_event = end_evt
         except JuliaError as e:
             if self.raise_errors:
                 raise e
@@ -328,51 +440,46 @@ end
                 raise SkippableFailure(f"Julia kernel launch failed for {params=}: {e}")
 
     def start_event(self):
-        """Records the event that marks the start of a measurement."""
-        if self.backend_mod_name == "CUDA":
-            evt = self.start_evt()
-            self.backend_mod.record(evt, self.stream)
-            self.backend_mod.synchronize(evt)
-            return evt
-        elif self.backend_mod_name == "AMDGPU":
-            evt = self.start_evt(self.stream, do_record=False, timing=True)
-            self.backend_mod.HIP.record(evt)
-            self.backend_mod.HIP.synchronize(evt)
-            return evt
-        elif self.backend_mod_name == "Metal":
-            # Because our kernel launch happens via Kernel Abstractions, we wrap our kernel between two command buffers.
-            # Normally you would just use one command buffer for the actual kernel and take GPUEndTime - GPUStartTime.
-            jl.start_buf = self.create_metal_buffer()
-            jl.seval("Metal.commit!(start_buf)")
-            self.backend_mod.wait_completed(jl.start_buf)
-            return float(jl.start_buf.GPUEndTime)
+        """Marks the start of a measurement (non-blocking).
+
+        The GPU timing events (CUDA, AMDGPU) and Metal command buffers are recorded in Julia directly around the kernel
+        launch in `run_kernel`, so that host-side work before the launch (e.g. Python to Julia calls, GC pauses) is
+        not measured as GPU time.
+        """
+        self._host_start_time = perf_counter()
+        self._start_event = None
+        self._end_event = None
 
     def stop_event(self):
-        """Records the event that marks the end of a measurement."""
-        if self.backend_mod_name == "CUDA":
-            evt = self.end_evt()
-            self.backend_mod.record(evt, self.stream)
-            self.backend_mod.synchronize(evt)
-            return evt
-        elif self.backend_mod_name == "AMDGPU":
-            evt = self.end_evt(self.stream, do_record=False, timing=True)
-            self.backend_mod.HIP.record(evt)
-            self.backend_mod.HIP.synchronize(evt)
-            return evt
-        elif self.backend_mod_name == "Metal":
-            jl.end_buf = self.create_metal_buffer()
-            jl.seval("Metal.commit!(end_buf)")
-            self.backend_mod.wait_completed(jl.end_buf)
-            return float(jl.end_buf.GPUStartTime)
+        """Marks the end of a measurement (non-blocking); the events are recorded in `run_kernel`."""
+        pass
 
     def kernel_finished(self):
         """Returns True if the kernel has finished, False otherwise."""
-        return True  # JuliaCall synchronizes on record
+        if self.backend_mod_name == "CUDA":
+            if self._end_event is not None:
+                return bool(self.backend_mod.isdone(self._end_event))
+            return True
+        elif self.backend_mod_name == "AMDGPU":
+            if self._end_event is not None:
+                # AMDGPU.HIP.hipEventQuery returns (hipError_t, bool)
+                result = self.backend_mod.HIP.hipEventQuery(self._end_event)
+                if isinstance(result, tuple) and len(result) >= 2:
+                    return bool(result[1])
+                return bool(result)
+            return True
+        elif self.backend_mod_name == "Metal":
+            return bool(self.metal_kernel_finished())
+        elif self.backend_mod_name in ("INTEL", "CPU"):
+            # No hardware events
+            return True
+        return True
 
     # @staticmethod
     def synchronize(self):
         try:
-            jl.Main.KernelAbstractions.synchronize(self.backend)
+            self._host_time_julia = self.synchronize_gpu(self.launch_kernel_time_start)
+            self._host_stop_time = perf_counter()
         except JuliaError as e:
             raise RuntimeError(f"Julia synchronize failed: {e}")
 
@@ -394,6 +501,11 @@ end
     def memcpy_dtoh(dest, src):
         """Perform a device to host memory copy."""
         try:
+            if not isinstance(src, np.ndarray):
+                # NumPy cannot view device memory, so on a (wrapped) GPU array `np.copyto` falls back to a very slow
+                # generic conversion (seconds for a few million elements). Copy to a host `Array` in Julia instead,
+                # which NumPy can then read through the buffer protocol without further copies.
+                src = np.asarray(jl.Array(src))
             np.copyto(dest, src)
         except JuliaError as e:
             raise RuntimeError(f"Julia memcpy_dtoh failed: {e}")
@@ -445,14 +557,6 @@ end
                 raise ImportError(
                     f'{package} not found in your Julia environment. Run `using Pkg; Pkg.add(\"{package}\")` to install it.'
                 ) from e
-
-    def create_metal_buffer(self):
-        """Create a Metal buffer in the command queue."""
-        try:
-            buf = self.contextqueue.commandBuffer()
-        except Exception:
-            buf = self.backend_mod.MTLCommandBuffer(self.contextqueue)
-        return buf
 
     def setup_streams(self, backend_name: str):
         """Set up stream and event attributes for observers."""

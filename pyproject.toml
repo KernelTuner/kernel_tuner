@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [project]
 name = "kernel_tuner"
 description = "An easy to use CUDA/OpenCL kernel tuner in Python"
-version = "1.5.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
+version = "1.6.0" # adhere to PEP440 versioning: https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#id55
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
@@ -41,15 +41,15 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development",
     "Topic :: System :: Distributed Computing",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14"
+    "Programming Language :: Python :: 3.14",   # TODO when least supported Python version is 3.14, remove juliapkg[zstd] from the optional dependencies
+    "Programming Language :: Python :: 3.15"
 ]
 
 # ATTENTION: if anything is changed here, run `poetry update`
-requires-python = ">=3.10,<4" # <4 is because of hip-python  # NOTE when changing the Python versions, also change the test versions in the Noxfile and GitHub Actions
+requires-python = ">=3.11,<4" # <4 is because of hip-python  # NOTE when changing the Python versions, also change the test versions in the Noxfile and GitHub Actions
 dependencies = [
     "numpy>=2.0.0",
     "scipy>=1.14.1",    # Python >=3.13 needs scipy >=1.14
@@ -100,7 +100,11 @@ cuda = ["cuda-python>=12.6.0", "nvidia-ml-py>=12.535.108", "pynvml>=11.4.1"] # A
 opencl = ["pyopencl"]                                                   # Attention: if pyopencl is changed here, also change `session.install("pyopencl")` in the Noxfile
 cuda_opencl = ["cuda-python>=12.6.0", "pyopencl"]                            # Attention: if pycuda is changed here, also change `session.install("pycuda")` in the Noxfile
 hip = ["hip-python"]
-julia = ["juliapkg>=0.1.23", "juliacall>=0.9.31"]
+julia = [
+    "juliapkg>=0.1.28; python_version >= '3.14'",
+    "juliapkg[zstd]>=0.1.28; python_version < '3.14'",  # zstd is required for Julia>=1.13 and Python<3.14 due to zstd registry default
+    "juliacall>=0.9.37"
+]
 tutorial = ["jupyter>=1.0.0", "matplotlib>=3.5.0", "nvidia-ml-py>=12.535.108"]
 
 # ATTENTION: if anything is changed here, run `poetry update` and `poetry export --with docs --without-hashes --format=requirements.txt --output doc/requirements.txt`
@@ -130,7 +134,6 @@ nox = "^2024.4.15"
 nox-poetry = "^1.0.3"
 ruff = "^0.15.0"
 pep440 = "^0.1.2"
-tomli = "^2.0.1"          # held back by Python <= 3.10, can be replaced by built-in [tomllib](https://docs.python.org/3.11/library/tomllib.html) from Python 3.11 onwards
 scikit-optimize = "0.10.2"
 
 # development dependencies are unused for now, as this is already covered by test and docs

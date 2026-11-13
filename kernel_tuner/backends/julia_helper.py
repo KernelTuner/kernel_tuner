@@ -19,7 +19,10 @@ backend_map = {
         "name": "CUDA.name(CUDA.device())",
         "max_threads": "CUDA.attribute(CUDA.device(), CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)",
         "capability": "CUDA.capability(CUDA.device())",
+        "uuid": lambda d: f"NVML.uuid(CUDA.NVML.Device({d}))",
+        "pci_bus_id": None,
         "GPUArrayType": "CuArray",
+        "supported_float_types": ["Float16", "BFloat16", "Float32", "Float64"],
     },
     "AMD": {
         "pkg": "AMDGPU",
@@ -29,7 +32,10 @@ backend_map = {
         "name": "AMDGPU.HIP.name(AMDGPU.HIP.device())",
         "max_threads": "AMDGPU.HIP.attribute(AMDGPU.HIP.device(), AMDGPU.HIP.hipDeviceAttributeMaxThreadsPerBlock)",
         "capability": None,
+        "uuid": None,
+        "pci_bus_id": None,
         "GPUArrayType": "ROCArray",
+        "supported_float_types": ["Float16", "BFloat16", "Float32", "Float64"],
     },
     "INTEL": {
         "pkg": "oneAPI",
@@ -39,7 +45,10 @@ backend_map = {
         "name": "oneAPI.name(oneAPI.device())",
         "max_threads": "oneAPI.compute_properties(oneAPI.device()).maxTotalGroupSize",
         "capability": None,
+        "uuid": None,
+        "pci_bus_id": None,
         "GPUArrayType": "oneArray",
+        "supported_float_types": ["Float16", "BFloat16", "Float32", "Float64"],
     },
     "METAL": {
         "pkg": "Metal",
@@ -49,7 +58,10 @@ backend_map = {
         "name": "Metal.device().name",
         "max_threads": "Int(Metal.device().maxThreadsPerThreadgroup.width)",
         "capability": None,
+        "uuid": None,
+        "pci_bus_id": None,
         "GPUArrayType": "MtlArray",
+        "supported_float_types": ["Float16", "BFloat16", "Float32"],
     },
     "CPU": {
         "pkg": None,
@@ -57,8 +69,11 @@ backend_map = {
         "module_backend": "CPU",
         "device_select": lambda d: "nothing",
         "name": "CPU",
-        "max_threads": "1024", # arbitrary as CPU doesn't have a max threads per block concept
+        "max_threads": "1024",  # arbitrary as CPU doesn't have a max threads per block concept
         "capability": None,
+        "uuid": None,
+        "pci_bus_id": None,
+        "supported_float_types": ["Float16", "Float32", "Float64"],
         "GPUArrayType": "Array",
     },
 }
@@ -113,10 +128,7 @@ def julia_backend_available_metal():
             if "metal" in supported:
                 version = regex_search(r".*metal([\d.]+)", supported).group(1)
                 if float(version) < 3:
-                    warn(
-                        f"Metal backend detected, but {supported} < 3. "
-                        "Metal.jl requires Metal version 3 or higher."
-                    )
+                    warn(f"Metal backend detected, but {supported} < 3. Metal.jl requires Metal version 3 or higher.")
                 else:
                     return True
     return False
@@ -125,10 +137,12 @@ def julia_backend_available_metal():
 def julia_backend_available_intel():
     """Check if Intel backend is available. May give false positives if other backends are present."""
     try:
-        # not a perfect check but should work in most cases
-        subprocess.check_output(
-            "ls /dev/dri/by-path/".split()
-        )
+        subprocess.check_output("intel-smi")
         return True
     except (FileNotFoundError, subprocess.CalledProcessError):
-        return False
+        try:
+            # not a perfect check but should work in most cases
+            subprocess.check_output("ls /dev/dri/by-path/".split())
+            return True
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            return False

@@ -16,7 +16,7 @@
 
 
 Create optimized GPU applications in any mainstream GPU 
-programming language (CUDA, HIP, OpenCL, OpenACC, OpenMP).
+programming language (CUDA, HIP, OpenCL, OpenACC, OpenMP). For Julia, see [KernelTuner.jl](https://github.com/KernelTuner/KernelTuner.jl). 
 
 What Kernel Tuner does:
 

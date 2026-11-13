@@ -3,7 +3,16 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
-- Fix `np.shuffle` crash and wrong return type in `Searchspace` distributed random and LHS samplers
+- Extended Julia functionality:
+  - Implemented Julia observers for Metal, Nvidia and AMD energy measurements.
+  - Improved timing stability. 
+  - Include the new tests of #407, additional new and updated tests.
+- Improved performance and data handling.
+- Improved NVML and AMD observers.
+- Improved signal handling.
+- Added Python 3.15 support, dropped 3.10 support due to removed support from required dependencies. 
+- Removed tomli dependency in favor of built-in tomllib.
+- Fix `np.shuffle` crash and wrong return type in `Searchspace` distributed random and LHS samplers.
 
 ## [1.5.0] - 2026-08-20
 - Kernel Tuner can now be used from Julia, [see KernelTuner.jl](https://github.com/KernelTuner/KernelTuner.jl)

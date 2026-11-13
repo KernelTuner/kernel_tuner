@@ -28,7 +28,7 @@ jobs:
               with:
                   python-version: "3.12"
             - name: Setup Poetry
-              uses: Gr1N/setup-poetry@v9
+              uses: Gr1N/setup-poetry@v10
             - name: Build the source distribution and pure-Python wheel
               run: |
                   poetry install

@@ -21,7 +21,7 @@ from julia_helper import backend_map, detect_julia_gpu_backends  # noqa: E402, F
 
 # set the test parameters
 verbose = False
-python_versions_to_test = ["3.14", "3.13", "3.12", "3.11"]
+python_versions_to_test = ["3.15", "3.14", "3.13", "3.12", "3.11"]
 nox.options.stop_on_first_error = True
 nox.options.error_on_missing_interpreters = True
 nox.options.default_venv_backend = "virtualenv"
@@ -72,9 +72,9 @@ def create_settings(session: Session) -> None:
 # obtain workspace level settings from the 'noxsettings.toml' file
 if settings_file_path.exists():
     with settings_file_path.open(mode="rb") as fp:
-        import tomli
+        import tomllib
 
-        nox_settings = tomli.load(fp)
+        nox_settings = tomllib.load(fp)
         venvbackend = nox_settings["venvbackend"]
         envdir = nox_settings["envdir"]
         assert venvbackend in venvbackend_values, (
@@ -145,6 +145,7 @@ def tests(session: Session) -> None:
     small_disk = False
     skip_gpu = False
     github_action = False
+    session_posargs = []
     if session.posargs:
         for arg in session.posargs:
             if arg.lower() == "skip-gpu":
@@ -171,7 +172,8 @@ def tests(session: Session) -> None:
             elif arg.lower() == "github-action":
                 github_action = True
             else:
-                raise ValueError(f"Unrecognized argument {arg}")
+                session_posargs.append(arg)
+                session.warn(f"Unrecognized argument {arg}, passing to pytest")
     if install_julia == False and julia_use_gpu == True:
         raise ValueError("Cannot use Julia GPU backend if Julia is disabled")
     if skip_gpu == True and julia_use_gpu == True:
@@ -342,7 +344,7 @@ def tests(session: Session) -> None:
         # set the Julia version
         # when changed, also see `require_julia` in Project.toml and the Julia version in the GitHub Actions workflow
         if github_action:
-            preamble = "import juliapkg; juliapkg.require_julia('1.11')"    # must match the setup-julia action
+            preamble = "import juliapkg; juliapkg.require_julia('1.13')"    # must match the setup-julia action
         else:
             preamble = "import juliapkg; juliapkg.require_julia('1.11, 2')" # meaning >= 1.11, < 2.0
         # call JuliaPKG to precompile packages in the session environment
@@ -406,11 +408,11 @@ def tests(session: Session) -> None:
     # for the last Python version session if all optional dependencies are enabled:
     if session.python == python_versions_to_test[-1] and full_install:
         # run pytest on the package to generate the correct coverage report
-        session.run("pytest", external=False, env=env_vars)
+        session.run("pytest", *session_posargs, external=False, env=env_vars)
     else:
         # for the other Python version sessions:
         # run pytest without coverage reporting
-        session.run("pytest", "--no-cov", external=False, env=env_vars)
+        session.run("pytest", "--no-cov", *session_posargs, external=False, env=env_vars)
 
     # warn if no coverage report
     if not full_install:
