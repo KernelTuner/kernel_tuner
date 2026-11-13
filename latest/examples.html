@@ -73,6 +73,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#point-in-polygon">Point-in-Polygon</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#expdist">ExpDist</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#code-generator">Code Generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#random-number-generation">Random Number Generation</a></li>
 </ul>
 </li>
 </ul>
@@ -268,6 +269,17 @@ kernel [<a class="reference external" href="https://github.com/kerneltuner/kerne
 <dl class="simple">
 <dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/vector_add_codegen.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/opencl/vector_add_codegen.py">OpenCL</a>]</dt><dd><ul class="simple">
 <li><p>use a Python function as a code generator</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="random-number-generation">
+<h2>Random Number Generation<a class="headerlink" href="#random-number-generation" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>[<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/cuda/curand.py">CUDA</a>] [<a class="reference external" href="https://github.com/kerneltuner/kernel_tuner/blob/master/examples/hip/hiprand.py">HIP</a>]</dt><dd><ul class="simple">
+<li><p>use curand’s (CUDA) or rocRAND’s (HIP) device-side API to generate random numbers inside a tuned kernel</p></li>
+<li><p>initialize the generator state once from the host using run_kernel, then reuse it across tuning</p></li>
+<li><p>tune the unrolling factor of the loop that draws the random numbers</p></li>
 </ul>
 </dd>
 </dl>
