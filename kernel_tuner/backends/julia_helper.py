@@ -6,6 +6,7 @@ We might want to consider moving this to a utility module or Julia package as it
 import os
 import shutil
 import subprocess
+import sys
 from glob import glob
 from json import JSONDecodeError
 from json import loads as json_loads
@@ -148,17 +149,31 @@ def julia_backend_available_metal():
 
 
 def julia_backend_available_intel():
-    """Check if Intel backend is available. May give false positives if other backends are present."""
-    try:
-        subprocess.check_output("intel-smi")
-        return True
-    except (FileNotFoundError, subprocess.CalledProcessError):
+    """Check if Intel backend is available, i.e. an Intel GPU is present (oneAPI.jl only supports Linux)."""
+    INTEL_PCI_VENDOR_ID = "0x8086"
+    PCI_CLASS_DISPLAY = "0x03"
+
+    if not sys.platform.startswith("linux"):
+        return False
+    for tool in ("xpu-smi", "intel-smi"):
         try:
-            # not a perfect check but should work in most cases
-            subprocess.check_output("ls /dev/dri/by-path/".split())
+            subprocess.check_output(tool, stderr=subprocess.DEVNULL)
             return True
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            return False
+        except (FileNotFoundError, PermissionError, subprocess.CalledProcessError):
+            pass
+    # a /dev/dri device alone is not enough, as e.g. NVIDIA, AMD and virtual GPUs (as on CI runners) also have one,
+    # so check the PCI vendor and class of the DRM devices for an Intel display controller
+    for device in glob("/sys/class/drm/card*/device"):
+        try:
+            with open(os.path.join(device, "vendor")) as vendor_file:
+                vendor = vendor_file.read().strip().lower()
+            with open(os.path.join(device, "class")) as class_file:
+                device_class = class_file.read().strip().lower()
+        except OSError:
+            continue
+        if vendor == INTEL_PCI_VENDOR_ID and device_class.startswith(PCI_CLASS_DISPLAY):
+            return True
+    return False
 
 
 # UUIDs of the JLLs that provide the CUDA toolkit to CUDA.jl, these hold the preferences for using a local toolkit
@@ -189,7 +204,9 @@ def cuda_driver_version():
 def _toolkit_candidate_dirs():
     """Directories that may hold a CUDA toolkit, in the order that CUDA.jl (CUDA_Runtime_Discovery) searches them."""
     # if set, the environment variables override the discovery
-    env_dirs = [os.environ[var] for var in ("CUDA_PATH", "CUDA_HOME", "CUDA_ROOT") if os.path.isdir(os.environ.get(var, ""))]
+    env_dirs = [
+        os.environ[var] for var in ("CUDA_PATH", "CUDA_HOME", "CUDA_ROOT") if os.path.isdir(os.environ.get(var, ""))
+    ]
     if env_dirs:
         return list(dict.fromkeys(env_dirs))
     dirs = []
@@ -243,7 +260,9 @@ def local_cuda_toolkit_preferences():
         return None
     if setting not in ("yes", "true", "1", "on"):
         if setting != "auto":
-            warn(f"Unknown value '{setting}' for {LOCAL_CUDA_TOOLKIT_ENV}, expected 'auto', 'yes' or 'no'. Using 'auto'.")
+            warn(
+                f"Unknown value '{setting}' for {LOCAL_CUDA_TOOLKIT_ENV}, expected 'auto', 'yes' or 'no'. Using 'auto'."
+            )
         toolkit = find_local_cuda_toolkit()
         if toolkit is None:
             return None

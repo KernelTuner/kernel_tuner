@@ -219,9 +219,14 @@ class JuliaFunctions(GPUBackend):
                 elif not self.package_installed(backend_pkg):
                     # CUDA.jl downloads a CUDA toolkit on installation, prefer a compatible local toolkit instead
                     preferences = local_cuda_toolkit_preferences()
-            self.check_package_and_install(
+            installed = self.check_package_and_install(
                 packages, allow_install=backend_name != "INTEL", preferences=preferences
             )  # avoid Intel false positives
+            if not installed:
+                if self.backend_requested:
+                    raise ImportError(f"Julia backend {backend_name} requested, but {backend_pkg} is not installed.")
+                warn(f"Julia backend {backend_name} detected, but {backend_pkg} is not installed. Using the CPU backend.")
+                return self.initialize_backend(device, "CPU")
 
             # # Set debug level if needed
             # if backend_name == "cuda":
@@ -579,17 +584,19 @@ end
     def check_package_and_install(self, packages, allow_install=True, preferences=None):
         """Checks if the Julia package(s) are available, and installs the missing ones if not.
 
+        Returns True if the packages are available, False if they are missing and installation is not allowed.
+
         ``preferences`` optionally maps package names to Julia preferences that are set before installing, e.g. to
         configure the CUDA toolkit JLLs. Packages that only appear in ``preferences`` are added as dependencies.
         """
         packages = [packages] if isinstance(packages, str) else list(packages)
         missing = [package for package in packages if not self.package_available(package)]
         if not missing:
-            return
+            return True
         add_command = "using Pkg; Pkg.add([" + ", ".join(f'\"{package}\"' for package in missing) + "])"
         if not allow_install:
             warn(f"{', '.join(missing)} not found in your Julia environment. Run `{add_command}` to install it.")
-            return
+            return False
         try:
             warn(f"{', '.join(missing)} not found, attempting to install it directly.")
             import juliapkg
@@ -602,6 +609,7 @@ end
             juliapkg.resolve()
             for package in missing:
                 jl.seval(f"import {package}")
+            return True
         except Exception as e:
             raise ImportError(
                 f"{', '.join(missing)} not found in your Julia environment. Run `{add_command}` to install it."
@@ -654,7 +662,9 @@ end
 
     def verify_backends_with_options(self, compiler_options=None):
         """Verify that the requested backend is available."""
+        self.backend_requested = False
         if compiler_options is not None and len(compiler_options) == 1:
+            self.backend_requested = True
             if compiler_options[0].upper() not in self.available_backends:
                 raise ValueError(
                     f"Requested Julia backend '{compiler_options[0]}' not available. "
