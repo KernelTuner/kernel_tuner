@@ -3,8 +3,7 @@
 # Units follow NVML: power in milliwatt, energy in millijoule, clocks in MHz, temperature in degrees Celsius.
 module KernelTunerNVML
 
-import CUDACore
-import NVML
+include(joinpath(@__DIR__, "..", "backends", "julia_load_cuda.jl"))  # defines CUDACore and NVML
 
 # NVML return code of an exception, or -1 if it is not an NVML error
 error_code(err) = err isa NVML.NVMLError ? Int(err.code) : -1

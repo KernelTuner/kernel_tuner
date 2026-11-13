@@ -5,6 +5,7 @@ This backend allows Julia kernels to be compiled, launched, and observed from Py
 Requirements:
   pip install juliacall
   and in Julia: ] add CUDACore NVML / AMDGPU / oneAPI / Metal (will be automatically installed if not present)
+  An installed CUDA.jl is used as is, as it contains CUDACore and NVML.
   When installing CUDACore, a compatible local CUDA toolkit is used if available instead of downloading one,
   see `KERNEL_TUNER_JULIA_LOCAL_CUDA_TOOLKIT` in julia_helper.py.
 
@@ -178,7 +179,7 @@ class JuliaFunctions(GPUBackend):
                 f"""
                 global dest_tmp, src_tmp  # for memcpy_htod
                 module KernelTunerHelper
-                    using {self.backend_mod_name}
+                    using {self.backend_using}
                     const kt_julia_backend = {self.backend_mod_instname}()
                     const GPUArrayType = {self.GPUArrayType}
                     include("{str(Path(__file__).parent / "julia_helper.jl")}")
@@ -211,9 +212,13 @@ class JuliaFunctions(GPUBackend):
             # Ensure the package is installed
             packages = [backend_pkg] + info.get("extra_pkgs", [])
             preferences = None
-            if backend_name == "CUDA" and not self.package_available(backend_pkg):
-                # CUDA.jl downloads a CUDA toolkit on installation, prefer a compatible local toolkit instead
-                preferences = local_cuda_toolkit_preferences()
+            if backend_name == "CUDA":
+                if self.package_installed("CUDA"):
+                    # CUDA.jl contains CUDACore and NVML, use it as is (see julia_load_cuda.jl)
+                    packages = []
+                elif not self.package_installed(backend_pkg):
+                    # CUDA.jl downloads a CUDA toolkit on installation, prefer a compatible local toolkit instead
+                    preferences = local_cuda_toolkit_preferences()
             self.check_package_and_install(
                 packages, allow_install=backend_name != "INTEL", preferences=preferences
             )  # avoid Intel false positives
@@ -229,10 +234,15 @@ class JuliaFunctions(GPUBackend):
         # KernelAbstractions is a dependency of the backend packages, but must be a direct dependency to be loaded
         self.check_package_and_install("KernelAbstractions")
         jl.seval("using KernelAbstractions")
+        self.backend_using = info["module"]
         if backend_pkg is not None:
-            jl.seval(f"using {info['module']}")
-            for extra_pkg in info.get("extra_pkgs", []):
-                jl.seval(f"import {extra_pkg}")
+            if info.get("loader") is not None:
+                # the loader binds the module in Main, so other modules defined in Main use it relatively
+                jl.include(str(Path(__file__).parent / info["loader"]))
+                jl.seval(f"using .{info['module']}")
+                self.backend_using = f"..{info['module']}"
+            else:
+                jl.seval(f"using {info['module']}")
         backend_mod = getattr(jl.Main, self.backend_mod_name)
         self.backend_mod = backend_mod
         jl.seval(f"tmp_arr = {info['GPUArrayType']}(Float32.(zeros(2)))")
@@ -391,7 +401,7 @@ end
         else:
             module_code = f"""
 module KernelTunerUserKernel
-    using {self.backend_mod_name}
+    using {self.backend_using}
     {kernel_code}
 end
             """
@@ -551,6 +561,11 @@ end
     # -------------------------
     # Helper functions
     # -------------------------
+
+    @staticmethod
+    def package_installed(package):
+        """Checks if the Julia package is a direct dependency of the environment, without loading it."""
+        return bool(jl.seval(f'Base.find_package("{package}") !== nothing'))
 
     @staticmethod
     def package_available(package):

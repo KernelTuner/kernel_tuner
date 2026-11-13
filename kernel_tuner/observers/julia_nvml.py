@@ -52,7 +52,7 @@ class _JuliaNVMLLibrary:
             try:
                 jl.include(str(Path(__file__).parent / "julia_nvml.jl"))
             except JuliaError as e:
-                raise ImportError(f"Could not load NVML.jl, are CUDACore.jl and NVML.jl installed? {e}") from e
+                raise ImportError(f"Could not load NVML.jl, is CUDA.jl (or CUDACore.jl and NVML.jl) installed? {e}") from e
         self._module = jl.KernelTunerNVML
 
     def __getattr__(self, name):

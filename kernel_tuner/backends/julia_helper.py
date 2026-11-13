@@ -17,8 +17,10 @@ backend_map = {
     "CUDA": {
         # CUDACore is the core of CUDA.jl (>= 6) without the CUDA libraries (cuBLAS, cuFFT, cuSOLVER etc.), which the
         # backend does not need. NVML is a separate, small package, used to query the device UUID.
+        # An installed CUDA.jl is used instead, as it contains both, see julia_load_cuda.jl.
         "pkg": "CUDACore",
         "extra_pkgs": ["NVML"],
+        "loader": "julia_load_cuda.jl",
         "module": "CUDACore",
         "module_backend": "CUDABackend",
         "helper_ext": "cuda",
