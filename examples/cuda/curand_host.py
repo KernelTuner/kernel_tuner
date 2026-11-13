@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """Example showing how to tune a CUDA kernel that draws numbers generated
-with the cuRAND host API"""
+with the cuRAND host API
+
+Requires nvmath-python: pip install nvmath-python
+"""
 
 import numpy
 from kernel_tuner import tune_kernel
