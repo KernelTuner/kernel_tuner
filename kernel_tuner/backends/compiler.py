@@ -13,7 +13,7 @@ import numpy as np
 import numpy.ctypeslib
 
 from kernel_tuner.backends.backend import CompilerBackend
-from kernel_tuner.observers.compiler import CompilerRuntimeObserver
+from kernel_tuner.observers.compiler import CompilerDefaultObserver
 from kernel_tuner.util import (
     delete_temp_file,
     get_temp_filename,
@@ -82,6 +82,26 @@ dtype_map = {
 # of the argument data. For an ndarray, the ctypes object is a wrapper for the ndarray's data.
 Argument = namedtuple("Argument", ["numpy", "ctypes"])
 
+# This represents an extended return value from C functions, allowing
+# it to pass multiple objectives and an error string.
+class ExtendedReturnValue(C.Structure):
+    _fields_ = [
+                ("success", C.c_bool),
+                ("error", C.c_char * 256),
+                ("count", C.c_int),
+                ("keys", (C.c_char * 16) * 8), # TODO: double-check memory order
+                ("values", C.c_float * 8)
+               ]
+    # TODO: fix this hack
+    def copy(self):
+        return self
+    def convert(self):
+        result = {}
+        for i in range(self.count):
+            key = C.cast(self.keys[i], C.c_char_p).value.decode("ascii")
+            result[key] = self.values[i]
+        return result
+
 
 class CompilerFunctions(CompilerBackend):
     """Class that groups the code for running and compiling C functions"""
@@ -95,7 +115,7 @@ class CompilerFunctions(CompilerBackend):
         # allocations contains a clean copy of the memory
         self.allocations = []
         self.observers = observers or []
-        self.observers.append(CompilerRuntimeObserver(self))
+        self.observers.append(CompilerDefaultObserver(self))
         for obs in self.observers:
             obs.register_device(self)
 
@@ -158,18 +178,21 @@ class CompilerFunctions(CompilerBackend):
         ctype_args = [None for _ in arguments]
 
         for i, arg in enumerate(arguments):
-            if not (isinstance(arg, (np.ndarray, np.number, DeviceArray)) or is_cupy_array(arg)):
+            if not (isinstance(arg, (np.ndarray, np.number, DeviceArray)) or is_cupy_array(arg) or (isinstance(arg, str) and arg == "KernelTunerExtendedReturnValue")):
                 raise TypeError(
                     f"Argument is not numpy or cupy ndarray or numpy scalar or HIP Python DeviceArray but a {type(arg)}"
                 )
-            dtype_str = arg.typestr if isinstance(arg, DeviceArray) else str(arg.dtype)
-            if isinstance(arg, np.ndarray):
-                if dtype_str in dtype_map.keys():
-                    data_ctypes = arg.ctypes.data_as(C.POINTER(dtype_map[dtype_str]))
+            if isinstance(arg, str) and arg == "KernelTunerExtendedReturnValue":
+                # TODO: double check that this gets handled properly everywhere
+                arg = ExtendedReturnValue()
+                data_ctypes = C.pointer(arg)
+            elif isinstance(arg, np.ndarray):
+                if str(arg.dtype) in dtype_map.keys():
+                    data_ctypes = arg.ctypes.data_as(C.POINTER(dtype_map[str(arg.dtype)]))
                 else:
                     raise TypeError("unknown dtype for ndarray")
             elif isinstance(arg, np.generic):
-                data_ctypes = dtype_map[dtype_str](arg)
+                data_ctypes = dtype_map[str(arg.dtype)](arg)
             elif is_cupy_array(arg):
                 data_ctypes = C.c_void_p(arg.data.ptr)
             elif isinstance(arg, DeviceArray):
@@ -364,8 +387,17 @@ class CompilerFunctions(CompilerBackend):
         logging.debug("run_kernel")
         logging.debug("arguments=" + str([str(arg.ctypes) for arg in c_args]))
 
-        time = func(*[arg.ctypes for arg in c_args])
-        self.last_result = time
+        # HACK: detect mode
+        if True:
+            func(*[arg.ctypes for arg in c_args])
+            # TODO: Use error status and raise exception if appropriate
+            self.last_result = c_args[-1].numpy.convert()
+
+            # TODO: fix this
+            time = self.last_result["time"]
+        else:
+            time = func(*[arg.ctypes for arg in c_args])
+            self.last_result = time
 
         return time
 

@@ -12,6 +12,7 @@ except ImportError:
 
 import kernel_tuner
 from kernel_tuner.backends.compiler import Argument, CompilerFunctions, get_array_module, is_cupy_array
+from kernel_tuner.observers.compiler import CompilerDefaultObserver
 from kernel_tuner.core import KernelInstance, KernelSource
 from kernel_tuner.util import delete_temp_file
 
@@ -391,3 +392,34 @@ def test_memcpy_dtoh():
     assert np.all(ready_arguments[0].numpy != output)
     cfunc.memcpy_dtoh(output, ready_arguments[0])
     assert np.all(ready_arguments[0].numpy == output)
+
+def test_observer():
+    dev = Mock()
+    observer = CompilerDefaultObserver(dev)
+
+    res = observer.get_results()
+    assert res == {}
+
+    dev.last_result = 1.0
+    observer.after_finish()
+    dev.last_result = 2.0
+    observer.after_finish()
+    res = observer.get_results()
+    assert res == { "times": [ 1.0, 2.0 ], "time": 1.5 }
+
+    res = observer.get_results()
+    assert res == {}
+
+    dev.last_result = { "time": 3.0 }
+    observer.after_finish()
+    dev.last_result = { "time": 4.0 }
+    observer.after_finish()
+    res = observer.get_results()
+    assert res == { "times": [ 3.0, 4.0 ], "time": 3.5 }
+
+    dev.last_result = { "time": 5.0, "energy": 7.0 }
+    observer.after_finish()
+    dev.last_result = { "time": 6.0, "energy": 8.0 }
+    observer.after_finish()
+    res = observer.get_results()
+    assert res == { "times": [ 5.0, 6.0 ], "time": 5.5, "energys": [ 7.0, 8.0 ], "energy": 7.5 }
