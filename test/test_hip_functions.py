@@ -1,4 +1,6 @@
 import ctypes
+import uuid
+
 import numpy as np
 import pytest
 
@@ -160,3 +162,11 @@ def test_smem_args(env):
         verbose=True, lang="HIP")
     tune_params = env[-1]
     assert len(result) == len(tune_params["block_size_x"])
+
+@skip_if_no_hip
+def test_device_uuid():
+    """The device UUID is either valid or None, for GPUs that do not report one (e.g. iGPUs)."""
+    dev = kt_hip.HipFunctions(0)
+
+    device_uuid = dev.env["uuid"]
+    assert device_uuid is None or isinstance(uuid.UUID(device_uuid), uuid.UUID)

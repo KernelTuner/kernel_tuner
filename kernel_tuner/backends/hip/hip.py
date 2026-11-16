@@ -104,7 +104,10 @@ class HipFunctions(GPUBackend):
         env["pci_bus_id"] = props.pciBusID
         env["pci_domain_id"] = props.pciDomainID
         env["pci_device_id"] = props.pciDeviceID
-        env["uuid"] = str(uuid.UUID(bytes=props.uuid.bytes))
+        # GPUs without a UUID (e.g. iGPUs) report a placeholder that is shorter than the UUID buffer
+        env["uuid"] = None
+        if len(props.uuid.bytes) == props.uuid.c_sizeof():
+            env["uuid"] = str(uuid.UUID(bytes=props.uuid.bytes))
         env["hip_driver_version"] = hip_check(hip.hipDriverGetVersion())
         env["hip_runtime_version"] = hip_check(hip.hipRuntimeGetVersion())
         env["device_properties"] = extract_safe_properties(props)
