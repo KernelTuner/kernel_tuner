@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
+- Fixed `run_kernel` with Julia kernels when `grid_div_x/y/z` are passed as Julia vectors.
+- `block_size_names` can be passed as a tuple, and the list passed in is no longer modified.
 
 ## [1.6.0] - 2026-11-13
 - Extended Julia functionality:

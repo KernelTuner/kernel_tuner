@@ -532,6 +532,18 @@ def test_check_tune_params_list3():
             check_tune_params_list(tune_params, [])
 
 
+def test_append_default_block_size_names():
+    assert append_default_block_size_names(None) is None
+    assert append_default_block_size_names([]) == ["block_size_x", "block_size_y", "block_size_z"]
+    # a tuple is accepted as well, and the names passed in are not modified
+    names = ("bx",)
+    assert append_default_block_size_names(names) == ["bx", "block_size_y", "block_size_z"]
+    names = ["bx", "by"]
+    assert append_default_block_size_names(names) == ["bx", "by", "block_size_z"]
+    assert names == ["bx", "by"]
+    assert append_default_block_size_names(["bx", "by", "bz", "bw"]) == ["bx", "by", "bz", "bw"]
+
+
 def test_check_block_size_params_names_list():
     def test_warnings(function, args, number, warning_type):
         with warnings.catch_warnings(record=True) as w:
