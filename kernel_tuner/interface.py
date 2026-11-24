@@ -683,7 +683,7 @@ def tune_kernel(
     block_size_names = util.check_block_size_params_names_list(block_size_names, tune_params)
 
     # ensure there is always at least three names
-    util.append_default_block_size_names(block_size_names)
+    block_size_names = util.append_default_block_size_names(block_size_names)
 
     # if Julia, infer the Julia backend from the kernelsource
     if kernelsource.lang.upper() == "JULIA":
@@ -976,9 +976,12 @@ def run_kernel(
         params = util.julia_list_of_pairs_to_dict(params)
         # convert scalars without explicit types to numpy scalars
         arguments = [numpy.array(a)[()] if numpy.isscalar(a) else a for a in arguments]
+        grid_div_x = util.possible_julia_vector_to_list(grid_div_x)
+        grid_div_y = util.possible_julia_vector_to_list(grid_div_y)
+        grid_div_z = util.possible_julia_vector_to_list(grid_div_z)
     block_size_names = util.possible_julia_vector_to_list(block_size_names)
     # ensure there is always at least three names
-    util.append_default_block_size_names(block_size_names)
+    block_size_names = util.append_default_block_size_names(block_size_names)
 
     _check_user_input(kernel_name, kernelsource, arguments, block_size_names)
 

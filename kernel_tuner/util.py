@@ -408,7 +408,7 @@ def check_tune_params_list(tune_params, observers, simulation_mode=False):
 def check_block_size_names(block_size_names):
     if block_size_names is not None:
         # do some type checks for the user input
-        if not isinstance(block_size_names, list):
+        if not isinstance(block_size_names, (list, tuple)):
             raise ValueError("block_size_names should be a list of strings!", block_size_names, type(block_size_names))
         if len(block_size_names) > 3:
             raise ValueError("block_size_names should not contain more than 3 names!", block_size_names)
@@ -421,11 +421,14 @@ def check_block_size_names(block_size_names):
 
 
 def append_default_block_size_names(block_size_names):
+    """Returns the block size names as a new list, padded with the default names to at least three names.
+
+    Any sequence is accepted (e.g. a tuple, or a Julia vector), and the one passed in is not modified.
+    """
     if block_size_names is None:
-        return
-    for i, name in enumerate(default_block_size_names):
-        if len(block_size_names) < i + 1:
-            block_size_names.append(name)
+        return None
+    block_size_names = list(block_size_names)
+    return block_size_names + default_block_size_names[len(block_size_names) :]
 
 
 def check_block_size_params_names_list(block_size_names, tune_params):
